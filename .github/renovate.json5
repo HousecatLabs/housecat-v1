@@ -1,0 +1,10 @@
+{
+  extends: [
+    'config:base',
+    'npm:unpublishSafe',
+    'schedule:weekends',
+    ':automergeLinters',
+    ':automergeTesters',
+    ':disableDependencyDashboard',
+  ],
+}
