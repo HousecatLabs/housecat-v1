@@ -12,6 +12,22 @@ describe('HousecatManagement', () => {
     })
   })
 
+  describe('public variables', () => {
+    it('should have correct address for weth', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      expect(await mgmt.weth()).equal(weth.address)
+    })
+
+    it('should have correct address for treasury', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      expect(await mgmt.treasury()).equal(treasury.address)
+    })
+  })
+
   describe('emergencyPause', () => {
     it('only owner allowed to call', async () => {
       const [signer, otherUser] = await ethers.getSigners()
