@@ -17,7 +17,6 @@ const deploy = async (
   return [management, factory]
 }
 
-
 describe('HousecatFactory', () => {
   describe('deploy', () => {
     it('should deploy successfully', async () => {

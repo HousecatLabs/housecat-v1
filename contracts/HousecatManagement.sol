@@ -7,6 +7,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import './common/Constants.sol';
+import './common/TokenData.sol';
 import './interfaces/IHousecatManagement.sol';
 
 contract HousecatManagement is IHousecatManagement, Constants, Ownable, Pausable {
@@ -14,6 +15,8 @@ contract HousecatManagement is IHousecatManagement, Constants, Ownable, Pausable
 
   address public override treasury;
   address public override weth;
+  address[] private supportedTokens;
+  mapping(address => TokenData) private tokenData;
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
@@ -39,5 +42,21 @@ contract HousecatManagement is IHousecatManagement, Constants, Ownable, Pausable
   function updateWETH(address _weth) external override onlyOwner {
     weth = _weth;
     emit UpdateWETH(_weth);
+  }
+
+  function getSupportedTokens() external view override returns (address[] memory) {
+    return supportedTokens;
+  }
+
+  function setSupportedTokens(address[] memory _tokens) external override onlyOwner {
+    supportedTokens = _tokens;
+  }
+
+  function getTokenData(address _token) external view override returns (TokenData memory) {
+    return tokenData[_token];
+  }
+
+  function setTokenData(address _token, TokenData memory _tokenData) external override onlyOwner {
+    tokenData[_token] = _tokenData;
   }
 }
