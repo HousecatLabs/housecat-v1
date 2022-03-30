@@ -7,9 +7,8 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import './HousecatManagement.sol';
 import './HousecatPool.sol';
-import './interfaces/IHousecatFactory.sol';
 
-contract HousecatFactory is IHousecatFactory {
+contract HousecatFactory {
   using SafeMath for uint;
   using SafeERC20 for IERC20;
 
@@ -28,20 +27,20 @@ contract HousecatFactory is IHousecatFactory {
     poolTemplateContract = _poolTemplateContract;
   }
 
-  receive() external payable override {}
+  receive() external payable {}
 
-  function createPool() external payable override whenNotPaused {
+  function createPool() external payable whenNotPaused {
     address poolAddress = Clones.clone(poolTemplateContract);
     HousecatPool pool = HousecatPool(payable(poolAddress));
     pool.initialize(msg.sender, address(this), managementContract);
     pools.push(poolAddress);
   }
 
-  function getPool(uint _index) external view override returns (address) {
+  function getPool(uint _index) external view returns (address) {
     return pools[_index];
   }
 
-  function getNPools() external view override returns (uint) {
+  function getNPools() external view returns (uint) {
     return pools.length;
   }
 }

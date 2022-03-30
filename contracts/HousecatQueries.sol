@@ -6,17 +6,16 @@ import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/utils/math/SafeCast.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
-import './interfaces/IHousecatQueries.sol';
 import './common/Constants.sol';
 
-contract HousecatQueries is IHousecatQueries, Constants {
+contract HousecatQueries is Constants {
   using SafeMath for uint;
 
-  function getTokenPrices(address[] memory _priceFeeds) external view override returns (uint[] memory) {
+  function getTokenPrices(address[] memory _priceFeeds) external view returns (uint[] memory) {
     return _getTokenPrices(_priceFeeds);
   }
 
-  function getTokenBalances(address _account, address[] memory _tokens) external view override returns (uint[] memory) {
+  function getTokenBalances(address _account, address[] memory _tokens) external view returns (uint[] memory) {
     return _getTokenBalances(_account, _tokens);
   }
 
@@ -24,7 +23,7 @@ contract HousecatQueries is IHousecatQueries, Constants {
     uint[] memory _balances,
     uint[] memory _tokenPrices,
     uint[] memory _tokenDecimals
-  ) external pure override returns (uint[] memory, uint) {
+  ) external pure returns (uint[] memory, uint) {
     return _getTokenWeights(_balances, _tokenPrices, _tokenDecimals);
   }
 
@@ -32,7 +31,7 @@ contract HousecatQueries is IHousecatQueries, Constants {
     uint _balance,
     uint _price,
     uint _decimals
-  ) external pure override returns (uint) {
+  ) external pure returns (uint) {
     return _getTokenValue(_balance, _price, _decimals);
   }
 
@@ -40,7 +39,7 @@ contract HousecatQueries is IHousecatQueries, Constants {
     uint[] memory _balances,
     uint[] memory _tokenPrices,
     uint[] memory _tokenDecimals
-  ) external pure override returns (uint) {
+  ) external pure returns (uint) {
     return _getTotalValue(_balances, _tokenPrices, _tokenDecimals);
   }
 

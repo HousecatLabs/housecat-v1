@@ -8,13 +8,12 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import './common/Constants.sol';
 import './common/TokenData.sol';
-import './interfaces/IHousecatManagement.sol';
 
-contract HousecatManagement is IHousecatManagement, Constants, Ownable, Pausable {
+contract HousecatManagement is Constants, Ownable, Pausable {
   using SafeMath for uint;
 
-  address public override treasury;
-  address public override weth;
+  address public treasury;
+  address public weth;
   address[] private supportedTokens;
   mapping(address => TokenData) private tokenData;
 
@@ -26,37 +25,37 @@ contract HousecatManagement is IHousecatManagement, Constants, Ownable, Pausable
     weth = _weth;
   }
 
-  function emergencyPause() external override onlyOwner {
+  function emergencyPause() external onlyOwner {
     _pause();
   }
 
-  function emergencyUnpause() external override onlyOwner {
+  function emergencyUnpause() external onlyOwner {
     _unpause();
   }
 
-  function updateTreasury(address _treasury) external override onlyOwner {
+  function updateTreasury(address _treasury) external onlyOwner {
     treasury = _treasury;
     emit UpdateTreasury(_treasury);
   }
 
-  function updateWETH(address _weth) external override onlyOwner {
+  function updateWETH(address _weth) external onlyOwner {
     weth = _weth;
     emit UpdateWETH(_weth);
   }
 
-  function getSupportedTokens() external view override returns (address[] memory) {
+  function getSupportedTokens() external view returns (address[] memory) {
     return supportedTokens;
   }
 
-  function setSupportedTokens(address[] memory _tokens) external override onlyOwner {
+  function setSupportedTokens(address[] memory _tokens) external onlyOwner {
     supportedTokens = _tokens;
   }
 
-  function getTokenData(address _token) external view override returns (TokenData memory) {
+  function getTokenData(address _token) external view returns (TokenData memory) {
     return tokenData[_token];
   }
 
-  function setTokenData(address _token, TokenData memory _tokenData) external override onlyOwner {
+  function setTokenData(address _token, TokenData memory _tokenData) external onlyOwner {
     tokenData[_token] = _tokenData;
   }
 }
