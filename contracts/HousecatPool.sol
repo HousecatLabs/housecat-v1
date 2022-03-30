@@ -28,7 +28,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   receive() external payable {}
 
-  function initialize(address _owner, address _factory, address _management) external {
+  function initialize(
+    address _owner,
+    address _factory,
+    address _management
+  ) external {
     require(!initialized, 'HousecatPool: already initialized');
     _transferOwnership(_owner);
     factory = HousecatFactory(payable(_factory));
@@ -57,7 +61,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     TokenData memory wethData = management.getTokenData(weth);
     uint wethPrice = _getTokenPrice(wethData.priceFeed);
     uint depositValue = _getTokenValue(amountWethBought, wethPrice, wethData.decimals);
-    
+
     //uint[] memory tokenBalances = _getTokenBalances(address(this), );
     // receives matic and trades it to wmatic
     // mints pool tokens and sends to the depositor

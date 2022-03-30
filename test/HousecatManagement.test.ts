@@ -5,10 +5,7 @@ import { HousecatManagement } from '../typechain-types'
 import { deployManagement } from '../utils/deploy-contracts'
 import { mockToken, mockWETH } from '../utils/mock-contracts'
 
-const deploy = async (
-  signer: SignerWithAddress,
-  treasury: SignerWithAddress,
-): Promise<HousecatManagement> => {
+const deploy = async (signer: SignerWithAddress, treasury: SignerWithAddress): Promise<HousecatManagement> => {
   const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
   return await deployManagement(signer, treasury.address, weth.address)
 }
@@ -82,7 +79,7 @@ describe('HousecatManagement', () => {
       const [signer, treasury] = await ethers.getSigners()
       const mgmt = await deploy(signer, treasury)
       const weth = await mgmt.weth()
-      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther("1"))
+      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
       await mgmt.connect(signer).setSupportedTokens([weth, otherToken.address])
       expect(await mgmt.getSupportedTokens()).have.members([weth, otherToken.address])
 
@@ -110,7 +107,7 @@ describe('HousecatManagement', () => {
       const setTokenData = mgmt.connect(otherUser).setTokenData(weth, {
         priceFeed: ethers.constants.AddressZero,
         maxSlippage: 0,
-        decimals: 18
+        decimals: 18,
       })
       await expect(setTokenData).revertedWith('Ownable: caller is not the owner')
     })
@@ -123,7 +120,7 @@ describe('HousecatManagement', () => {
       await mgmt.connect(signer).setTokenData(weth, {
         priceFeed: otherAccount.address,
         maxSlippage: percent100.div(100),
-        decimals: 18
+        decimals: 18,
       })
       const tokenData = await mgmt.getTokenData(weth)
       expect(tokenData.priceFeed).equal(otherAccount.address)

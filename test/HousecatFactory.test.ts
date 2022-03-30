@@ -5,10 +5,9 @@ import { mockWETH } from '../utils/mock-contracts'
 import { HousecatFactory, HousecatManagement } from '../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-
 const deploy = async (
   signer: SignerWithAddress,
-  treasury: SignerWithAddress,
+  treasury: SignerWithAddress
 ): Promise<[HousecatManagement, HousecatFactory]> => {
   const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
   const pool = await deployPool(signer)
