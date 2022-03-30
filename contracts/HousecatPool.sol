@@ -58,9 +58,9 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   function deposit() external payable whenNotPaused {
     address weth = management.weth();
     uint amountWethBought = _buyWETH(weth, msg.value);
-    TokenData memory wethData = management.getTokenData(weth);
-    uint wethPrice = _getTokenPrice(wethData.priceFeed);
-    uint depositValue = _getTokenValue(amountWethBought, wethPrice, wethData.decimals);
+    TokenMeta memory wethMeta = management.getTokenMeta(weth);
+    uint wethPrice = _getTokenPrice(wethMeta.priceFeed);
+    uint depositValue = _getTokenValue(amountWethBought, wethPrice, wethMeta.decimals);
 
     //uint[] memory tokenBalances = _getTokenBalances(address(this), );
     // receives matic and trades it to wmatic

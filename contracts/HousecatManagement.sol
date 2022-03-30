@@ -7,7 +7,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import './common/Constants.sol';
-import './common/TokenData.sol';
+import './common/TokenMeta.sol';
 
 contract HousecatManagement is Constants, Ownable, Pausable {
   using SafeMath for uint;
@@ -15,7 +15,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address public treasury;
   address public weth;
   address[] private supportedTokens;
-  mapping(address => TokenData) private tokenData;
+  mapping(address => TokenMeta) private tokenMeta;
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
@@ -47,15 +47,15 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return supportedTokens;
   }
 
+  function getTokenMeta(address _token) external view returns (TokenMeta memory) {
+    return tokenMeta[_token];
+  }
+
   function setSupportedTokens(address[] memory _tokens) external onlyOwner {
     supportedTokens = _tokens;
   }
 
-  function getTokenData(address _token) external view returns (TokenData memory) {
-    return tokenData[_token];
-  }
-
-  function setTokenData(address _token, TokenData memory _tokenData) external onlyOwner {
-    tokenData[_token] = _tokenData;
+  function setTokenMeta(address _token, TokenMeta memory _tokenMeta) external onlyOwner {
+    tokenMeta[_token] = _tokenMeta;
   }
 }

@@ -88,28 +88,28 @@ describe('HousecatManagement', () => {
     })
   })
 
-  describe('getTokenData', () => {
+  describe('getTokenMeta', () => {
     it('should be empty for any unset token', async () => {
       const [signer, treasury] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const tokenData = await mgmt.getTokenData(weth.address)
-      expect(tokenData.priceFeed).equal(ethers.constants.AddressZero)
-      expect(tokenData.maxSlippage).equal(0)
+      const tokenMeta = await mgmt.getTokenMeta(weth.address)
+      expect(tokenMeta.priceFeed).equal(ethers.constants.AddressZero)
+      expect(tokenMeta.maxSlippage).equal(0)
     })
   })
 
-  describe('setTokenData', () => {
+  describe('setTokenMeta', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
       const mgmt = await deploy(signer, treasury)
       const weth = await mgmt.weth()
-      const setTokenData = mgmt.connect(otherUser).setTokenData(weth, {
+      const setTokenMeta = mgmt.connect(otherUser).setTokenMeta(weth, {
         priceFeed: ethers.constants.AddressZero,
         maxSlippage: 0,
         decimals: 18,
       })
-      await expect(setTokenData).revertedWith('Ownable: caller is not the owner')
+      await expect(setTokenMeta).revertedWith('Ownable: caller is not the owner')
     })
 
     it('sets values correctly if called by the owner', async () => {
@@ -117,12 +117,12 @@ describe('HousecatManagement', () => {
       const mgmt = await deploy(signer, treasury)
       const percent100 = await mgmt.getPercent100()
       const weth = await mgmt.weth()
-      await mgmt.connect(signer).setTokenData(weth, {
+      await mgmt.connect(signer).setTokenMeta(weth, {
         priceFeed: otherAccount.address,
         maxSlippage: percent100.div(100),
         decimals: 18,
       })
-      const tokenData = await mgmt.getTokenData(weth)
+      const tokenData = await mgmt.getTokenMeta(weth)
       expect(tokenData.priceFeed).equal(otherAccount.address)
       expect(tokenData.maxSlippage).equal(percent100.div(100))
     })
