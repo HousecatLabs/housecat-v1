@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { HousecatManagement } from '../typechain-types'
 import { deployManagement } from '../utils/deploy-contracts'
-import { mockToken, mockWETH } from '../utils/mock-contracts'
+import { mockPriceFeed, mockToken, mockWETH } from '../utils/mock-contracts'
 
 const deploy = async (signer: SignerWithAddress, treasury: SignerWithAddress): Promise<HousecatManagement> => {
   const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
@@ -66,6 +66,17 @@ describe('HousecatManagement', () => {
     })
   })
 
+  describe('getTokenMeta', () => {
+    it('should be empty for any unset token', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const tokenMeta = await mgmt.getTokenMeta(weth.address)
+      expect(tokenMeta.priceFeed).equal(ethers.constants.AddressZero)
+      expect(tokenMeta.maxSlippage).equal(0)
+    })
+  })
+
   describe('setSupportedTokens', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
@@ -85,17 +96,6 @@ describe('HousecatManagement', () => {
 
       await mgmt.connect(signer).setSupportedTokens([weth])
       expect(await mgmt.getSupportedTokens()).have.members([weth])
-    })
-  })
-
-  describe('getTokenMeta', () => {
-    it('should be empty for any unset token', async () => {
-      const [signer, treasury] = await ethers.getSigners()
-      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
-      const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const tokenMeta = await mgmt.getTokenMeta(weth.address)
-      expect(tokenMeta.priceFeed).equal(ethers.constants.AddressZero)
-      expect(tokenMeta.maxSlippage).equal(0)
     })
   })
 
@@ -122,9 +122,78 @@ describe('HousecatManagement', () => {
         maxSlippage: percent100.div(100),
         decimals: 18,
       })
-      const tokenData = await mgmt.getTokenMeta(weth)
-      expect(tokenData.priceFeed).equal(otherAccount.address)
-      expect(tokenData.maxSlippage).equal(percent100.div(100))
+      const tokenMeta = await mgmt.getTokenMeta(weth)
+      expect(tokenMeta.priceFeed).equal(otherAccount.address)
+      expect(tokenMeta.maxSlippage).equal(percent100.div(100))
+    })
+  })
+
+  describe('setTokenMetaMany', () => {
+    it('only owner allowed to call', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const mgmt = await deploy(signer, treasury)
+      const weth = await mgmt.weth()
+      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
+      const setTokenMetaMany = mgmt.connect(otherUser).setTokenMetaMany([weth, otherToken.address], [
+        {
+          priceFeed: ethers.constants.AddressZero,
+          maxSlippage: 0,
+          decimals: 18,
+        },
+        {
+          priceFeed: ethers.constants.AddressZero,
+          maxSlippage: 0,
+          decimals: 18,
+        },
+      ])
+      await expect(setTokenMetaMany).revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('fails if arrays have different lengths', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const mgmt = await deploy(signer, treasury)
+      const weth = await mgmt.weth()
+      const setTokenMetaMany = mgmt.connect(signer).setTokenMetaMany([weth], [
+        {
+          priceFeed: ethers.constants.AddressZero,
+          maxSlippage: 0,
+          decimals: 18,
+        },
+        {
+          priceFeed: ethers.constants.AddressZero,
+          maxSlippage: 0,
+          decimals: 18,
+        },
+      ])
+      await expect(setTokenMetaMany).revertedWith('array size mismatch')
+    })
+
+    it('sets values correctly if called by the owner', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const mgmt = await deploy(signer, treasury)
+      const weth = await mgmt.weth()
+      const feed1 = await mockPriceFeed(signer, 1e8, 8)
+      const feed2 = await mockPriceFeed(signer, 2e8, 8)
+      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
+      await mgmt.connect(signer).setTokenMetaMany([weth, otherToken.address], [
+        {
+          priceFeed: feed1.address,
+          maxSlippage: 0,
+          decimals: 18,
+        },
+        {
+          priceFeed: feed2.address,
+          maxSlippage: 0,
+          decimals: 6,
+        },
+      ])
+
+      const meta1 = await mgmt.getTokenMeta(weth)
+      expect(meta1.priceFeed).equal(feed1.address)
+      expect(meta1.decimals).equal(18)
+
+      const meta2 = await mgmt.getTokenMeta(otherToken.address)
+      expect(meta2.decimals).equal(6)
     })
   })
 })

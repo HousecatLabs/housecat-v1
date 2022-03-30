@@ -51,11 +51,31 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return tokenMeta[_token];
   }
 
+  function getTokensWithMeta() external view returns (address[] memory, TokenMeta[] memory) {
+    TokenMeta[] memory meta = new TokenMeta[](supportedTokens.length);
+    for (uint i = 0; i < supportedTokens.length; i++) {
+      meta[i] = tokenMeta[supportedTokens[i]];
+    }
+    return (supportedTokens, meta);
+  }
+
   function setSupportedTokens(address[] memory _tokens) external onlyOwner {
     supportedTokens = _tokens;
   }
 
   function setTokenMeta(address _token, TokenMeta memory _tokenMeta) external onlyOwner {
+    _setTokenMeta(_token, _tokenMeta);
+  }
+
+  function setTokenMetaMany(address[] memory _tokens, TokenMeta[] memory _tokensMeta) external onlyOwner {
+    require(_tokens.length == _tokensMeta.length, 'array size mismatch');
+    for (uint i = 0; i < _tokens.length; i++) {
+      _setTokenMeta(_tokens[i], _tokensMeta[i]);
+    }
+  }
+
+  function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) internal {
+    require(_token != address(0));
     tokenMeta[_token] = _tokenMeta;
   }
 }
