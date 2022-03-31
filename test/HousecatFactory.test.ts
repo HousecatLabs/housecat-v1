@@ -1,13 +1,17 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import mockHousecat from '../utils/mock-housecat'
+import { deployHousecat } from '../utils/deploy-contracts'
 
 
 describe('HousecatFactory', () => {
   describe('createPool', () => {
     it('should fail when paused', async () => {
       const [signer, treasury] = await ethers.getSigners()
-      const [management, factory] = await mockHousecat({ signer, treasury: treasury.address })
+      const [management, factory] = await deployHousecat({
+        signer,
+        treasury: treasury.address,
+        weth: ethers.constants.AddressZero
+      })
       await management.connect(signer).emergencyPause()
       const createPool = factory.createPool()
       await expect(createPool).revertedWith('HousecatFactory: paused')
@@ -15,7 +19,11 @@ describe('HousecatFactory', () => {
 
     it('should create a pool instance with correct initial state', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
-      const factory = (await mockHousecat({ signer, treasury: treasury.address }))[1]
+      const factory = (await deployHousecat({
+        signer,
+        treasury: treasury.address,
+        weth: ethers.constants.AddressZero
+      }))[1]
       await factory.connect(manager).createPool()
       const poolAddress = await factory.getPool(0)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
@@ -30,7 +38,11 @@ describe('HousecatFactory', () => {
 
     it('should fail to initialize a second time', async () => {
       const [signer, treasury, manager, otherUser] = await ethers.getSigners()
-      const [management, factory] = await mockHousecat({ signer, treasury: treasury.address })
+      const [management, factory] = await deployHousecat({
+        signer,
+        treasury: treasury.address,
+        weth: ethers.constants.AddressZero
+      })
       await factory.connect(manager).createPool()
       const poolAddress = await factory.getPool(0)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
@@ -41,7 +53,11 @@ describe('HousecatFactory', () => {
 
   describe('getPool', async () => {
     const [signer, treasury, manager, otherUser] = await ethers.getSigners()
-    const [management, factory] = await mockHousecat({ signer, treasury: treasury.address })
+    const [management, factory] = await deployHousecat({
+      signer,
+      treasury: treasury.address,
+      weth: ethers.constants.AddressZero
+    })
     await factory.connect(manager).createPool()
     const poolAddress = await factory.getPool(0)
     const instance = await ethers.getContractAt('HousecatPool', poolAddress)
