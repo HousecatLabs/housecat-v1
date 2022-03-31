@@ -1,20 +1,15 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { HousecatManagement } from '../typechain-types'
 import { deployManagement } from '../utils/deploy-contracts'
-import { mockPriceFeed, mockToken, mockWETH } from '../utils/mock-contracts'
+import { mockPriceFeed, mockToken, mockWETH } from '../utils/mock-defi'
+import mockHousecat from '../utils/mock-housecat'
 
-const deploy = async (signer: SignerWithAddress, treasury: SignerWithAddress): Promise<HousecatManagement> => {
-  const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
-  return await deployManagement(signer, treasury.address, weth.address)
-}
 
 describe('HousecatManagement', () => {
   describe('deploy', () => {
     it('should deploy successfully', async () => {
       const [signer, treasury] = await ethers.getSigners()
-      await deploy(signer, treasury)
+      await mockHousecat({ signer, treasury: treasury.address })
     })
   })
 
@@ -28,7 +23,7 @@ describe('HousecatManagement', () => {
 
     it('should have correct address for treasury', async () => {
       const [signer, treasury] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       expect(await mgmt.treasury()).equal(treasury.address)
     })
   })
@@ -36,14 +31,14 @@ describe('HousecatManagement', () => {
   describe('emergencyPause', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const pause = mgmt.connect(otherUser).emergencyPause()
       await expect(pause).revertedWith('Ownable: caller is not the owner')
     })
 
     it('sets paused to true', async () => {
       const [signer, treasury] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       await mgmt.connect(signer).emergencyPause()
       expect(await mgmt.paused()).equal(true)
     })
@@ -52,14 +47,14 @@ describe('HousecatManagement', () => {
   describe('emergencyUnpause', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const pause = mgmt.connect(otherUser).emergencyUnpause()
       await expect(pause).revertedWith('Ownable: caller is not the owner')
     })
 
     it('sets paused to false', async () => {
       const [signer, treasury] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       await mgmt.connect(signer).emergencyPause()
       await mgmt.connect(signer).emergencyUnpause()
       expect(await mgmt.paused()).equal(false)
@@ -79,7 +74,7 @@ describe('HousecatManagement', () => {
   describe('setSupportedTokens', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const weth = await mgmt.weth()
       const tx = mgmt.connect(otherUser).setSupportedTokens([weth])
       await expect(tx).revertedWith('Ownable: caller is not the owner')
@@ -87,7 +82,7 @@ describe('HousecatManagement', () => {
 
     it('should set the list of supported tokens if called by the owner', async () => {
       const [signer, treasury] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const weth = await mgmt.weth()
       const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
       await mgmt.connect(signer).setSupportedTokens([weth, otherToken.address])
@@ -101,7 +96,7 @@ describe('HousecatManagement', () => {
   describe('setTokenMeta', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const weth = await mgmt.weth()
       const setTokenMeta = mgmt.connect(otherUser).setTokenMeta(weth, {
         priceFeed: ethers.constants.AddressZero,
@@ -112,7 +107,7 @@ describe('HousecatManagement', () => {
 
     it('sets values correctly if called by the owner', async () => {
       const [signer, treasury, otherAccount] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const weth = await mgmt.weth()
       await mgmt.connect(signer).setTokenMeta(weth, {
         priceFeed: otherAccount.address,
@@ -126,7 +121,7 @@ describe('HousecatManagement', () => {
   describe('setTokenMetaMany', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const weth = await mgmt.weth()
       const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
       const setTokenMetaMany = mgmt.connect(otherUser).setTokenMetaMany([weth, otherToken.address], [
@@ -144,7 +139,7 @@ describe('HousecatManagement', () => {
 
     it('fails if arrays have different lengths', async () => {
       const [signer, treasury] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const weth = await mgmt.weth()
       const setTokenMetaMany = mgmt.connect(signer).setTokenMetaMany([weth], [
         {
@@ -161,7 +156,7 @@ describe('HousecatManagement', () => {
 
     it('sets values correctly if called by the owner', async () => {
       const [signer, treasury] = await ethers.getSigners()
-      const mgmt = await deploy(signer, treasury)
+      const [mgmt] = await mockHousecat({ signer, treasury: treasury.address })
       const weth = await mgmt.weth()
       const feed1 = await mockPriceFeed(signer, 1e8, 8)
       const feed2 = await mockPriceFeed(signer, 2e8, 8)
