@@ -73,7 +73,6 @@ describe('HousecatManagement', () => {
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
       const tokenMeta = await mgmt.getTokenMeta(weth.address)
       expect(tokenMeta.priceFeed).equal(ethers.constants.AddressZero)
-      expect(tokenMeta.maxSlippage).equal(0)
     })
   })
 
@@ -106,7 +105,6 @@ describe('HousecatManagement', () => {
       const weth = await mgmt.weth()
       const setTokenMeta = mgmt.connect(otherUser).setTokenMeta(weth, {
         priceFeed: ethers.constants.AddressZero,
-        maxSlippage: 0,
         decimals: 18,
       })
       await expect(setTokenMeta).revertedWith('Ownable: caller is not the owner')
@@ -115,16 +113,13 @@ describe('HousecatManagement', () => {
     it('sets values correctly if called by the owner', async () => {
       const [signer, treasury, otherAccount] = await ethers.getSigners()
       const mgmt = await deploy(signer, treasury)
-      const percent100 = await mgmt.getPercent100()
       const weth = await mgmt.weth()
       await mgmt.connect(signer).setTokenMeta(weth, {
         priceFeed: otherAccount.address,
-        maxSlippage: percent100.div(100),
         decimals: 18,
       })
       const tokenMeta = await mgmt.getTokenMeta(weth)
       expect(tokenMeta.priceFeed).equal(otherAccount.address)
-      expect(tokenMeta.maxSlippage).equal(percent100.div(100))
     })
   })
 
@@ -137,12 +132,10 @@ describe('HousecatManagement', () => {
       const setTokenMetaMany = mgmt.connect(otherUser).setTokenMetaMany([weth, otherToken.address], [
         {
           priceFeed: ethers.constants.AddressZero,
-          maxSlippage: 0,
           decimals: 18,
         },
         {
           priceFeed: ethers.constants.AddressZero,
-          maxSlippage: 0,
           decimals: 18,
         },
       ])
@@ -156,12 +149,10 @@ describe('HousecatManagement', () => {
       const setTokenMetaMany = mgmt.connect(signer).setTokenMetaMany([weth], [
         {
           priceFeed: ethers.constants.AddressZero,
-          maxSlippage: 0,
           decimals: 18,
         },
         {
           priceFeed: ethers.constants.AddressZero,
-          maxSlippage: 0,
           decimals: 18,
         },
       ])
@@ -178,12 +169,10 @@ describe('HousecatManagement', () => {
       await mgmt.connect(signer).setTokenMetaMany([weth, otherToken.address], [
         {
           priceFeed: feed1.address,
-          maxSlippage: 0,
           decimals: 18,
         },
         {
           priceFeed: feed2.address,
-          maxSlippage: 0,
           decimals: 6,
         },
       ])
