@@ -6,13 +6,6 @@ import mockHousecat from '../utils/mock-housecat'
 
 
 describe('HousecatManagement', () => {
-  describe('deploy', () => {
-    it('should deploy successfully', async () => {
-      const [signer, treasury] = await ethers.getSigners()
-      await mockHousecat({ signer, treasury: treasury.address })
-    })
-  })
-
   describe('public state variables', () => {
     it('should have correct address for weth', async () => {
       const [signer, treasury] = await ethers.getSigners()

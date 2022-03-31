@@ -4,13 +4,6 @@ import mockHousecat from '../utils/mock-housecat'
 
 
 describe('HousecatFactory', () => {
-  describe('deploy', () => {
-    it('should deploy successfully', async () => {
-      const [signer] = await ethers.getSigners()
-      await mockHousecat({ signer })
-    })
-  })
-
   describe('createPool', () => {
     it('should fail when paused', async () => {
       const [signer, treasury] = await ethers.getSigners()
