@@ -3,8 +3,16 @@ import { deployHousecat } from "./deploy-contracts"
 import { IAmmWithMockTokens, ITokenWithPriceFeed, mockAssets } from "./mock-defi"
 
 
-interface IMockHousecat extends IAmmWithMockTokens {
+interface IMockHousecatProps extends IAmmWithMockTokens {
   treasury?: string
+}
+
+export interface IMockHousecat {
+  management: HousecatManagement
+  factory: HousecatFactory
+  amm: IUniswapV2Router02
+  weth: ITokenWithPriceFeed
+  tokens: ITokenWithPriceFeed[]
 }
 
 export const mockHousecat = async ({
@@ -12,7 +20,7 @@ export const mockHousecat = async ({
   treasury,
   weth,
   tokens,
-}: IMockHousecat): Promise<[HousecatManagement, HousecatFactory, IUniswapV2Router02, ITokenWithPriceFeed, ITokenWithPriceFeed[]]> => {
+}: IMockHousecatProps): Promise<IMockHousecat> => {
   const [amm, _weth, _tokens] = await mockAssets({
     signer,
     weth,
@@ -33,5 +41,5 @@ export const mockHousecat = async ({
     tokens: tokenAddresses,
     tokensMeta
   })
-  return [management, factory, amm, _weth, _tokens]
+  return { management, factory, amm, weth: _weth, tokens: _tokens }
 }
