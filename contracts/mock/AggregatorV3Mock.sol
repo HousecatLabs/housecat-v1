@@ -53,4 +53,8 @@ contract AggregatorV3Mock {
   {
     return (roundId, answer, startedAt, updatedAt, answeredInRound);
   }
+
+  function setAnswer(int256 _value) public {
+    answer = _value;
+  }
 }
