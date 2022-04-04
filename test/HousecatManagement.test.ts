@@ -3,7 +3,6 @@ import { ethers } from 'hardhat'
 import { deployManagement } from '../utils/deploy-contracts'
 import { mockPriceFeed, mockToken, mockWETH } from '../utils/mock-defi'
 
-
 describe('HousecatManagement', () => {
   describe('public state variables', () => {
     it('should have correct address for weth', async () => {
@@ -121,16 +120,19 @@ describe('HousecatManagement', () => {
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
       const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
-      const setTokenMetaMany = mgmt.connect(otherUser).setTokenMetaMany([weth.address, otherToken.address], [
-        {
-          priceFeed: ethers.constants.AddressZero,
-          decimals: 18,
-        },
-        {
-          priceFeed: ethers.constants.AddressZero,
-          decimals: 18,
-        },
-      ])
+      const setTokenMetaMany = mgmt.connect(otherUser).setTokenMetaMany(
+        [weth.address, otherToken.address],
+        [
+          {
+            priceFeed: ethers.constants.AddressZero,
+            decimals: 18,
+          },
+          {
+            priceFeed: ethers.constants.AddressZero,
+            decimals: 18,
+          },
+        ]
+      )
       await expect(setTokenMetaMany).revertedWith('Ownable: caller is not the owner')
     })
 
@@ -138,16 +140,19 @@ describe('HousecatManagement', () => {
       const [signer, treasury] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const setTokenMetaMany = mgmt.connect(signer).setTokenMetaMany([weth.address], [
-        {
-          priceFeed: ethers.constants.AddressZero,
-          decimals: 18,
-        },
-        {
-          priceFeed: ethers.constants.AddressZero,
-          decimals: 18,
-        },
-      ])
+      const setTokenMetaMany = mgmt.connect(signer).setTokenMetaMany(
+        [weth.address],
+        [
+          {
+            priceFeed: ethers.constants.AddressZero,
+            decimals: 18,
+          },
+          {
+            priceFeed: ethers.constants.AddressZero,
+            decimals: 18,
+          },
+        ]
+      )
       await expect(setTokenMetaMany).revertedWith('array size mismatch')
     })
 
@@ -158,16 +163,19 @@ describe('HousecatManagement', () => {
       const feed1 = await mockPriceFeed(signer, 1e8, 8)
       const feed2 = await mockPriceFeed(signer, 2e8, 8)
       const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
-      await mgmt.connect(signer).setTokenMetaMany([weth.address, otherToken.address], [
-        {
-          priceFeed: feed1.address,
-          decimals: 18,
-        },
-        {
-          priceFeed: feed2.address,
-          decimals: 6,
-        },
-      ])
+      await mgmt.connect(signer).setTokenMetaMany(
+        [weth.address, otherToken.address],
+        [
+          {
+            priceFeed: feed1.address,
+            decimals: 18,
+          },
+          {
+            priceFeed: feed2.address,
+            decimals: 6,
+          },
+        ]
+      )
 
       const meta1 = await mgmt.getTokenMeta(weth.address)
       expect(meta1.priceFeed).equal(feed1.address)

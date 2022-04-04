@@ -4,7 +4,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { AggregatorV3Mock, ERC20Mock, IUniswapV2Router02, WETHMock } from '../typechain-types'
 import { BigNumberish } from 'ethers'
 
-const QUICKSWAP_ROUTER = "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
+const QUICKSWAP_ROUTER = '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff'
 
 export const mockToken = async (
   signer: SignerWithAddress,
@@ -36,7 +36,6 @@ export const mockPriceFeed = async (signer: SignerWithAddress, answer: BigNumber
   const AggregatorV3Mock = await ethers.getContractFactory('AggregatorV3Mock')
   return AggregatorV3Mock.connect(signer).deploy(answer, decimals)
 }
-
 
 export interface IWeth {
   price: string
@@ -90,19 +89,10 @@ export const mockAssets = async ({
     // send to amm as liquidity
     await amm
       .connect(signer)
-      .addLiquidity(
-        token.address,
-        _weth.address,
-        amountToken,
-        amountWeth,
-        1,
-        1,
-        signer.address,
-        999999999999
-      )
+      .addLiquidity(token.address, _weth.address, amountToken, amountWeth, 1, 1, signer.address, 999999999999)
     tokensWithFeeds.push({
       token,
-      priceFeed
+      priceFeed,
     })
   }
   const wethWithFeed = { token: _weth, priceFeed: wethPriceFeed }

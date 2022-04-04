@@ -12,7 +12,7 @@ interface IMockHousecatAndPool extends IMockHousecat {
 const mockHousecatAndPool = async (
   signer: SignerWithAddress,
   treasury: SignerWithAddress,
-  manager: SignerWithAddress,
+  manager: SignerWithAddress
 ): Promise<IMockHousecatAndPool> => {
   const mock = await mockHousecat({
     signer,

@@ -2,7 +2,6 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { deployHousecat } from '../utils/deploy-contracts'
 
-
 describe('HousecatFactory', () => {
   describe('createPool', () => {
     it('should fail when paused', async () => {
@@ -10,7 +9,7 @@ describe('HousecatFactory', () => {
       const [management, factory] = await deployHousecat({
         signer,
         treasury: treasury.address,
-        weth: ethers.constants.AddressZero
+        weth: ethers.constants.AddressZero,
       })
       await management.connect(signer).emergencyPause()
       const createPool = factory.createPool()
@@ -19,11 +18,13 @@ describe('HousecatFactory', () => {
 
     it('should create a pool instance with correct initial state', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
-      const factory = (await deployHousecat({
-        signer,
-        treasury: treasury.address,
-        weth: ethers.constants.AddressZero
-      }))[1]
+      const factory = (
+        await deployHousecat({
+          signer,
+          treasury: treasury.address,
+          weth: ethers.constants.AddressZero,
+        })
+      )[1]
       await factory.connect(manager).createPool()
       const poolAddress = await factory.getPool(0)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
@@ -41,7 +42,7 @@ describe('HousecatFactory', () => {
       const [management, factory] = await deployHousecat({
         signer,
         treasury: treasury.address,
-        weth: ethers.constants.AddressZero
+        weth: ethers.constants.AddressZero,
       })
       await factory.connect(manager).createPool()
       const poolAddress = await factory.getPool(0)
@@ -56,7 +57,7 @@ describe('HousecatFactory', () => {
     const [management, factory] = await deployHousecat({
       signer,
       treasury: treasury.address,
-      weth: ethers.constants.AddressZero
+      weth: ethers.constants.AddressZero,
     })
     await factory.connect(manager).createPool()
     const poolAddress = await factory.getPool(0)

@@ -33,7 +33,7 @@ export const deployFactory = async (
 }
 
 export interface IDeployHousecat {
-  signer: SignerWithAddress,
+  signer: SignerWithAddress
   treasury?: string
   weth: string
   tokens?: string[]
