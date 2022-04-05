@@ -65,10 +65,12 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
   }
 
-  function withdraw(uint _amount, uint _minOutputAmount) external {
-    // receives pool tokens and burns them
-    // sells assets pro rata the burned amount
-    // sends bought matic to the withdrawer
+  function withdraw(uint _amount) external {
+    require(this.balanceOf(msg.sender) >= _amount, 'withdrawal exceeds balance');
+    // uint shareInPool = _amount.mul(PERCENT_100).div(totalSupply());
+    // first repay loan positions using the long positions equally;
+    // for each token get the net balance and send % of that to a withdraw contract
+    // finally let the withdrawer trade tokens on behalf of the withdraw contract to ETH
   }
 
   function _buyWETH(address _weth, uint _amount) internal returns (uint) {
@@ -94,10 +96,19 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function _getPoolValue() internal view returns (uint) {
+    return _getPoolGrossValue().sub(_getPoolLoanValue());
+  }
+
+  function _getPoolGrossValue() internal view returns (uint) {
     (address[] memory tokens, TokenMeta[] memory tokensMeta) = management.getTokensWithMeta();
     uint[] memory tokenBalances = _getTokenBalances(address(this), tokens);
     (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(tokensMeta);
     uint[] memory tokenPrices = _getTokenPrices(priceFeeds);
     return _getTotalValue(tokenBalances, tokenPrices, decimals);
+  }
+
+  function _getPoolLoanValue() internal pure returns (uint) {
+    // TODO: resolve total value of loan positions
+    return 0;
   }
 }
