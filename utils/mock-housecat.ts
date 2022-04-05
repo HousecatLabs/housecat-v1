@@ -1,9 +1,13 @@
-import { HousecatFactory, HousecatManagement, IUniswapV2Router02 } from '../typechain-types'
-import { deployHousecat } from './deploy-contracts'
+import { HousecatFactory, HousecatManagement, IUniswapV2Router02, UniswapV2Integration } from '../typechain-types'
+import { deployHousecat, deployUniswapV2Integration } from './deploy-contracts'
 import { IAmmWithMockTokens, ITokenWithPriceFeed, mockAssets } from './mock-defi'
 
 interface IMockHousecatProps extends IAmmWithMockTokens {
   treasury?: string
+}
+
+interface IIntegrations {
+  uniswapV2: UniswapV2Integration
 }
 
 export interface IMockHousecat {
@@ -12,6 +16,7 @@ export interface IMockHousecat {
   amm: IUniswapV2Router02
   weth: ITokenWithPriceFeed
   tokens: ITokenWithPriceFeed[]
+  integrations: IIntegrations
 }
 
 export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHousecatProps): Promise<IMockHousecat> => {
@@ -30,12 +35,16 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
       }))
     )),
   ]
+  const integrations = {
+    uniswapV2: await deployUniswapV2Integration(signer)
+  }
   const [management, factory] = await deployHousecat({
     signer,
     treasury: treasury || signer.address,
     weth: _weth.token.address,
     tokens: tokenAddresses,
     tokensMeta,
+    integrations: [integrations.uniswapV2.address],
   })
-  return { management, factory, amm, weth: _weth, tokens: _tokens }
+  return { management, factory, amm, weth: _weth, tokens: _tokens, integrations }
 }

@@ -204,6 +204,5 @@ describe('HousecatManagement', () => {
         expect(await mgmt.isIntegrationEnabled(weth.address)).equal(true)
       })
     })
-
   })
 })
