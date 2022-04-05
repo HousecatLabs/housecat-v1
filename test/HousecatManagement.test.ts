@@ -197,23 +197,23 @@ describe('HousecatManagement', () => {
       expect(meta2.decimals).equal(6)
     })
 
-    describe('setIntegrationEnabled', () => {
+    describe('setAdapterEnabled', () => {
       it('only owner allowed to call', async () => {
         const [signer, treasury, otherUser] = await ethers.getSigners()
         const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
         const mgmt = await deployManagement(signer, treasury.address, weth.address)
-        const setIntegrationEnabled = mgmt.connect(otherUser).setIntegrationEnabled(weth.address, true)
-        await expect(setIntegrationEnabled).revertedWith('Ownable: caller is not the owner')
+        const setAdapterEnabled = mgmt.connect(otherUser).setAdapterEnabled(weth.address, true)
+        await expect(setAdapterEnabled).revertedWith('Ownable: caller is not the owner')
       })
 
       it('sets value correctly if called by the owner', async () => {
         const [signer, treasury] = await ethers.getSigners()
         const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
         const mgmt = await deployManagement(signer, treasury.address, weth.address)
-        // integration wouldn't be weth in reality but use it for the sake of testing
-        expect(await mgmt.isIntegrationEnabled(weth.address)).equal(false)
-        await mgmt.connect(signer).setIntegrationEnabled(weth.address, true)
-        expect(await mgmt.isIntegrationEnabled(weth.address)).equal(true)
+        // weth contract wouldn't be an adapter in reality but let's use it for the sake of testing
+        expect(await mgmt.isAdapterEnabled(weth.address)).equal(false)
+        await mgmt.connect(signer).setAdapterEnabled(weth.address, true)
+        expect(await mgmt.isAdapterEnabled(weth.address)).equal(true)
       })
     })
   })
