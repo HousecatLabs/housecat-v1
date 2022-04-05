@@ -36,7 +36,7 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
     )),
   ]
   const integrations = {
-    uniswapV2: await deployUniswapV2Integration(signer)
+    uniswapV2: await deployUniswapV2Integration(signer),
   }
   const [management, factory] = await deployHousecat({
     signer,

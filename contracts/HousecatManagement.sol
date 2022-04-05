@@ -64,6 +64,15 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return integrationEnabled[_integration];
   }
 
+  function isTokenSupported(address _token) external view returns (bool) {
+    for (uint i = 0; i < supportedTokens.length; i++) {
+      if (supportedTokens[i] == _token) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function setSupportedTokens(address[] memory _tokens) external onlyOwner {
     supportedTokens = _tokens;
   }

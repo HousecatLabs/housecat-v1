@@ -89,6 +89,18 @@ describe('HousecatManagement', () => {
     })
   })
 
+  describe('isTokenSupported', () => {
+    it('should return correctly whether or not token is included in supportedTokens list', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
+      expect(await mgmt.isTokenSupported(otherToken.address)).equal(false)
+      await mgmt.connect(signer).setSupportedTokens([weth.address, otherToken.address])
+      expect(await mgmt.isTokenSupported(otherToken.address)).equal(true)
+    })
+  })
+
   describe('setTokenMeta', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
