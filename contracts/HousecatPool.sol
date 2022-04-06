@@ -78,6 +78,14 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // finally let the withdrawer trade tokens on behalf of the withdraw contract to ETH
   }
 
+  function manageAssets(address _adapter, bytes calldata _data) external onlyOwner {
+    // TODO: require pool value doesn't drop more than a specified % slippage limit
+    // TODO: validate cumulative value drop over N days period is less than a specified % limit
+    require(management.isAdapterEnabled(_adapter), 'unsupported adapter');
+    (bool success, bytes memory message) = _adapter.delegatecall(_data);
+    require(success, string(message));
+  }
+
   function _buyWETH(address _weth, uint _amount) internal returns (uint) {
     uint amountBeforeDeposit = IWETH(_weth).balanceOf(address(this));
     IWETH(_weth).deposit{value: _amount}();
