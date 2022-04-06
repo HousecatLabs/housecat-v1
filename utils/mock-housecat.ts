@@ -45,6 +45,7 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
     tokens: tokenAddresses,
     tokensMeta,
     adapters: [adapters.uniswapV2.address],
+    integrations: [amm.address],
   })
   return { management, factory, amm, weth: _weth, tokens: _tokens, adapters }
 }

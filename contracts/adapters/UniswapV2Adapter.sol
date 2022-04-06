@@ -27,8 +27,7 @@ contract UniswapV2Adapter {
   function _validateTrade(address _router, address[] memory _path) internal view {
     HousecatPool pool = HousecatPool(payable(address(this)));
     HousecatManagement mgmt = HousecatManagement(pool.management());
-    // TODO: require _router is supported
-    require(mgmt.isTokenSupported(_path[0]) && mgmt.isTokenSupported(_path[_path.length - 1]), 'unsupported tokens');
-    // TODO: require _amountOutMin is within reasonable slippage limits
+    require(mgmt.isIntegrationEnabled(_router), 'UniswapV2Adapter: unsupported integration');
+    require(mgmt.isTokenSupported(_path[_path.length - 1]), 'UniswapV2Adapter: unsupported token to');
   }
 }

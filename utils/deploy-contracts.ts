@@ -44,6 +44,7 @@ export interface IDeployHousecat {
   tokens?: string[]
   tokensMeta?: TokenMetaStruct[]
   adapters?: string[]
+  integrations?: string[]
 }
 
 export const deployHousecat = async ({
@@ -53,6 +54,7 @@ export const deployHousecat = async ({
   tokens,
   tokensMeta,
   adapters,
+  integrations,
 }: IDeployHousecat): Promise<[HousecatManagement, HousecatFactory]> => {
   const poolTemplate = await deployPool(signer)
   const mgmt = await deployManagement(signer, treasury || signer.address, weth)
@@ -66,6 +68,11 @@ export const deployHousecat = async ({
   if (adapters) {
     for (let i = 0; i < adapters.length; i++) {
       await mgmt.setAdapterEnabled(adapters[i], true)
+    }
+  }
+  if (integrations) {
+    for (let i = 0; i < integrations.length; i++) {
+      await mgmt.setIntegrationEnabled(integrations[i], true)
     }
   }
   return [mgmt, factory]
