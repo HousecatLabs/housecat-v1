@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { HousecatFactory, HousecatPool, HousecatQueries, UniswapV2Adapter } from '../typechain-types'
+import { HousecatFactory, HousecatPool, HousecatQueries, ManagerUniswapV2Adapter } from '../typechain-types'
 import { HousecatManagement } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 
@@ -32,8 +32,8 @@ export const deployFactory = async (
   return HousecatFactory.connect(signer).deploy(management, poolTemplate)
 }
 
-export const deployUniswapV2Adapter = async (signer: SignerWithAddress): Promise<UniswapV2Adapter> => {
-  const UniswapV2Adapter = await ethers.getContractFactory('UniswapV2Adapter')
+export const deployUniswapV2Adapter = async (signer: SignerWithAddress): Promise<ManagerUniswapV2Adapter> => {
+  const UniswapV2Adapter = await ethers.getContractFactory('ManagerUniswapV2Adapter')
   return UniswapV2Adapter.connect(signer).deploy()
 }
 
@@ -43,7 +43,8 @@ export interface IDeployHousecat {
   weth: string
   tokens?: string[]
   tokensMeta?: TokenMetaStruct[]
-  adapters?: string[]
+  managerAdapters?: string[]
+  withdrawerAdapters?: string[]
   integrations?: string[]
 }
 
@@ -53,7 +54,8 @@ export const deployHousecat = async ({
   weth,
   tokens,
   tokensMeta,
-  adapters,
+  managerAdapters,
+  withdrawerAdapters,
   integrations,
 }: IDeployHousecat): Promise<[HousecatManagement, HousecatFactory]> => {
   const poolTemplate = await deployPool(signer)
@@ -65,14 +67,19 @@ export const deployHousecat = async ({
       await mgmt.connect(signer).setTokenMetaMany(tokens, tokensMeta)
     }
   }
-  if (adapters) {
-    for (let i = 0; i < adapters.length; i++) {
-      await mgmt.setAdapterEnabled(adapters[i], true)
+  if (managerAdapters) {
+    for (let i = 0; i < managerAdapters.length; i++) {
+      await mgmt.setManagerAdapter(managerAdapters[i], true)
+    }
+  }
+  if (withdrawerAdapters) {
+    for (let i = 0; i < withdrawerAdapters.length; i++) {
+      await mgmt.setWithdrawerAdapter(withdrawerAdapters[i], true)
     }
   }
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {
-      await mgmt.setIntegrationEnabled(integrations[i], true)
+      await mgmt.setIntegration(integrations[i], true)
     }
   }
   return [mgmt, factory]

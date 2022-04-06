@@ -16,8 +16,9 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address public weth;
   address[] private supportedTokens;
   mapping(address => TokenMeta) private tokenMeta;
-  mapping(address => bool) private adapterEnabled;
-  mapping(address => bool) private integrationEnabled;
+  mapping(address => bool) private managerAdapters;
+  mapping(address => bool) private withdrawerAdapters;
+  mapping(address => bool) private integrations;
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
@@ -61,12 +62,16 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return (supportedTokens, meta);
   }
 
-  function isAdapterEnabled(address _adapter) external view returns (bool) {
-    return adapterEnabled[_adapter];
+  function isManagerAdapter(address _adapter) external view returns (bool) {
+    return managerAdapters[_adapter];
   }
 
-  function isIntegrationEnabled(address _integration) external view returns (bool) {
-    return integrationEnabled[_integration];
+  function isWithdrawerAdapter(address _adapter) external view returns (bool) {
+    return withdrawerAdapters[_adapter];
+  }
+
+  function isIntegration(address _integration) external view returns (bool) {
+    return integrations[_integration];
   }
 
   function isTokenSupported(address _token) external view returns (bool) {
@@ -93,12 +98,16 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     }
   }
 
-  function setAdapterEnabled(address _adapter, bool _value) external onlyOwner {
-    adapterEnabled[_adapter] = _value;
+  function setManagerAdapter(address _adapter, bool _value) external onlyOwner {
+    managerAdapters[_adapter] = _value;
   }
 
-  function setIntegrationEnabled(address _integration, bool _value) external onlyOwner {
-    integrationEnabled[_integration] = _value;
+  function setWithdrawerAdapter(address _adapter, bool _value) external onlyOwner {
+    withdrawerAdapters[_adapter] = _value;
+  }
+
+  function setIntegration(address _integration, bool _value) external onlyOwner {
+    integrations[_integration] = _value;
   }
 
   function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) internal {
