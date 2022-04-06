@@ -71,7 +71,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function withdraw(uint _amount) external {
-    require(this.balanceOf(msg.sender) >= _amount, 'withdrawal exceeds balance');
+    require(this.balanceOf(msg.sender) >= _amount, 'HousecatPool: withdrawal exceeds balance');
     // uint shareInPool = _amount.mul(PERCENT_100).div(totalSupply());
     // first repay loan positions using the long positions equally;
     // for each token get the net balance and send % of that to a withdraw contract
@@ -81,7 +81,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   function manageAssets(address _adapter, bytes calldata _data) external onlyOwner {
     // TODO: require pool value doesn't drop more than a specified % slippage limit
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
-    require(management.isAdapterEnabled(_adapter), 'unsupported adapter');
+    require(management.isAdapterEnabled(_adapter), 'HousecatPool: unsupported adapter');
     (bool success, bytes memory message) = _adapter.delegatecall(_data);
     require(success, string(message));
   }

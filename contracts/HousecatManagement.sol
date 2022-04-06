@@ -87,7 +87,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   }
 
   function setTokenMetaMany(address[] memory _tokens, TokenMeta[] memory _tokensMeta) external onlyOwner {
-    require(_tokens.length == _tokensMeta.length, 'array size mismatch');
+    require(_tokens.length == _tokensMeta.length, 'HousecatManagement: array size mismatch');
     for (uint i = 0; i < _tokens.length; i++) {
       _setTokenMeta(_tokens[i], _tokensMeta[i]);
     }
