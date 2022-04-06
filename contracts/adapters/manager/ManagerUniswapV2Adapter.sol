@@ -13,7 +13,9 @@ contract ManagerUniswapV2Adapter {
     uint _amountIn,
     uint _amountOutMin
   ) external {
-    _validateTrade(_router, _path);
+    HousecatPool pool = HousecatPool(payable(address(this)));
+    HousecatManagement mgmt = HousecatManagement(pool.management());
+    _validateParams(mgmt, _router, _path);
     IERC20(_path[0]).approve(_router, _amountIn);
     IUniswapV2Router02(_router).swapExactTokensForTokens(
       _amountIn,
@@ -24,10 +26,8 @@ contract ManagerUniswapV2Adapter {
     );
   }
 
-  function _validateTrade(address _router, address[] memory _path) internal view {
-    HousecatPool pool = HousecatPool(payable(address(this)));
-    HousecatManagement mgmt = HousecatManagement(pool.management());
-    require(mgmt.isIntegration(_router), 'ManagerUniswapV2Adapter: unsupported integration');
-    require(mgmt.isTokenSupported(_path[_path.length - 1]), 'ManagerUniswapV2Adapter: unsupported token to');
+  function _validateParams(HousecatManagement _mgmt, address _router, address[] memory _path) internal view {
+    require(_mgmt.isIntegration(_router), 'ManagerUniswapV2Adapter: unsupported integration');
+    require(_mgmt.isTokenSupported(_path[_path.length - 1]), 'ManagerUniswapV2Adapter: unsupported token to');
   }
 }

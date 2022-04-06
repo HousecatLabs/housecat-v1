@@ -9,6 +9,7 @@ import './interfaces/IWETH.sol';
 import './HousecatQueries.sol';
 import './HousecatFactory.sol';
 import './HousecatManagement.sol';
+import './structs/PoolAction.sol';
 
 contract HousecatPool is HousecatQueries, ERC20, Ownable {
   using SafeMath for uint;
@@ -70,19 +71,34 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
   }
 
-  function withdraw(uint _amount) external {
+  function withdraw(uint _amount, PoolAction[] memory _actions, address _to) external {
     require(this.balanceOf(msg.sender) >= _amount, 'HousecatPool: withdrawal exceeds balance');
-    // first repay loan positions using the long positions equally;
-    // for each token get the net balance and send % of that to a withdraw contract
-    // finally let the withdrawer trade tokens on behalf of the withdraw contract to ETH
+    uint shareInPool = _amount.mul(PERCENT_100).div(totalSupply());
+    uint poolValueBefore = _getPoolValue();
+    uint maxWithdrawValue = poolValueBefore.mul(shareInPool).div(PERCENT_100);
+    // TODO: check weights before ~ after
+    uint balanceETHBefore = address(this).balance;
+    for (uint i = 0; i < _actions.length; i++) {
+      require(management.isWithdrawerAdapter(_actions[i].adapter), 'HousecatPool: unsupported adapter');
+      (bool success, bytes memory message) = _actions[i].adapter.delegatecall(_actions[i].data);
+      require(success, string(message));
+    }
+    uint actualWithdrawValue = poolValueBefore.sub(_getPoolValue());
+    require(maxWithdrawValue >= actualWithdrawValue, 'HousecatPool: withdraw value too high');
+    _burn(msg.sender, _amount); // TODO: burn tokens only for the amount corresponding to the actual withdrawn value
+    uint balanceETHReceived = address(this).balance.sub(balanceETHBefore);
+    (bool sent, ) = _to.call{value: balanceETHReceived}('');
+    require(sent, 'HousecatPool: send ETH failed');
   }
 
-  function manageAssets(address _adapter, bytes calldata _data) external onlyOwner {
+  function manageAssets(PoolAction[] memory _actions) external onlyOwner {
+    for (uint i = 0; i < _actions.length; i++) {
+      require(management.isManagerAdapter(_actions[i].adapter), 'HousecatPool: unsupported adapter');
+      (bool success, bytes memory message) = _actions[i].adapter.delegatecall(_actions[i].data);
+      require(success, string(message));
+    }
     // TODO: require pool value doesn't drop more than a specified % slippage limit
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
-    require(management.isManagerAdapter(_adapter), 'HousecatPool: unsupported adapter');
-    (bool success, bytes memory message) = _adapter.delegatecall(_data);
-    require(success, string(message));
   }
 
   function _buyWETH(address _weth, uint _amount) internal returns (uint) {
