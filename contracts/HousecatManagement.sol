@@ -17,6 +17,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address[] private supportedTokens;
   mapping(address => TokenMeta) private tokenMeta;
   mapping(address => bool) private adapterEnabled;
+  mapping(address => bool) private integrationEnabled;
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
@@ -64,6 +65,10 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return adapterEnabled[_adapter];
   }
 
+  function isIntegrationEnabled(address _integration) external view returns (bool) {
+    return integrationEnabled[_integration];
+  }
+
   function isTokenSupported(address _token) external view returns (bool) {
     for (uint i = 0; i < supportedTokens.length; i++) {
       if (supportedTokens[i] == _token) {
@@ -88,8 +93,12 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     }
   }
 
-  function setAdapterEnabled(address _integration, bool _value) external onlyOwner {
-    adapterEnabled[_integration] = _value;
+  function setAdapterEnabled(address _adapter, bool _value) external onlyOwner {
+    adapterEnabled[_adapter] = _value;
+  }
+
+  function setIntegrationEnabled(address _integration, bool _value) external onlyOwner {
+    integrationEnabled[_integration] = _value;
   }
 
   function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) internal {
