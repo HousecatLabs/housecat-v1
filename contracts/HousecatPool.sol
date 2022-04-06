@@ -50,6 +50,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return tokenSymbol;
   }
 
+  function getBalances() external view returns (uint[] memory) {
+    address[] memory tokens = management.getSupportedTokens();
+    return _getTokenBalances(address(this), tokens);
+  }
+
   function deposit() external payable whenNotPaused {
     uint poolValueStart = _getPoolValue();
     address weth = management.weth();
