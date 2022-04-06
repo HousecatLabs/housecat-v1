@@ -57,6 +57,44 @@ describe('HousecatManagement', () => {
     })
   })
 
+  describe('updateTreasury', async () => {
+    it('only owner allowed to call', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const tx = mgmt.connect(otherUser).updateTreasury(otherUser.address)
+      await expect(tx).revertedWith('Ownable: caller is not the owner')
+    })
+    it('updates treasury address and emits UpdateTreasury event', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const tx = mgmt.connect(signer).updateTreasury(otherUser.address)
+      await expect(tx).emit(mgmt, 'UpdateTreasury').withArgs(otherUser.address)
+      expect(await mgmt.treasury()).equal(otherUser.address)
+    })
+  })
+
+  describe('updateWETH', async () => {
+    it('only owner allowed to call', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const weth1 = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const weth2 = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth1.address)
+      const tx = mgmt.connect(otherUser).updateWETH(weth2.address)
+      await expect(tx).revertedWith('Ownable: caller is not the owner')
+    })
+    it('updates weth address and emits UpdateWETH event', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth1 = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const weth2 = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth1.address)
+      const tx = mgmt.connect(signer).updateWETH(weth2.address)
+      await expect(tx).emit(mgmt, 'UpdateWETH').withArgs(weth2.address)
+      expect(await mgmt.weth()).equal(weth2.address)
+    })
+  })
+
   describe('getTokenMeta', () => {
     it('should be empty for any unset token', async () => {
       const [signer, treasury] = await ethers.getSigners()
