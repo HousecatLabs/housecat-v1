@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { HousecatFactory, HousecatPool, HousecatQueries } from '../typechain-types'
+import { HousecatFactory, HousecatPool, HousecatQueries, UniswapV2Adapter } from '../typechain-types'
 import { HousecatManagement } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 
@@ -32,12 +32,19 @@ export const deployFactory = async (
   return HousecatFactory.connect(signer).deploy(management, poolTemplate)
 }
 
+export const deployUniswapV2Adapter = async (signer: SignerWithAddress): Promise<UniswapV2Adapter> => {
+  const UniswapV2Adapter = await ethers.getContractFactory('UniswapV2Adapter')
+  return UniswapV2Adapter.connect(signer).deploy()
+}
+
 export interface IDeployHousecat {
   signer: SignerWithAddress
   treasury?: string
   weth: string
   tokens?: string[]
   tokensMeta?: TokenMetaStruct[]
+  adapters?: string[]
+  integrations?: string[]
 }
 
 export const deployHousecat = async ({
@@ -46,6 +53,8 @@ export const deployHousecat = async ({
   weth,
   tokens,
   tokensMeta,
+  adapters,
+  integrations,
 }: IDeployHousecat): Promise<[HousecatManagement, HousecatFactory]> => {
   const poolTemplate = await deployPool(signer)
   const mgmt = await deployManagement(signer, treasury || signer.address, weth)
@@ -54,6 +63,16 @@ export const deployHousecat = async ({
     await mgmt.connect(signer).setSupportedTokens(tokens)
     if (tokensMeta) {
       await mgmt.connect(signer).setTokenMetaMany(tokens, tokensMeta)
+    }
+  }
+  if (adapters) {
+    for (let i = 0; i < adapters.length; i++) {
+      await mgmt.setAdapterEnabled(adapters[i], true)
+    }
+  }
+  if (integrations) {
+    for (let i = 0; i < integrations.length; i++) {
+      await mgmt.setIntegrationEnabled(integrations[i], true)
     }
   }
   return [mgmt, factory]

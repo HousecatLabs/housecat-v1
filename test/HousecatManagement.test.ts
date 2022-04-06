@@ -57,6 +57,44 @@ describe('HousecatManagement', () => {
     })
   })
 
+  describe('updateTreasury', async () => {
+    it('only owner allowed to call', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const tx = mgmt.connect(otherUser).updateTreasury(otherUser.address)
+      await expect(tx).revertedWith('Ownable: caller is not the owner')
+    })
+    it('updates treasury address and emits UpdateTreasury event', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const tx = mgmt.connect(signer).updateTreasury(otherUser.address)
+      await expect(tx).emit(mgmt, 'UpdateTreasury').withArgs(otherUser.address)
+      expect(await mgmt.treasury()).equal(otherUser.address)
+    })
+  })
+
+  describe('updateWETH', async () => {
+    it('only owner allowed to call', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const weth1 = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const weth2 = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth1.address)
+      const tx = mgmt.connect(otherUser).updateWETH(weth2.address)
+      await expect(tx).revertedWith('Ownable: caller is not the owner')
+    })
+    it('updates weth address and emits UpdateWETH event', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth1 = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const weth2 = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth1.address)
+      const tx = mgmt.connect(signer).updateWETH(weth2.address)
+      await expect(tx).emit(mgmt, 'UpdateWETH').withArgs(weth2.address)
+      expect(await mgmt.weth()).equal(weth2.address)
+    })
+  })
+
   describe('getTokenMeta', () => {
     it('should be empty for any unset token', async () => {
       const [signer, treasury] = await ethers.getSigners()
@@ -86,6 +124,18 @@ describe('HousecatManagement', () => {
 
       await mgmt.connect(signer).setSupportedTokens([weth.address])
       expect(await mgmt.getSupportedTokens()).have.members([weth.address])
+    })
+  })
+
+  describe('isTokenSupported', () => {
+    it('should return correctly whether or not token is included in supportedTokens list', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
+      expect(await mgmt.isTokenSupported(otherToken.address)).equal(false)
+      await mgmt.connect(signer).setSupportedTokens([weth.address, otherToken.address])
+      expect(await mgmt.isTokenSupported(otherToken.address)).equal(true)
     })
   })
 
@@ -183,6 +233,45 @@ describe('HousecatManagement', () => {
 
       const meta2 = await mgmt.getTokenMeta(otherToken.address)
       expect(meta2.decimals).equal(6)
+    })
+
+    describe('setAdapterEnabled', () => {
+      it('only owner allowed to call', async () => {
+        const [signer, treasury, otherUser] = await ethers.getSigners()
+        const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+        const mgmt = await deployManagement(signer, treasury.address, weth.address)
+        const setAdapterEnabled = mgmt.connect(otherUser).setAdapterEnabled(weth.address, true)
+        await expect(setAdapterEnabled).revertedWith('Ownable: caller is not the owner')
+      })
+
+      it('sets value correctly if called by the owner', async () => {
+        const [signer, treasury] = await ethers.getSigners()
+        const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+        const mgmt = await deployManagement(signer, treasury.address, weth.address)
+        // weth contract wouldn't be an adapter in reality but let's use it for the sake of testing
+        expect(await mgmt.isAdapterEnabled(weth.address)).equal(false)
+        await mgmt.connect(signer).setAdapterEnabled(weth.address, true)
+        expect(await mgmt.isAdapterEnabled(weth.address)).equal(true)
+      })
+    })
+
+    describe('setIntegrationEnabled', () => {
+      it('only owner allowed to call', async () => {
+        const [signer, treasury, otherUser] = await ethers.getSigners()
+        const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+        const mgmt = await deployManagement(signer, treasury.address, weth.address)
+        const setIntegrationEnabled = mgmt.connect(otherUser).setIntegrationEnabled(weth.address, true)
+        await expect(setIntegrationEnabled).revertedWith('Ownable: caller is not the owner')
+      })
+
+      it('sets value correctly if called by the owner', async () => {
+        const [signer, treasury] = await ethers.getSigners()
+        const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+        const mgmt = await deployManagement(signer, treasury.address, weth.address)
+        expect(await mgmt.isIntegrationEnabled(weth.address)).equal(false)
+        await mgmt.connect(signer).setIntegrationEnabled(weth.address, true)
+        expect(await mgmt.isIntegrationEnabled(weth.address)).equal(true)
+      })
     })
   })
 })

@@ -50,6 +50,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return tokenSymbol;
   }
 
+  function getBalances() external view returns (uint[] memory) {
+    address[] memory tokens = management.getSupportedTokens();
+    return _getTokenBalances(address(this), tokens);
+  }
+
   function deposit() external payable whenNotPaused {
     uint poolValueStart = _getPoolValue();
     address weth = management.weth();
@@ -71,6 +76,14 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // first repay loan positions using the long positions equally;
     // for each token get the net balance and send % of that to a withdraw contract
     // finally let the withdrawer trade tokens on behalf of the withdraw contract to ETH
+  }
+
+  function manageAssets(address _adapter, bytes calldata _data) external onlyOwner {
+    // TODO: require pool value doesn't drop more than a specified % slippage limit
+    // TODO: validate cumulative value drop over N days period is less than a specified % limit
+    require(management.isAdapterEnabled(_adapter), 'unsupported adapter');
+    (bool success, bytes memory message) = _adapter.delegatecall(_data);
+    require(success, string(message));
   }
 
   function _buyWETH(address _weth, uint _amount) internal returns (uint) {
