@@ -26,7 +26,11 @@ contract ManagerUniswapV2Adapter {
     );
   }
 
-  function _validateParams(HousecatManagement _mgmt, address _router, address[] memory _path) internal view {
+  function _validateParams(
+    HousecatManagement _mgmt,
+    address _router,
+    address[] memory _path
+  ) internal view {
     require(_mgmt.isIntegration(_router), 'ManagerUniswapV2Adapter: unsupported integration');
     require(_mgmt.isTokenSupported(_path[_path.length - 1]), 'ManagerUniswapV2Adapter: unsupported token to');
   }

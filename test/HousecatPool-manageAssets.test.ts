@@ -11,10 +11,12 @@ describe('HousecatPool: manageAssets', () => {
     const { pool, managerAdapters } = await mockHousecatAndPool(signer, treasury, manager)
     const encoder = new ethers.utils.AbiCoder()
     const data = encoder.encode(['string'], ['foobar'])
-    const manage = pool.connect(signer).manageAssets([{
-      adapter: managerAdapters.uniswapV2.address,
-      data,
-    }])
+    const manage = pool.connect(signer).manageAssets([
+      {
+        adapter: managerAdapters.uniswapV2.address,
+        data,
+      },
+    ])
     await expect(manage).revertedWith('Ownable: caller is not the owner')
   })
 
@@ -33,10 +35,12 @@ describe('HousecatPool: manageAssets', () => {
         await weth.token.balanceOf(pool.address),
         1,
       ])
-      await pool.connect(manager).manageAssets([{
-        adapter: managerAdapters.uniswapV2.address,
-        data,
-      }])
+      await pool.connect(manager).manageAssets([
+        {
+          adapter: managerAdapters.uniswapV2.address,
+          data,
+        },
+      ])
 
       // check the pool holds token0 but not weth
       expect(await tokens[0].token.balanceOf(pool.address)).gt(0)
@@ -51,10 +55,12 @@ describe('HousecatPool: manageAssets', () => {
         await weth.token.balanceOf(pool.address),
         1,
       ])
-      const manage = pool.connect(manager).manageAssets([{
-        adapter: managerAdapters.uniswapV2.address,
-        data,
-      }])
+      const manage = pool.connect(manager).manageAssets([
+        {
+          adapter: managerAdapters.uniswapV2.address,
+          data,
+        },
+      ])
       await expect(manage).revertedWith('UniswapV2Adapter: unsupported integration')
     })
     it('should fail to buy tokens that are not whitelisted', async () => {
@@ -67,15 +73,21 @@ describe('HousecatPool: manageAssets', () => {
         await weth.token.balanceOf(pool.address),
         1,
       ])
-      const manage = pool.connect(manager).manageAssets([{
-        adapter: managerAdapters.uniswapV2.address,
-        data,
-      }])
+      const manage = pool.connect(manager).manageAssets([
+        {
+          adapter: managerAdapters.uniswapV2.address,
+          data,
+        },
+      ])
       await expect(manage).revertedWith('UniswapV2Adapter: unsupported token to')
     })
     it('should succeed to sell tokens that are not whitelisted', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
-      const { management, pool, managerAdapters, weth, tokens, amm } = await mockHousecatAndPool(signer, treasury, manager)
+      const { management, pool, managerAdapters, weth, tokens, amm } = await mockHousecatAndPool(
+        signer,
+        treasury,
+        manager
+      )
 
       // remove a token from the whitelist and send that token to the pool
       await management.connect(signer).setSupportedTokens([weth.token.address])
@@ -92,10 +104,12 @@ describe('HousecatPool: manageAssets', () => {
         await token.balanceOf(pool.address),
         1,
       ])
-      await pool.connect(manager).manageAssets([{
-        adapter: managerAdapters.uniswapV2.address,
-        data,
-      }])
+      await pool.connect(manager).manageAssets([
+        {
+          adapter: managerAdapters.uniswapV2.address,
+          data,
+        },
+      ])
 
       // check the pool no longer holds the token but holds weth instead
       expect(await token.balanceOf(pool.address)).equal(0)

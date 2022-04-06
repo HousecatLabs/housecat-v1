@@ -1,6 +1,12 @@
 import { ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { HousecatFactory, HousecatPool, HousecatQueries, ManagerUniswapV2Adapter, WithdrawerUniswapV2Adapter } from '../typechain-types'
+import {
+  HousecatFactory,
+  HousecatPool,
+  HousecatQueries,
+  ManagerUniswapV2Adapter,
+  WithdrawerUniswapV2Adapter,
+} from '../typechain-types'
 import { HousecatManagement } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 
@@ -37,7 +43,9 @@ export const deployManagerUniswapV2Adapter = async (signer: SignerWithAddress): 
   return UniswapV2Adapter.connect(signer).deploy()
 }
 
-export const deployWithdrawerUniswapV2Adapter = async (signer: SignerWithAddress): Promise<WithdrawerUniswapV2Adapter> => {
+export const deployWithdrawerUniswapV2Adapter = async (
+  signer: SignerWithAddress
+): Promise<WithdrawerUniswapV2Adapter> => {
   const UniswapV2Adapter = await ethers.getContractFactory('WithdrawerUniswapV2Adapter')
   return UniswapV2Adapter.connect(signer).deploy()
 }

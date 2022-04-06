@@ -29,7 +29,12 @@ contract WithdrawerUniswapV2Adapter {
     IWETH(weth).withdraw(amountWeth);
   }
 
-  function _validateParams(HousecatManagement _mgmt, address _weth, address _router, address[] memory _path) internal view {
+  function _validateParams(
+    HousecatManagement _mgmt,
+    address _weth,
+    address _router,
+    address[] memory _path
+  ) internal view {
     require(_mgmt.isIntegration(_router), 'WithdrawerUniswapV2Adapter: unsupported integration');
     require(_mgmt.isTokenSupported(_path[0]), 'WithdrawerUniswapV2Adapter: unsupported token from');
     require(_path[_path.length - 1] == _weth, 'WithdrawerUniswapV2Adapter: invalid token to');

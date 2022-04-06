@@ -71,7 +71,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
   }
 
-  function withdraw(uint _amount, PoolAction[] memory _actions, address _to) external {
+  function withdraw(
+    uint _amount,
+    PoolAction[] memory _actions,
+    address _to
+  ) external {
     require(this.balanceOf(msg.sender) >= _amount, 'HousecatPool: withdrawal exceeds balance');
     uint shareInPool = _amount.mul(PERCENT_100).div(totalSupply());
     uint poolValueBefore = _getPoolValue();

@@ -45,7 +45,7 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
     uniswapV2: await deployManagerUniswapV2Adapter(signer),
   }
   const withdrawerAdapters = {
-    uniswapV2: await deployWithdrawerUniswapV2Adapter(signer)
+    uniswapV2: await deployWithdrawerUniswapV2Adapter(signer),
   }
   const [management, factory] = await deployHousecat({
     signer,
@@ -53,8 +53,8 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
     weth: _weth.token.address,
     tokens: tokenAddresses,
     tokensMeta,
-    managerAdapters: Object.values(managerAdapters).map(x => x.address),
-    withdrawerAdapters: Object.values(withdrawerAdapters).map(x => x.address),
+    managerAdapters: Object.values(managerAdapters).map((x) => x.address),
+    withdrawerAdapters: Object.values(withdrawerAdapters).map((x) => x.address),
     integrations: [amm.address],
   })
   return { management, factory, amm, weth: _weth, tokens: _tokens, managerAdapters, withdrawerAdapters }
