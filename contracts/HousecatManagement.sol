@@ -14,14 +14,16 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   address public treasury;
   address public weth;
+  address public manageAssetsAdapter;
+  address public withdrawAdapter;
+  mapping(address => bool) private integrations;
   address[] private supportedTokens;
   mapping(address => TokenMeta) private tokenMeta;
-  mapping(address => bool) private managerAdapters;
-  mapping(address => bool) private withdrawerAdapters;
-  mapping(address => bool) private integrations;
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
+  event UpdateManageAssetsAdapter(address adapter);
+  event UpdateWithdrawAdapter(address adapter);
 
   constructor(address _treasury, address _weth) {
     treasury = _treasury;
@@ -46,6 +48,16 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     emit UpdateWETH(_weth);
   }
 
+  function updateManageAssetsAdapter(address _adapter) external onlyOwner {
+    manageAssetsAdapter = _adapter;
+    emit UpdateManageAssetsAdapter(_adapter);
+  }
+
+  function updateWithdrawAdapter(address _adapter) external onlyOwner {
+    withdrawAdapter = _adapter;
+    emit UpdateWithdrawAdapter(_adapter);
+  }
+
   function getSupportedTokens() external view returns (address[] memory) {
     return supportedTokens;
   }
@@ -60,14 +72,6 @@ contract HousecatManagement is Constants, Ownable, Pausable {
       meta[i] = tokenMeta[supportedTokens[i]];
     }
     return (supportedTokens, meta);
-  }
-
-  function isManagerAdapter(address _adapter) external view returns (bool) {
-    return managerAdapters[_adapter];
-  }
-
-  function isWithdrawerAdapter(address _adapter) external view returns (bool) {
-    return withdrawerAdapters[_adapter];
   }
 
   function isIntegration(address _integration) external view returns (bool) {
@@ -96,14 +100,6 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     for (uint i = 0; i < _tokens.length; i++) {
       _setTokenMeta(_tokens[i], _tokensMeta[i]);
     }
-  }
-
-  function setManagerAdapter(address _adapter, bool _value) external onlyOwner {
-    managerAdapters[_adapter] = _value;
-  }
-
-  function setWithdrawerAdapter(address _adapter, bool _value) external onlyOwner {
-    withdrawerAdapters[_adapter] = _value;
   }
 
   function setIntegration(address _integration, bool _value) external onlyOwner {

@@ -9,7 +9,6 @@ import './interfaces/IWETH.sol';
 import './HousecatQueries.sol';
 import './HousecatFactory.sol';
 import './HousecatManagement.sol';
-import './structs/PoolAction.sol';
 
 contract HousecatPool is HousecatQueries, ERC20, Ownable {
   using SafeMath for uint;
@@ -71,34 +70,38 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
   }
 
-  function withdraw(
-    uint _amount,
-    PoolAction[] memory _actions,
-    address _to
-  ) external {
-    require(this.balanceOf(msg.sender) >= _amount, 'HousecatPool: withdrawal exceeds balance');
-    uint shareInPool = _amount.mul(PERCENT_100).div(totalSupply());
+  function withdraw(bytes[] calldata _data) external {
+    // TODO: validate that token weights don't change
+
+    // keep track of balances before withdrawal
+    uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
     uint poolValueBefore = _getPoolValue();
-    uint maxWithdrawValue = poolValueBefore.mul(shareInPool).div(PERCENT_100);
-    // TODO: check weights before ~ after
-    uint balanceETHBefore = address(this).balance;
-    for (uint i = 0; i < _actions.length; i++) {
-      require(management.isWithdrawerAdapter(_actions[i].adapter), 'HousecatPool: unsupported adapter');
-      (bool success, bytes memory message) = _actions[i].adapter.delegatecall(_actions[i].data);
+    uint ethBalanceBefore = address(this).balance;
+
+    // execute withdrawal transactions
+    address adapter = management.withdrawAdapter();
+    for (uint i = 0; i < _data.length; i++) {
+      (bool success, bytes memory message) = adapter.delegatecall(_data[i]);
       require(success, string(message));
     }
-    uint actualWithdrawValue = poolValueBefore.sub(_getPoolValue());
-    require(maxWithdrawValue >= actualWithdrawValue, 'HousecatPool: withdraw value too high');
-    _burn(msg.sender, _amount); // TODO: burn tokens only for the amount corresponding to the actual withdrawn value
-    uint balanceETHReceived = address(this).balance.sub(balanceETHBefore);
-    (bool sent, ) = _to.call{value: balanceETHReceived}('');
-    require(sent, 'HousecatPool: send ETH failed');
+
+    // validate balances are correct after withdrawal
+    uint poolValueAfter = _getPoolValue();
+    uint ethBalanceAfter = address(this).balance;
+    uint withdrawValue = poolValueBefore.sub(poolValueAfter);
+    uint maxWithdrawValue = poolValueBefore.mul(shareInPool).div(PERCENT_100);
+    require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
+    require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: reducing ETH balance on withdrawal');
+    
+    /// burn pool tokens for the withdrawn value
+    uint amountBurn = withdrawValue.mul(PERCENT_100).div(poolValueBefore);
+    _burn(msg.sender, amountBurn);
   }
 
-  function manageAssets(PoolAction[] memory _actions) external onlyOwner {
-    for (uint i = 0; i < _actions.length; i++) {
-      require(management.isManagerAdapter(_actions[i].adapter), 'HousecatPool: unsupported adapter');
-      (bool success, bytes memory message) = _actions[i].adapter.delegatecall(_actions[i].data);
+  function manageAssets(bytes[] calldata _data) external onlyOwner {
+    address adapter = management.manageAssetsAdapter();
+    for (uint i = 0; i < _data.length; i++) {  
+      (bool success, bytes memory message) = adapter.delegatecall(_data[i]);
       require(success, string(message));
     }
     // TODO: require pool value doesn't drop more than a specified % slippage limit

@@ -4,8 +4,8 @@ import {
   HousecatFactory,
   HousecatPool,
   HousecatQueries,
-  ManagerUniswapV2Adapter,
-  WithdrawerUniswapV2Adapter,
+  ManageAssetsAdapter,
+  WithdrawAdapter,
 } from '../typechain-types'
 import { HousecatManagement } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
@@ -38,16 +38,14 @@ export const deployFactory = async (
   return HousecatFactory.connect(signer).deploy(management, poolTemplate)
 }
 
-export const deployManagerUniswapV2Adapter = async (signer: SignerWithAddress): Promise<ManagerUniswapV2Adapter> => {
-  const UniswapV2Adapter = await ethers.getContractFactory('ManagerUniswapV2Adapter')
-  return UniswapV2Adapter.connect(signer).deploy()
+export const deployManageAssetsAdapter = async (signer: SignerWithAddress): Promise<ManageAssetsAdapter> => {
+  const adapter = await ethers.getContractFactory('ManageAssetsAdapter')
+  return adapter.connect(signer).deploy()
 }
 
-export const deployWithdrawerUniswapV2Adapter = async (
-  signer: SignerWithAddress
-): Promise<WithdrawerUniswapV2Adapter> => {
-  const UniswapV2Adapter = await ethers.getContractFactory('WithdrawerUniswapV2Adapter')
-  return UniswapV2Adapter.connect(signer).deploy()
+export const deployWithdrawAdapter = async (signer: SignerWithAddress): Promise<WithdrawAdapter> => {
+  const adapter = await ethers.getContractFactory('WithdrawAdapter')
+  return adapter.connect(signer).deploy()
 }
 
 export interface IDeployHousecat {
@@ -56,8 +54,8 @@ export interface IDeployHousecat {
   weth: string
   tokens?: string[]
   tokensMeta?: TokenMetaStruct[]
-  managerAdapters?: string[]
-  withdrawerAdapters?: string[]
+  manageAssetsAdapter?: string
+  withdrawAdapter?: string
   integrations?: string[]
 }
 
@@ -67,8 +65,8 @@ export const deployHousecat = async ({
   weth,
   tokens,
   tokensMeta,
-  managerAdapters,
-  withdrawerAdapters,
+  manageAssetsAdapter,
+  withdrawAdapter,
   integrations,
 }: IDeployHousecat): Promise<[HousecatManagement, HousecatFactory]> => {
   const poolTemplate = await deployPool(signer)
@@ -80,15 +78,11 @@ export const deployHousecat = async ({
       await mgmt.connect(signer).setTokenMetaMany(tokens, tokensMeta)
     }
   }
-  if (managerAdapters) {
-    for (let i = 0; i < managerAdapters.length; i++) {
-      await mgmt.setManagerAdapter(managerAdapters[i], true)
-    }
+  if (manageAssetsAdapter) {
+    await mgmt.updateManageAssetsAdapter(manageAssetsAdapter)
   }
-  if (withdrawerAdapters) {
-    for (let i = 0; i < withdrawerAdapters.length; i++) {
-      await mgmt.setWithdrawerAdapter(withdrawerAdapters[i], true)
-    }
+  if (withdrawAdapter) {
+    await mgmt.updateWithdrawAdapter(withdrawAdapter)
   }
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {

@@ -1,18 +1,9 @@
-import { HousecatFactory, HousecatManagement, IUniswapV2Router02, ManagerUniswapV2Adapter } from '../typechain-types'
-import { WithdrawerUniswapV2Adapter } from '../typechain-types/WithdrawerUniswapV2Adapter'
-import { deployHousecat, deployManagerUniswapV2Adapter, deployWithdrawerUniswapV2Adapter } from './deploy-contracts'
+import { HousecatFactory, HousecatManagement, IUniswapV2Router02, ManageAssetsAdapter, WithdrawAdapter } from '../typechain-types'
+import { deployHousecat, deployManageAssetsAdapter, deployWithdrawAdapter } from './deploy-contracts'
 import { IAmmWithMockTokens, ITokenWithPriceFeed, mockAssets } from './mock-defi'
 
 interface IMockHousecatProps extends IAmmWithMockTokens {
   treasury?: string
-}
-
-interface IManagerAdapters {
-  uniswapV2: ManagerUniswapV2Adapter
-}
-
-interface IWithdrawerAdapters {
-  uniswapV2: WithdrawerUniswapV2Adapter
 }
 
 export interface IMockHousecat {
@@ -21,8 +12,8 @@ export interface IMockHousecat {
   amm: IUniswapV2Router02
   weth: ITokenWithPriceFeed
   tokens: ITokenWithPriceFeed[]
-  managerAdapters: IManagerAdapters
-  withdrawerAdapters: IWithdrawerAdapters
+  manageAssetsAdapter: ManageAssetsAdapter
+  withdrawAdapter: WithdrawAdapter
 }
 
 export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHousecatProps): Promise<IMockHousecat> => {
@@ -41,21 +32,17 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
       }))
     )),
   ]
-  const managerAdapters = {
-    uniswapV2: await deployManagerUniswapV2Adapter(signer),
-  }
-  const withdrawerAdapters = {
-    uniswapV2: await deployWithdrawerUniswapV2Adapter(signer),
-  }
+  const manageAssetsAdapter = await deployManageAssetsAdapter(signer)
+  const withdrawAdapter = await deployWithdrawAdapter(signer)
   const [management, factory] = await deployHousecat({
     signer,
     treasury: treasury || signer.address,
     weth: _weth.token.address,
     tokens: tokenAddresses,
     tokensMeta,
-    managerAdapters: Object.values(managerAdapters).map((x) => x.address),
-    withdrawerAdapters: Object.values(withdrawerAdapters).map((x) => x.address),
+    manageAssetsAdapter: manageAssetsAdapter.address,
+    withdrawAdapter: withdrawAdapter.address,
     integrations: [amm.address],
   })
-  return { management, factory, amm, weth: _weth, tokens: _tokens, managerAdapters, withdrawerAdapters }
+  return { management, factory, amm, weth: _weth, tokens: _tokens, manageAssetsAdapter, withdrawAdapter }
 }
