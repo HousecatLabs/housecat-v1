@@ -93,8 +93,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: reducing ETH balance on withdrawal');
     
-    /// burn pool tokens for the withdrawn value
-    uint amountBurn = withdrawValue.mul(PERCENT_100).div(poolValueBefore);
+    // burn pool tokens for the withdrawn value
+    uint amountBurn = totalSupply().mul(withdrawValue).div(poolValueBefore);
     _burn(msg.sender, amountBurn);
   }
 
