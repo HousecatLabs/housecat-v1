@@ -5,8 +5,8 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '../interfaces/IWETH.sol';
-import '../HousecatPool.sol';
-import '../HousecatManagement.sol';
+import '../core/HousecatPool.sol';
+import '../core/HousecatManagement.sol';
 
 contract WithdrawAdapter {
   using SafeERC20 for IERC20;

@@ -3,8 +3,8 @@ pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
-import '../HousecatPool.sol';
-import '../HousecatManagement.sol';
+import '../core/HousecatPool.sol';
+import '../core/HousecatManagement.sol';
 
 contract ManageAssetsAdapter {
   function tradeOnUniswapV2(

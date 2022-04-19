@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
-import './interfaces/IWETH.sol';
+import '../interfaces/IWETH.sol';
 import './HousecatQueries.sol';
 import './HousecatFactory.sol';
 import './HousecatManagement.sol';

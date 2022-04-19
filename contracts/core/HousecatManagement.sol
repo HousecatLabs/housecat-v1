@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/utils/math/SafeCast.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
-import './common/Constants.sol';
+import './Constants.sol';
 import './structs/TokenMeta.sol';
 
 contract HousecatManagement is Constants, Ownable, Pausable {
