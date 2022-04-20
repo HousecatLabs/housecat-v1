@@ -6,21 +6,24 @@ import '@openzeppelin/contracts/utils/math/SafeCast.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
-import './common/Constants.sol';
-import './common/TokenMeta.sol';
+import './Constants.sol';
+import './structs/TokenMeta.sol';
 
 contract HousecatManagement is Constants, Ownable, Pausable {
   using SafeMath for uint;
 
   address public treasury;
   address public weth;
+  address public manageAssetsAdapter;
+  address public withdrawAdapter;
+  mapping(address => bool) private integrations;
   address[] private supportedTokens;
   mapping(address => TokenMeta) private tokenMeta;
-  mapping(address => bool) private adapterEnabled;
-  mapping(address => bool) private integrationEnabled;
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
+  event UpdateManageAssetsAdapter(address adapter);
+  event UpdateWithdrawAdapter(address adapter);
 
   constructor(address _treasury, address _weth) {
     treasury = _treasury;
@@ -45,6 +48,16 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     emit UpdateWETH(_weth);
   }
 
+  function updateManageAssetsAdapter(address _adapter) external onlyOwner {
+    manageAssetsAdapter = _adapter;
+    emit UpdateManageAssetsAdapter(_adapter);
+  }
+
+  function updateWithdrawAdapter(address _adapter) external onlyOwner {
+    withdrawAdapter = _adapter;
+    emit UpdateWithdrawAdapter(_adapter);
+  }
+
   function getSupportedTokens() external view returns (address[] memory) {
     return supportedTokens;
   }
@@ -61,12 +74,8 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return (supportedTokens, meta);
   }
 
-  function isAdapterEnabled(address _adapter) external view returns (bool) {
-    return adapterEnabled[_adapter];
-  }
-
-  function isIntegrationEnabled(address _integration) external view returns (bool) {
-    return integrationEnabled[_integration];
+  function isIntegration(address _integration) external view returns (bool) {
+    return integrations[_integration];
   }
 
   function isTokenSupported(address _token) external view returns (bool) {
@@ -93,12 +102,8 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     }
   }
 
-  function setAdapterEnabled(address _adapter, bool _value) external onlyOwner {
-    adapterEnabled[_adapter] = _value;
-  }
-
-  function setIntegrationEnabled(address _integration, bool _value) external onlyOwner {
-    integrationEnabled[_integration] = _value;
+  function setIntegration(address _integration, bool _value) external onlyOwner {
+    integrations[_integration] = _value;
   }
 
   function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) internal {

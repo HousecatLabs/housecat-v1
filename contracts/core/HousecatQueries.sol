@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/utils/math/SafeCast.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
-import './common/Constants.sol';
+import './Constants.sol';
 
 contract HousecatQueries is Constants {
   using SafeMath for uint;

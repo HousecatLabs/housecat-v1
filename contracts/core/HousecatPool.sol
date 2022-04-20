@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
-import './interfaces/IWETH.sol';
+import '../interfaces/IWETH.sol';
 import './HousecatQueries.sol';
 import './HousecatFactory.sol';
 import './HousecatManagement.sol';
@@ -55,6 +55,10 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getTokenBalances(address(this), tokens);
   }
 
+  function getPoolValue() external view returns (uint) {
+    return _getPoolValue();
+  }
+
   function deposit() external payable whenNotPaused {
     uint poolValueStart = _getPoolValue();
     address weth = management.weth();
@@ -70,20 +74,48 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
   }
 
-  function withdraw(uint _amount) external {
-    require(this.balanceOf(msg.sender) >= _amount, 'HousecatPool: withdrawal exceeds balance');
-    // uint shareInPool = _amount.mul(PERCENT_100).div(totalSupply());
-    // first repay loan positions using the long positions equally;
-    // for each token get the net balance and send % of that to a withdraw contract
-    // finally let the withdrawer trade tokens on behalf of the withdraw contract to ETH
+  function withdraw(bytes[] calldata _data) external {
+    // keep track of balances before withdrawal
+    uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
+    uint poolValueBefore = _getPoolValue();
+    uint ethBalanceBefore = address(this).balance;
+
+    // execute withdrawal transactions
+    address adapter = management.withdrawAdapter();
+    for (uint i = 0; i < _data.length; i++) {
+      (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
+      require(success, string(result));
+    }
+
+    // TODO: validate that token weights haven't changed too much
+
+    // validate balances are correct after withdrawal
+    uint poolValueAfter = _getPoolValue();
+    uint withdrawValue = poolValueBefore.sub(poolValueAfter);
+    uint ethBalanceAfter = address(this).balance;
+
+    uint maxWithdrawValue = poolValueBefore.mul(shareInPool).div(PERCENT_100);
+    require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
+    require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: reducing ETH balance on withdrawal');
+
+    // burn pool tokens corresponding the withdrawn value
+    uint amountBurn = totalSupply().mul(withdrawValue).div(poolValueBefore);
+    _burn(msg.sender, amountBurn);
+
+    // send the received ETH to the withdrawer
+    uint amountEthToSend = ethBalanceAfter.sub(ethBalanceBefore);
+    (bool sent, ) = msg.sender.call{value: amountEthToSend}('');
+    require(sent, 'HousecatPool: sending ETH failed');
   }
 
-  function manageAssets(address _adapter, bytes calldata _data) external onlyOwner {
+  function manageAssets(bytes[] calldata _data) external onlyOwner {
+    address adapter = management.manageAssetsAdapter();
+    for (uint i = 0; i < _data.length; i++) {
+      (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
+      require(success, string(result));
+    }
     // TODO: require pool value doesn't drop more than a specified % slippage limit
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
-    require(management.isAdapterEnabled(_adapter), 'HousecatPool: unsupported adapter');
-    (bool success, bytes memory message) = _adapter.delegatecall(_data);
-    require(success, string(message));
   }
 
   function _buyWETH(address _weth, uint _amount) internal returns (uint) {
