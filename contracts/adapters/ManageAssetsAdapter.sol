@@ -7,7 +7,7 @@ import '../core/HousecatPool.sol';
 import '../core/HousecatManagement.sol';
 
 contract ManageAssetsAdapter {
-  function tradeOnUniswapV2(
+  function uniswapV2__swapTokens(
     address _router,
     address[] memory _path,
     uint _amountIn,
@@ -15,8 +15,8 @@ contract ManageAssetsAdapter {
   ) external {
     HousecatPool pool = HousecatPool(payable(address(this)));
     HousecatManagement mgmt = HousecatManagement(pool.management());
-    require(mgmt.isIntegration(_router), 'tradeOnUniswapV2: unsupported router');
-    require(mgmt.isTokenSupported(_path[_path.length - 1]), 'tradeOnUniswapV2: unsupported token to');
+    require(mgmt.isIntegration(_router), 'ManageAssetsAdapter: unsupported router');
+    require(mgmt.isTokenSupported(_path[_path.length - 1]), 'ManageAssetsAdapter: unsupported token to');
     IERC20(_path[0]).approve(_router, _amountIn);
     IUniswapV2Router02(_router).swapExactTokensForTokens(
       _amountIn,

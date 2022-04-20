@@ -17,9 +17,9 @@ const mockHousecatAndPool = async (
     treasury: treasury.address,
     weth: { price: '1' },
     tokens: [
-      { price: '1', reserveToken: '1000', reserveWeth: '1000' },
-      { price: '2', reserveToken: '500', reserveWeth: '1000' },
-      { price: '0.5', reserveToken: '2000', reserveWeth: '1000' },
+      { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+      { price: '2', reserveToken: '5000', reserveWeth: '10000' },
+      { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
     ],
   })
   await mock.factory.connect(manager).createPool()

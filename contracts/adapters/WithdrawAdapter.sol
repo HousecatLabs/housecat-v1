@@ -11,44 +11,29 @@ import '../core/HousecatManagement.sol';
 contract WithdrawAdapter {
   using SafeERC20 for IERC20;
 
-  function tradeOnUniswapV2(
+  function uniswapV2__sellTokenForETH(
     address _router,
     address[] memory _path,
     uint _amountIn,
     uint _amountOutMin
   ) external {
-    HousecatManagement mgmt = _getMgmt();
-    require(mgmt.isIntegration(_router), 'tradeOnUniswapV2: unsupported router');
-    require(mgmt.isTokenSupported(_path[0]), 'tradeOnUniswapV2: unsupported token from');
-    require(mgmt.isTokenSupported(_path[_path.length - 1]), 'tradeOnUniswapV2: unsupported token to');
-    IERC20(_path[0]).approve(_router, _amountIn);
-    IUniswapV2Router02(_router).swapExactTokensForTokens(
-      _amountIn,
-      _amountOutMin,
-      _path,
-      address(this),
-      block.timestamp
-    );
-  }
-
-  function withdrawWETH(uint _amount) external {
-    HousecatManagement mgmt = _getMgmt();
-    IWETH(mgmt.weth()).withdraw(_amount);
-  }
-
-  function sendToken(address _token, address _to, uint _amount) external {
-    HousecatManagement mgmt = _getMgmt();
-    require(mgmt.isTokenSupported(_token), 'sendToken: unsupported token');
-    IERC20(_token).transfer(_to, _amount);
-  }
-
-  function sendETH(address _to, uint _amount) external {
-    (bool sent, ) = _to.call{value: _amount}('');
-    require(sent, 'sendETH: send ETH failed');
-  }
-
-  function _getMgmt() internal view returns (HousecatManagement) {
     HousecatPool pool = HousecatPool(payable(address(this)));
-    return HousecatManagement(pool.management());
+    HousecatManagement mgmt = HousecatManagement(pool.management());
+    address weth = mgmt.weth();
+    require(mgmt.isIntegration(_router), 'WithdrawAdapter: unsupported router');
+    require(mgmt.isTokenSupported(_path[0]), 'WithdrawAdapter: unsupported token from');
+    require(_path[_path.length - 1] == weth, 'WithdrawAdapter: token to must be weth');
+    uint amountWeth = _amountIn;
+    if (_path[0] != weth) {
+      IERC20(_path[0]).approve(_router, _amountIn);
+      amountWeth = IUniswapV2Router02(_router).swapExactTokensForTokens(
+        _amountIn,
+        _amountOutMin,
+        _path,
+        address(this),
+        block.timestamp
+      )[_path.length - 1];
+    }
+    IWETH(weth).withdraw(amountWeth);
   }
 }

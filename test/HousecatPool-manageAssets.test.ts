@@ -15,7 +15,7 @@ describe('HousecatPool: manageAssets', () => {
     await expect(manage).revertedWith('Ownable: caller is not the owner')
   })
 
-  describe('uniswapV2', () => {
+  describe('uniswapV2__swapTokens', () => {
     it('manager should be able to trade tokens on behalf of the pool', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
       const { pool, manageAssetsAdapter, amm, weth, tokens } = await mockHousecatAndPool(signer, treasury, manager)
@@ -24,7 +24,7 @@ describe('HousecatPool: manageAssets', () => {
       await pool.connect(manager).deposit({ value: parseEther('1') })
 
       // trade all weth to token0
-      const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2', [
+      const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
         amm.address,
         [weth.token.address, tokens[0].token.address],
         await weth.token.balanceOf(pool.address),
@@ -39,20 +39,20 @@ describe('HousecatPool: manageAssets', () => {
     it('should fail to trade on a router which is not whitelisted', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
       const { pool, manageAssetsAdapter, weth, tokens } = await mockHousecatAndPool(signer, treasury, manager)
-      const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2', [
+      const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
         routers.sushiswap,
         [weth.token.address, tokens[0].token.address],
         await weth.token.balanceOf(pool.address),
         1,
       ])
       const manage = pool.connect(manager).manageAssets([data])
-      await expect(manage).revertedWith('ManageAssetsAdapter: unsupported integration')
+      await expect(manage).revertedWith('ManageAssetsAdapter: unsupported router')
     })
     it('should fail to buy tokens that are not whitelisted', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
       const { pool, manageAssetsAdapter, weth, amm } = await mockHousecatAndPool(signer, treasury, manager)
       const otherToken = await mockToken(signer, 'Other', 'OTHER', 18, 0)
-      const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2', [
+      const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
         amm.address,
         [weth.token.address, otherToken.address],
         await weth.token.balanceOf(pool.address),
@@ -78,7 +78,7 @@ describe('HousecatPool: manageAssets', () => {
       expect(await token.balanceOf(pool.address)).equal(parseEther('1'))
 
       // swap the token to weth
-      const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2', [
+      const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
         amm.address,
         [token.address, weth.token.address],
         await token.balanceOf(pool.address),

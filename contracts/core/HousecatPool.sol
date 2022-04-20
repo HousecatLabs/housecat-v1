@@ -55,6 +55,10 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getTokenBalances(address(this), tokens);
   }
 
+  function getPoolValue() external view returns (uint) {
+    return _getPoolValue();
+  }
+
   function deposit() external payable whenNotPaused {
     uint poolValueStart = _getPoolValue();
     address weth = management.weth();
@@ -71,8 +75,6 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function withdraw(bytes[] calldata _data) external {
-    // TODO: validate that token weights don't change
-
     // keep track of balances before withdrawal
     uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
     uint poolValueBefore = _getPoolValue();
@@ -81,28 +83,36 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // execute withdrawal transactions
     address adapter = management.withdrawAdapter();
     for (uint i = 0; i < _data.length; i++) {
-      (bool success, bytes memory message) = adapter.delegatecall(_data[i]);
-      require(success, string(message));
+      (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
+      require(success, string(result));
     }
+
+    // TODO: validate that token weights haven't changed too much
 
     // validate balances are correct after withdrawal
     uint poolValueAfter = _getPoolValue();
-    uint ethBalanceAfter = address(this).balance;
     uint withdrawValue = poolValueBefore.sub(poolValueAfter);
+    uint ethBalanceAfter = address(this).balance;
+    
     uint maxWithdrawValue = poolValueBefore.mul(shareInPool).div(PERCENT_100);
     require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: reducing ETH balance on withdrawal');
     
-    // burn pool tokens for the withdrawn value
+    // burn pool tokens corresponding the withdrawn value
     uint amountBurn = totalSupply().mul(withdrawValue).div(poolValueBefore);
     _burn(msg.sender, amountBurn);
+
+    // send the received ETH to the withdrawer
+    uint amountEthToSend = ethBalanceAfter.sub(ethBalanceBefore);
+    (bool sent, ) = msg.sender.call{value: amountEthToSend}('');
+    require(sent, 'HousecatPool: sending ETH failed');
   }
 
   function manageAssets(bytes[] calldata _data) external onlyOwner {
     address adapter = management.manageAssetsAdapter();
     for (uint i = 0; i < _data.length; i++) {  
-      (bool success, bytes memory message) = adapter.delegatecall(_data[i]);
-      require(success, string(message));
+      (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
+      require(success, string(result));
     }
     // TODO: require pool value doesn't drop more than a specified % slippage limit
     // TODO: validate cumulative value drop over N days period is less than a specified % limit

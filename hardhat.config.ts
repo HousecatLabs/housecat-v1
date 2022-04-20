@@ -32,7 +32,7 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
       forking: {
         url: process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
-        blockNumber: 26378365,
+        blockNumber: 26859779,
       },
       accounts: {
         accountsBalance: '10000000000000000000000000', // 1M ether

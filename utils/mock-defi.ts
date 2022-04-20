@@ -24,10 +24,12 @@ export const mockWETH = async (
   name: string,
   symbol: string,
   decimals: number,
-  mintAmount: BigNumberish
+  mintAmount: BigNumberish,
+  reserveAmount: BigNumberish = ethers.utils.parseEther("100"),
 ) => {
   const weth = await ethers.getContractFactory('WETHMock')
   const token = await weth.connect(signer).deploy(name, symbol, decimals)
+  token.connect(signer).deposit({ value: reserveAmount })
   await token.connect(signer).mint(signer.address, mintAmount)
   return token
 }
