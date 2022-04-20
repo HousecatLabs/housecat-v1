@@ -1,4 +1,10 @@
-import { HousecatFactory, HousecatManagement, IUniswapV2Router02, ManageAssetsAdapter, WithdrawAdapter } from '../typechain-types'
+import {
+  HousecatFactory,
+  HousecatManagement,
+  IUniswapV2Router02,
+  ManageAssetsAdapter,
+  WithdrawAdapter,
+} from '../typechain-types'
 import { deployHousecat, deployManageAssetsAdapter, deployWithdrawAdapter } from './deploy-contracts'
 import { IAmmWithMockTokens, ITokenWithPriceFeed, mockAssets } from './mock-defi'
 

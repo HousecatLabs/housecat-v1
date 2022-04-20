@@ -93,11 +93,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     uint poolValueAfter = _getPoolValue();
     uint withdrawValue = poolValueBefore.sub(poolValueAfter);
     uint ethBalanceAfter = address(this).balance;
-    
+
     uint maxWithdrawValue = poolValueBefore.mul(shareInPool).div(PERCENT_100);
     require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: reducing ETH balance on withdrawal');
-    
+
     // burn pool tokens corresponding the withdrawn value
     uint amountBurn = totalSupply().mul(withdrawValue).div(poolValueBefore);
     _burn(msg.sender, amountBurn);
@@ -110,7 +110,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   function manageAssets(bytes[] calldata _data) external onlyOwner {
     address adapter = management.manageAssetsAdapter();
-    for (uint i = 0; i < _data.length; i++) {  
+    for (uint i = 0; i < _data.length; i++) {
       (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
       require(success, string(result));
     }
