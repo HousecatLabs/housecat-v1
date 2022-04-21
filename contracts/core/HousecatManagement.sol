@@ -15,6 +15,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address public treasury;
   address public weth;
   address public manageAssetsAdapter;
+  address public depositAdapter;
   address public withdrawAdapter;
   mapping(address => bool) private integrations;
   address[] private supportedTokens;
@@ -23,6 +24,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
   event UpdateManageAssetsAdapter(address adapter);
+  event UpdateDepositAdapter(address adapter);
   event UpdateWithdrawAdapter(address adapter);
 
   constructor(address _treasury, address _weth) {
@@ -53,6 +55,11 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     emit UpdateManageAssetsAdapter(_adapter);
   }
 
+  function updateDepositAdapter(address _adapter) external onlyOwner {
+    depositAdapter = _adapter;
+    emit UpdateDepositAdapter(_adapter);
+  }
+  
   function updateWithdrawAdapter(address _adapter) external onlyOwner {
     withdrawAdapter = _adapter;
     emit UpdateWithdrawAdapter(_adapter);

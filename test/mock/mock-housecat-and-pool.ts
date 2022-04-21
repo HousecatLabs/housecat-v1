@@ -10,17 +10,19 @@ interface IMockHousecatAndPool extends IMockHousecat {
 const mockHousecatAndPool = async (
   signer: SignerWithAddress,
   treasury: SignerWithAddress,
-  manager: SignerWithAddress
+  manager: SignerWithAddress,
+  weth = { price: '1' },
+  tokens = [
+    { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+    { price: '2', reserveToken: '5000', reserveWeth: '10000' },
+    { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
+  ]
 ): Promise<IMockHousecatAndPool> => {
   const mock = await mockHousecat({
     signer,
     treasury: treasury.address,
-    weth: { price: '1' },
-    tokens: [
-      { price: '1', reserveToken: '10000', reserveWeth: '10000' },
-      { price: '2', reserveToken: '5000', reserveWeth: '10000' },
-      { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
-    ],
+    weth,
+    tokens,
   })
   await mock.factory.connect(manager).createPool()
   const pool = await ethers.getContractAt('HousecatPool', await mock.factory.getPool(0))
