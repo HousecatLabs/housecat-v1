@@ -1,13 +1,14 @@
 import { ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import {
+  HousecatManagement,
   HousecatFactory,
   HousecatPool,
   HousecatQueries,
   ManageAssetsAdapter,
   WithdrawAdapter,
+  DepositAdapter,
 } from '../typechain-types'
-import { HousecatManagement } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 
 export const deployQueries = async (signer: SignerWithAddress): Promise<HousecatQueries> => {
@@ -43,6 +44,11 @@ export const deployManageAssetsAdapter = async (signer: SignerWithAddress): Prom
   return adapter.connect(signer).deploy()
 }
 
+export const deployDepositAdapter = async (signer: SignerWithAddress): Promise<DepositAdapter> => {
+  const adapter = await ethers.getContractFactory('DepositAdapter')
+  return adapter.connect(signer).deploy()
+}
+
 export const deployWithdrawAdapter = async (signer: SignerWithAddress): Promise<WithdrawAdapter> => {
   const adapter = await ethers.getContractFactory('WithdrawAdapter')
   return adapter.connect(signer).deploy()
@@ -55,6 +61,7 @@ export interface IDeployHousecat {
   tokens?: string[]
   tokensMeta?: TokenMetaStruct[]
   manageAssetsAdapter?: string
+  depositAdapter?: string
   withdrawAdapter?: string
   integrations?: string[]
 }
@@ -66,6 +73,7 @@ export const deployHousecat = async ({
   tokens,
   tokensMeta,
   manageAssetsAdapter,
+  depositAdapter,
   withdrawAdapter,
   integrations,
 }: IDeployHousecat): Promise<[HousecatManagement, HousecatFactory]> => {
@@ -80,6 +88,9 @@ export const deployHousecat = async ({
   }
   if (manageAssetsAdapter) {
     await mgmt.updateManageAssetsAdapter(manageAssetsAdapter)
+  }
+  if (depositAdapter) {
+    await mgmt.updateDepositAdapter(depositAdapter)
   }
   if (withdrawAdapter) {
     await mgmt.updateWithdrawAdapter(withdrawAdapter)
