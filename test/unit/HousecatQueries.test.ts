@@ -1,8 +1,8 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { BigNumber } from 'ethers'
-import { deployQueries } from '../utils/deploy-contracts'
-import { mockPriceFeed, mockToken } from '../utils/mock-defi'
+import { deployQueries } from '../../utils/deploy-contracts'
+import { mockPriceFeed, mockToken } from '../../utils/mock-defi'
 
 describe('HousecatQueries', () => {
   describe('deploy', () => {
@@ -102,6 +102,20 @@ describe('HousecatQueries', () => {
       expect(weights[1]).equal(0)
       expect(weights).have.lengthOf(2)
       expect(totalValue).equal(0)
+    })
+  })
+
+  describe('getTokenAmounts', () => {
+    it('should transform weights to amounts correctly', async () => {
+      const [signer] = await ethers.getSigners()
+      const queries = await deployQueries(signer)
+      const balances = [ethers.utils.parseEther('1.0'), ethers.utils.parseEther('2.0')]
+      const prices = [ethers.utils.parseEther('2.0'), ethers.utils.parseEther('1.0')]
+      const decimals = [18, 18]
+      const [weights, totalValue] = await queries.getTokenWeights(balances, prices, decimals)
+      const amounts = await queries.getTokenAmounts(weights, totalValue, prices, decimals)
+      expect(amounts[0]).equal(balances[0])
+      expect(amounts[1]).equal(balances[1])
     })
   })
 })

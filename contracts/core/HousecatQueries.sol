@@ -43,6 +43,15 @@ contract HousecatQueries is Constants {
     return _getTotalValue(_balances, _tokenPrices, _tokenDecimals);
   }
 
+  function getTokenAmounts(
+    uint[] memory _weights,
+    uint _totalValue,
+    uint[] memory _tokenPrices,
+    uint[] memory _tokenDecimals
+  ) external pure returns (uint[] memory) {
+    return _getTokenAmounts(_weights, _totalValue, _tokenPrices, _tokenDecimals);
+  }
+
   function _getTokenPrices(address[] memory _priceFeeds) internal view returns (uint[] memory) {
     uint[] memory prices = new uint[](_priceFeeds.length);
     for (uint i; i < _priceFeeds.length; i++) {
@@ -67,6 +76,14 @@ contract HousecatQueries is Constants {
     uint _decimals
   ) internal pure returns (uint) {
     return _balance.mul(_price).div(10**_decimals);
+  }
+
+  function _getTokenAmount(
+    uint _value,
+    uint _price,
+    uint _decimals
+  ) internal pure returns (uint) {
+    return _value.mul(10**_decimals).div(_price);
   }
 
   function _getTotalValue(
@@ -96,5 +113,19 @@ contract HousecatQueries is Constants {
       }
     }
     return (weights, totalValue);
+  }
+
+  function _getTokenAmounts(
+    uint[] memory _weights,
+    uint _totalValue,
+    uint[] memory _tokenPrices,
+    uint[] memory _tokenDecimals
+  ) internal pure returns (uint[] memory) {
+    uint[] memory amounts = new uint[](_weights.length);
+    for (uint i = 0; i < _weights.length; i++) {
+      uint value = _totalValue.mul(_weights[i]).div(PERCENT_100);
+      amounts[i] = _getTokenAmount(value, _tokenPrices[i], _tokenDecimals[i]);
+    }
+    return amounts;
   }
 }

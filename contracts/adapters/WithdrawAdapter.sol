@@ -2,16 +2,13 @@
 pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '../interfaces/IWETH.sol';
 import '../core/HousecatPool.sol';
 import '../core/HousecatManagement.sol';
 
 contract WithdrawAdapter {
-  using SafeERC20 for IERC20;
-
-  function uniswapV2__sellTokenForETH(
+  function uniswapV2__swapTokenToETH(
     address _router,
     address[] memory _path,
     uint _amountIn,

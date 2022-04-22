@@ -55,29 +55,49 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getTokenBalances(address(this), tokens);
   }
 
-  function getPoolValue() external view returns (uint) {
-    return _getPoolValue();
+  function getWeights() external view returns (uint[] memory, uint) {
+    return _getWeights();
   }
 
-  function deposit() external payable whenNotPaused {
-    uint poolValueStart = _getPoolValue();
-    address weth = management.weth();
-    uint amountWethBought = _buyWETH(weth, msg.value);
-    TokenMeta memory wethMeta = management.getTokenMeta(weth);
-    uint wethPrice = _getTokenPrice(wethMeta.priceFeed);
-    uint depositValue = _getTokenValue(amountWethBought, wethPrice, wethMeta.decimals);
-    if (totalSupply() == 0) {
-      _mint(msg.sender, depositValue);
-    } else {
-      uint amountMint = totalSupply().mul(depositValue).div(poolValueStart);
-      _mint(msg.sender, amountMint);
+  function getValue() external view returns (uint) {
+    return _getValue();
+  }
+
+  function deposit(bytes[] calldata _data) external payable whenNotPaused {
+    // keep track of balances before deposit
+    uint poolValueBefore = _getValue();
+    uint ethBalanceBefore = address(this).balance.sub(msg.value);
+
+    // swap the sent eth to weth
+    _buyWETH(management.weth(), msg.value);
+
+    // execute deposit transactions
+    address adapter = management.depositAdapter();
+    for (uint i = 0; i < _data.length; i++) {
+      (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
+      require(success, string(result));
     }
+
+    // TODO: validate that token weights haven't changed too much
+    uint poolValueAfter = _getValue();
+    uint depositValue = poolValueAfter.sub(poolValueBefore);
+    uint ethBalanceAfter = address(this).balance;
+
+    // validate balances after deposit
+    require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced on deposit');
+
+    // mint pool tokens corresponding the deposit value
+    uint amountMint = depositValue;
+    if (totalSupply() > 0) {
+      amountMint = totalSupply().mul(depositValue).div(poolValueBefore);
+    }
+    _mint(msg.sender, amountMint);
   }
 
-  function withdraw(bytes[] calldata _data) external {
+  function withdraw(bytes[] calldata _data) external whenNotPaused {
     // keep track of balances before withdrawal
     uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
-    uint poolValueBefore = _getPoolValue();
+    uint poolValueBefore = _getValue();
     uint ethBalanceBefore = address(this).balance;
 
     // execute withdrawal transactions
@@ -89,14 +109,14 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // TODO: validate that token weights haven't changed too much
 
-    // validate balances are correct after withdrawal
-    uint poolValueAfter = _getPoolValue();
+    // validate balances after withdrawal
+    uint poolValueAfter = _getValue();
     uint withdrawValue = poolValueBefore.sub(poolValueAfter);
     uint ethBalanceAfter = address(this).balance;
 
     uint maxWithdrawValue = poolValueBefore.mul(shareInPool).div(PERCENT_100);
     require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
-    require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: reducing ETH balance on withdrawal');
+    require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced on withdraw');
 
     // burn pool tokens corresponding the withdrawn value
     uint amountBurn = totalSupply().mul(withdrawValue).div(poolValueBefore);
@@ -108,7 +128,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(sent, 'HousecatPool: sending ETH failed');
   }
 
-  function manageAssets(bytes[] calldata _data) external onlyOwner {
+  function manageAssets(bytes[] calldata _data) external onlyOwner whenNotPaused {
     address adapter = management.manageAssetsAdapter();
     for (uint i = 0; i < _data.length; i++) {
       (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
@@ -140,11 +160,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return (priceFeeds, decimals);
   }
 
-  function _getPoolValue() internal view returns (uint) {
-    return _getPoolGrossValue().sub(_getPoolLoanValue());
-  }
-
-  function _getPoolGrossValue() internal view returns (uint) {
+  function _getValue() internal view returns (uint) {
     (address[] memory tokens, TokenMeta[] memory tokensMeta) = management.getTokensWithMeta();
     uint[] memory tokenBalances = _getTokenBalances(address(this), tokens);
     (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(tokensMeta);
@@ -152,8 +168,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getTotalValue(tokenBalances, tokenPrices, decimals);
   }
 
-  function _getPoolLoanValue() internal pure returns (uint) {
-    // TODO: resolve total value of loan positions
-    return 0;
+  function _getWeights() internal view returns (uint[] memory, uint) {
+    (address[] memory tokens, TokenMeta[] memory tokensMeta) = management.getTokensWithMeta();
+    uint[] memory tokenBalances = _getTokenBalances(address(this), tokens);
+    (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(tokensMeta);
+    uint[] memory tokenPrices = _getTokenPrices(priceFeeds);
+    return _getTokenWeights(tokenBalances, tokenPrices, decimals);
   }
 }
