@@ -3,7 +3,7 @@ import { IMockHousecat, mockHousecat } from '../../utils/mock-housecat'
 import { HousecatPool } from '../../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-interface IMockHousecatAndPool extends IMockHousecat {
+export interface IMockHousecatAndPool extends IMockHousecat {
   pool: HousecatPool
 }
 

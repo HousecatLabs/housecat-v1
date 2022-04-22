@@ -21,7 +21,7 @@ describe('HousecatPool: manageAssets', () => {
       const { pool, manageAssetsAdapter, amm, weth, tokens } = await mockHousecatAndPool(signer, treasury, manager)
 
       // deposit ETH so that the pool has WETH
-      await pool.connect(manager).deposit({ value: parseEther('1') })
+      await pool.connect(manager).deposit([], { value: parseEther('1') })
 
       // trade all weth to token0
       const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
