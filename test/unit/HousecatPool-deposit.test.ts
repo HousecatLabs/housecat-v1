@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
-import mockHousecatAndPool from './mock/mock-housecat-and-pool'
+import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
 
 describe('HousecatPool: deposit', () => {
   describe('simple pool not holding other tokens than WETH', () => {

@@ -1,9 +1,9 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
-import mockHousecatAndPool from './mock/mock-housecat-and-pool'
-import { routers } from '../utils/addresses/polygon'
-import { mockToken } from '../utils/mock-defi'
+import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
+import { routers } from '../../utils/addresses/polygon'
+import { mockToken } from '../../utils/mock-defi'
 
 describe('HousecatPool: manageAssets', () => {
   it('only manager allowed to call', async () => {

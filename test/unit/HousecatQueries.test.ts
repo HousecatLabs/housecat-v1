@@ -1,8 +1,8 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { BigNumber } from 'ethers'
-import { deployQueries } from '../utils/deploy-contracts'
-import { mockPriceFeed, mockToken } from '../utils/mock-defi'
+import { deployQueries } from '../../utils/deploy-contracts'
+import { mockPriceFeed, mockToken } from '../../utils/mock-defi'
 
 describe('HousecatQueries', () => {
   describe('deploy', () => {

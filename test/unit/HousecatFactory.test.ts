@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { deployHousecat } from '../utils/deploy-contracts'
+import { deployHousecat } from '../../utils/deploy-contracts'
 
 describe('HousecatFactory', () => {
   describe('createPool', () => {

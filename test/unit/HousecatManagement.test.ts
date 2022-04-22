@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { deployManagement } from '../utils/deploy-contracts'
-import { mockPriceFeed, mockToken, mockWETH } from '../utils/mock-defi'
+import { deployManagement } from '../../utils/deploy-contracts'
+import { mockPriceFeed, mockToken, mockWETH } from '../../utils/mock-defi'
 
 describe('HousecatManagement', () => {
   describe('public state variables', () => {
