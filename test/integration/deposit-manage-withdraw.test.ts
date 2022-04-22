@@ -1,18 +1,19 @@
 import { ethers } from 'hardhat'
 import { formatEther, formatUnits, parseEther } from 'ethers/lib/utils'
 import mockHousecatAndPool, { IMockHousecatAndPool } from '../../test/mock/mock-housecat-and-pool'
-import { DepositAdapter, HousecatPool, IUniswapV2Router02, ManageAssetsAdapter, WithdrawAdapter } from '../../typechain-types'
+import {
+  DepositAdapter,
+  HousecatPool,
+  IUniswapV2Router02,
+  ManageAssetsAdapter,
+  WithdrawAdapter,
+} from '../../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber } from 'ethers'
 import { ITokenWithPriceFeed } from '../../utils/mock-defi'
 import { expect } from 'chai'
 
-
-const initialDeposit = async (
-  pool: HousecatPool,
-  manager: SignerWithAddress,
-  amount: BigNumber,
-): Promise<void> => {
+const initialDeposit = async (pool: HousecatPool, manager: SignerWithAddress, amount: BigNumber): Promise<void> => {
   await pool.connect(manager).deposit([], { value: amount })
   expect(await pool.balanceOf(manager.address)).equal(amount)
 }
@@ -26,12 +27,14 @@ const swapWethToTokens = async (
   tokens: ITokenWithPriceFeed[],
   amountsWeth: BigNumber[]
 ) => {
-  const buyTokenTxs = tokens.map((token, idx) => manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
-    amm.address,
-    [weth.token.address, token.token.address],
-    amountsWeth[idx],
-    1
-  ]))
+  const buyTokenTxs = tokens.map((token, idx) =>
+    manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
+      amm.address,
+      [weth.token.address, token.token.address],
+      amountsWeth[idx],
+      1,
+    ])
+  )
   await pool.connect(manager).manageAssets(buyTokenTxs)
 }
 
@@ -42,17 +45,19 @@ const deposit = async (
   amm: IUniswapV2Router02,
   weth: ITokenWithPriceFeed,
   tokens: ITokenWithPriceFeed[],
-  amountDeposit: BigNumber,
+  amountDeposit: BigNumber
 ) => {
   const [weights] = await pool.getWeights()
   const [, ...tokenWeights] = weights
   const percent100 = await pool.getPercent100()
-  const buyTokenTxs = tokens.map((token, idx) => depositAdapter.interface.encodeFunctionData('uniswapV2__swapWETHToToken', [
-    amm.address,
-    [weth.token.address, token.token.address],
-    amountDeposit.mul(tokenWeights[idx]).div(percent100),
-    1
-  ]))
+  const buyTokenTxs = tokens.map((token, idx) =>
+    depositAdapter.interface.encodeFunctionData('uniswapV2__swapWETHToToken', [
+      amm.address,
+      [weth.token.address, token.token.address],
+      amountDeposit.mul(tokenWeights[idx]).div(percent100),
+      1,
+    ])
+  )
   await pool.connect(mirrorer).deposit(buyTokenTxs, { value: amountDeposit })
 }
 
@@ -63,18 +68,20 @@ const withdraw = async (
   amm: IUniswapV2Router02,
   weth: ITokenWithPriceFeed,
   tokens: ITokenWithPriceFeed[],
-  amountWithdraw: BigNumber,
+  amountWithdraw: BigNumber
 ) => {
   const poolValue = await pool.getValue()
   const percent100 = await pool.getPercent100()
   const withdrawPercentage = amountWithdraw.mul(percent100).div(poolValue)
   const balances = await pool.getBalances()
-  const sellTokenTxs = [weth, ...tokens].map((token, idx) => withdrawAdapter.interface.encodeFunctionData('uniswapV2__swapTokenToETH', [
-    amm.address,
-    [token.token.address, weth.token.address],
-    balances[idx].mul(withdrawPercentage).div(percent100),
-    1
-  ]))
+  const sellTokenTxs = [weth, ...tokens].map((token, idx) =>
+    withdrawAdapter.interface.encodeFunctionData('uniswapV2__swapTokenToETH', [
+      amm.address,
+      [token.token.address, weth.token.address],
+      balances[idx].mul(withdrawPercentage).div(percent100),
+      1,
+    ])
+  )
   await pool.connect(withdrawer).withdraw(sellTokenTxs)
 }
 
@@ -86,18 +93,12 @@ describe('integration: deposit-manage-withdraw', () => {
   let mock: IMockHousecatAndPool
 
   before(async () => {
-    [owner, treasury, manager, mirrorer] = await ethers.getSigners()
-    mock = await mockHousecatAndPool(
-      owner,
-      treasury,
-      manager,
-      { price: '1' },
-      [
-        { price: '1', reserveToken: '10000', reserveWeth: '10000' },
-        { price: '2', reserveToken: '5000', reserveWeth: '10000' },
-        { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
-      ]
-    )
+    ;[owner, treasury, manager, mirrorer] = await ethers.getSigners()
+    mock = await mockHousecatAndPool(owner, treasury, manager, { price: '1' }, [
+      { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+      { price: '2', reserveToken: '5000', reserveWeth: '10000' },
+      { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
+    ])
   })
 
   describe('initial deposit of 10 ETH by pool manager', () => {
@@ -146,7 +147,7 @@ describe('integration: deposit-manage-withdraw', () => {
 
     it('pool should hold 25% of each four token', async () => {
       const [weights] = await mock.pool.getWeights()
-      weights.forEach(weight => {
+      weights.forEach((weight) => {
         const percent = parseFloat(formatUnits(weight, 8))
         expect(percent).approximately(0.25, 0.01)
       })
@@ -170,7 +171,7 @@ describe('integration: deposit-manage-withdraw', () => {
 
     it('pool weights should not change (should still hold 25% of each token)', async () => {
       const [weights] = await mock.pool.getWeights()
-      weights.forEach(weight => {
+      weights.forEach((weight) => {
         const percent = parseFloat(formatUnits(weight, 8))
         expect(percent).approximately(0.25, 0.01)
       })
@@ -180,7 +181,7 @@ describe('integration: deposit-manage-withdraw', () => {
       const totalSupply = parseFloat(formatEther(await mock.pool.totalSupply()))
       const mirrorerBalance = parseFloat(formatEther(await mock.pool.balanceOf(mirrorer.address)))
       const share = mirrorerBalance / totalSupply
-      expect(share).approximately(0.50, 0.01)
+      expect(share).approximately(0.5, 0.01)
     })
   })
 
@@ -209,7 +210,7 @@ describe('integration: deposit-manage-withdraw', () => {
 
     it('pool weights should not change (should still hold 25% of each token)', async () => {
       const [weights] = await mock.pool.getWeights()
-      weights.forEach(weight => {
+      weights.forEach((weight) => {
         const percent = parseFloat(formatUnits(weight, 8))
         expect(percent).approximately(0.25, 0.01)
       })
@@ -223,4 +224,3 @@ describe('integration: deposit-manage-withdraw', () => {
     })
   })
 })
-

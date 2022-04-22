@@ -6,7 +6,12 @@ import {
   ManageAssetsAdapter,
   WithdrawAdapter,
 } from '../typechain-types'
-import { deployDepositAdapter, deployHousecat, deployManageAssetsAdapter, deployWithdrawAdapter } from './deploy-contracts'
+import {
+  deployDepositAdapter,
+  deployHousecat,
+  deployManageAssetsAdapter,
+  deployWithdrawAdapter,
+} from './deploy-contracts'
 import { IAmmWithMockTokens, ITokenWithPriceFeed, mockAssets } from './mock-defi'
 
 interface IMockHousecatProps extends IAmmWithMockTokens {
@@ -54,5 +59,14 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
     withdrawAdapter: withdrawAdapter.address,
     integrations: [amm.address],
   })
-  return { management, factory, amm, weth: _weth, tokens: _tokens, manageAssetsAdapter, depositAdapter, withdrawAdapter }
+  return {
+    management,
+    factory,
+    amm,
+    weth: _weth,
+    tokens: _tokens,
+    manageAssetsAdapter,
+    depositAdapter,
+    withdrawAdapter,
+  }
 }

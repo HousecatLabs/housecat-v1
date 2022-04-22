@@ -59,7 +59,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     depositAdapter = _adapter;
     emit UpdateDepositAdapter(_adapter);
   }
-  
+
   function updateWithdrawAdapter(address _adapter) external onlyOwner {
     withdrawAdapter = _adapter;
     emit UpdateWithdrawAdapter(_adapter);
