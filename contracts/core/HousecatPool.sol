@@ -97,7 +97,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   function withdraw(bytes[] calldata _data) external whenNotPaused {
     // keep track of balances before withdrawal
     uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
-    uint poolValueBefore = _getValue();
+    (uint[] memory weightsBefore, uint valueBefore) = _getWeights();
     uint ethBalanceBefore = address(this).balance;
 
     // execute withdrawal transactions
@@ -107,19 +107,19 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
       require(success, string(result));
     }
 
-    // TODO: validate that token weights haven't changed too much
-
     // validate balances after withdrawal
-    uint poolValueAfter = _getValue();
-    uint withdrawValue = poolValueBefore.sub(poolValueAfter);
+    (uint[] memory weightsAfter, uint valueAfter) = _getWeights();
+    uint withdrawValue = valueBefore.sub(valueAfter);
+    bool weightsChanged = _haveWeightsChanged(weightsBefore, weightsAfter);
     uint ethBalanceAfter = address(this).balance;
 
-    uint maxWithdrawValue = poolValueBefore.mul(shareInPool).div(PERCENT_100);
+    uint maxWithdrawValue = valueBefore.mul(shareInPool).div(PERCENT_100);
     require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
+    require(!weightsChanged, 'HousecatPool: weights changed');
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced on withdraw');
 
     // burn pool tokens corresponding the withdrawn value
-    uint amountBurn = totalSupply().mul(withdrawValue).div(poolValueBefore);
+    uint amountBurn = totalSupply().mul(withdrawValue).div(valueBefore);
     _burn(msg.sender, amountBurn);
 
     // send the received ETH to the withdrawer
@@ -136,6 +136,19 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
     // TODO: require pool value doesn't drop more than a specified % slippage limit
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
+  }
+
+  function _haveWeightsChanged(uint[] memory _weightsBefore, uint[] memory _weightsAfter) internal pure returns (bool) {
+    for (uint i; i < _weightsBefore.length; i++) {
+      uint diff = _weightsBefore[i] > _weightsAfter[i]
+        ? _weightsBefore[i].sub(_weightsAfter[i])
+        : _weightsAfter[i].sub(_weightsBefore[i]);
+      if (diff > PERCENT_100.div(100)) {
+        // TODO: define max diff in mgmt settings
+        return true;
+      }
+    }
+    return false;
   }
 
   function _buyWETH(address _weth, uint _amount) internal returns (uint) {

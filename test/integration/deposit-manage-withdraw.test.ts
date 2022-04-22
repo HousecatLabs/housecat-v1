@@ -1,89 +1,10 @@
 import { ethers } from 'hardhat'
 import { formatEther, formatUnits, parseEther } from 'ethers/lib/utils'
 import mockHousecatAndPool, { IMockHousecatAndPool } from '../../test/mock/mock-housecat-and-pool'
-import {
-  DepositAdapter,
-  HousecatPool,
-  IUniswapV2Router02,
-  ManageAssetsAdapter,
-  WithdrawAdapter,
-} from '../../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber } from 'ethers'
-import { ITokenWithPriceFeed } from '../../utils/mock-defi'
 import { expect } from 'chai'
-
-const initialDeposit = async (pool: HousecatPool, manager: SignerWithAddress, amount: BigNumber): Promise<void> => {
-  await pool.connect(manager).deposit([], { value: amount })
-  expect(await pool.balanceOf(manager.address)).equal(amount)
-}
-
-const swapWethToTokens = async (
-  pool: HousecatPool,
-  manager: SignerWithAddress,
-  manageAssetsAdapter: ManageAssetsAdapter,
-  amm: IUniswapV2Router02,
-  weth: ITokenWithPriceFeed,
-  tokens: ITokenWithPriceFeed[],
-  amountsWeth: BigNumber[]
-) => {
-  const buyTokenTxs = tokens.map((token, idx) =>
-    manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
-      amm.address,
-      [weth.token.address, token.token.address],
-      amountsWeth[idx],
-      1,
-    ])
-  )
-  await pool.connect(manager).manageAssets(buyTokenTxs)
-}
-
-const deposit = async (
-  pool: HousecatPool,
-  mirrorer: SignerWithAddress,
-  depositAdapter: DepositAdapter,
-  amm: IUniswapV2Router02,
-  weth: ITokenWithPriceFeed,
-  tokens: ITokenWithPriceFeed[],
-  amountDeposit: BigNumber
-) => {
-  const [weights] = await pool.getWeights()
-  const [, ...tokenWeights] = weights
-  const percent100 = await pool.getPercent100()
-  const buyTokenTxs = tokens.map((token, idx) =>
-    depositAdapter.interface.encodeFunctionData('uniswapV2__swapWETHToToken', [
-      amm.address,
-      [weth.token.address, token.token.address],
-      amountDeposit.mul(tokenWeights[idx]).div(percent100),
-      1,
-    ])
-  )
-  await pool.connect(mirrorer).deposit(buyTokenTxs, { value: amountDeposit })
-}
-
-const withdraw = async (
-  pool: HousecatPool,
-  withdrawer: SignerWithAddress,
-  withdrawAdapter: WithdrawAdapter,
-  amm: IUniswapV2Router02,
-  weth: ITokenWithPriceFeed,
-  tokens: ITokenWithPriceFeed[],
-  amountWithdraw: BigNumber
-) => {
-  const poolValue = await pool.getValue()
-  const percent100 = await pool.getPercent100()
-  const withdrawPercentage = amountWithdraw.mul(percent100).div(poolValue)
-  const balances = await pool.getBalances()
-  const sellTokenTxs = [weth, ...tokens].map((token, idx) =>
-    withdrawAdapter.interface.encodeFunctionData('uniswapV2__swapTokenToETH', [
-      amm.address,
-      [token.token.address, weth.token.address],
-      balances[idx].mul(withdrawPercentage).div(percent100),
-      1,
-    ])
-  )
-  await pool.connect(withdrawer).withdraw(sellTokenTxs)
-}
+import { deposit, withdraw, swapWethToTokens } from '../utils/pool-actions'
 
 describe('integration: deposit-manage-withdraw', () => {
   let owner: SignerWithAddress
@@ -104,7 +25,7 @@ describe('integration: deposit-manage-withdraw', () => {
   describe('initial deposit of 10 ETH by pool manager', () => {
     before(async () => {
       const { pool } = mock
-      await initialDeposit(pool, manager, parseEther('10'))
+      await pool.connect(manager).deposit([], { value: parseEther('10') })
     })
 
     it('managers pool token balance should equal the deposit value', async () => {
