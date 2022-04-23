@@ -1,7 +1,9 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
-import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
+import mockHousecatAndPool, { IMockHousecatAndPool } from '../mock/mock-housecat-and-pool'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { swapWethToTokens } from '../utils/pool-actions'
 
 describe('HousecatPool: deposit', () => {
   describe('simple pool not holding other tokens than WETH', () => {
@@ -72,6 +74,41 @@ describe('HousecatPool: deposit', () => {
         // check the other users holds 1/3 of the total supply
         expect((await pool.totalSupply()).mul(1)).equal((await pool.balanceOf(otherUser.address)).mul(3))
       })
+    })
+  })
+
+  describe('pool holding other tokens in addition to WETH', () => {
+    let owner: SignerWithAddress
+    let treasury: SignerWithAddress
+    let manager: SignerWithAddress
+    let mirrorer: SignerWithAddress
+    let mock: IMockHousecatAndPool
+
+    before(async () => {
+      ;[owner, treasury, manager, mirrorer] = await ethers.getSigners()
+      mock = await mockHousecatAndPool(owner, treasury, manager, { price: '1' }, [
+        { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+        { price: '2', reserveToken: '5000', reserveWeth: '10000' },
+        { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
+      ])
+
+      const { pool, amm, weth, manageAssetsAdapter, tokens } = mock
+
+      // add 10 ETH initial deposit
+      await pool.connect(manager).deposit([], { value: parseEther('10') })
+
+      // allocate the funds to four tokens 2.5 ETH each
+      await swapWethToTokens(pool, manager, manageAssetsAdapter, amm, weth, tokens, [
+        parseEther('2.5'),
+        parseEther('2.5'),
+        parseEther('2.5'),
+      ])
+    })
+
+    it('should refuse to change the weights of the pool', async () => {
+      const { pool } = mock
+      const tx = pool.connect(mirrorer).deposit([], { value: parseEther('10') })
+      await expect(tx).revertedWith('HousecatPool: weights changed')
     })
   })
 })

@@ -65,7 +65,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   function deposit(bytes[] calldata _data) external payable whenNotPaused {
     // keep track of balances before deposit
-    uint poolValueBefore = _getValue();
+    (uint[] memory weightsBefore, uint valueBefore) = _getWeights();
     uint ethBalanceBefore = address(this).balance.sub(msg.value);
 
     // swap the sent eth to weth
@@ -78,18 +78,20 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
       require(success, string(result));
     }
 
-    // TODO: validate that token weights haven't changed too much
-    uint poolValueAfter = _getValue();
-    uint depositValue = poolValueAfter.sub(poolValueBefore);
+    (uint[] memory weightsAfter, uint valueAfter) = _getWeights();
+    uint depositValue = valueAfter.sub(valueBefore);
+    bool weightsChanged = _haveWeightsChanged(weightsBefore, weightsAfter);
     uint ethBalanceAfter = address(this).balance;
 
     // validate balances after deposit
+    uint minValue = ONE_USD; // TODO: define minValue in mgmt contract
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced on deposit');
+    require(!weightsChanged || valueBefore < minValue, 'HousecatPool: weights changed');
 
     // mint pool tokens corresponding the deposit value
     uint amountMint = depositValue;
     if (totalSupply() > 0) {
-      amountMint = totalSupply().mul(depositValue).div(poolValueBefore);
+      amountMint = totalSupply().mul(depositValue).div(valueBefore);
     }
     _mint(msg.sender, amountMint);
   }
