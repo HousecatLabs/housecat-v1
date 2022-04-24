@@ -80,7 +80,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     (uint[] memory weightsAfter, uint valueAfter) = _getWeights();
     uint depositValue = valueAfter.sub(valueBefore);
-    bool weightsChanged = _haveWeightsChanged(weightsBefore, weightsAfter);
+    bool weightsChanged = _didWeightsChange(weightsBefore, weightsAfter);
     uint ethBalanceAfter = address(this).balance;
 
     // validate balances after deposit
@@ -112,7 +112,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // validate balances after withdrawal
     (uint[] memory weightsAfter, uint valueAfter) = _getWeights();
     uint withdrawValue = valueBefore.sub(valueAfter);
-    bool weightsChanged = _haveWeightsChanged(weightsBefore, weightsAfter);
+    bool weightsChanged = _didWeightsChange(weightsBefore, weightsAfter);
     uint ethBalanceAfter = address(this).balance;
 
     uint maxWithdrawValue = valueBefore.mul(shareInPool).div(PERCENT_100);
@@ -140,7 +140,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
   }
 
-  function _haveWeightsChanged(uint[] memory _weightsBefore, uint[] memory _weightsAfter) internal pure returns (bool) {
+  function _didWeightsChange(uint[] memory _weightsBefore, uint[] memory _weightsAfter) internal pure returns (bool) {
     for (uint i; i < _weightsBefore.length; i++) {
       uint diff = _weightsBefore[i] > _weightsAfter[i]
         ? _weightsBefore[i].sub(_weightsAfter[i])
