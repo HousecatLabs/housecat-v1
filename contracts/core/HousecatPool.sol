@@ -178,12 +178,24 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function managePositions(bytes[] calldata _data) external onlyOwner whenNotPaused {
+    uint ethBalanceBefore = address(this).balance;
+    uint netValueBefore = getNetValue(); 
+    
     address adapter = management.managePositionsAdapter();
     for (uint i = 0; i < _data.length; i++) {
       (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
       require(success, string(result));
     }
-    // TODO: require pool value doesn't drop more than a specified % slippage limit
+
+    uint ethBalanceAfter = address(this).balance;
+    require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
+
+    uint netValueAfter = getNetValue();
+    if (netValueAfter < netValueBefore) {
+      uint valueReduced = netValueBefore.sub(netValueAfter);
+      uint percentsValueReduced = valueReduced.mul(PERCENT_100).div(netValueBefore);
+      require(percentsValueReduced < PERCENT_100.div(100)); // TODO: define slippage limit in mgmt settings
+    }
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
   }
 
