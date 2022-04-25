@@ -105,13 +105,15 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     (uint[] memory assetWeightsAfter, uint assetValueAfter) = getAssetWeights();
     (uint[] memory loanWeightsAfter, uint loanValueAfter) = getLoanWeights();
     uint netValueAfter = assetValueAfter.sub(loanValueAfter);
-    
-    if (assetValueBefore > ONE_USD) { // TODO: define threshold value in mgmt settings
+
+    if (assetValueBefore > ONE_USD) {
+      // TODO: define threshold value in mgmt settings
       bool assetWeightsChanged = _didWeightsChange(assetWeightsBefore, assetWeightsAfter);
       require(!assetWeightsChanged, 'HousecatPool: asset weights changed');
     }
 
-    if (loanValueBefore > ONE_USD) { // TODO: define threshold value in mgmt settings
+    if (loanValueBefore > ONE_USD) {
+      // TODO: define threshold value in mgmt settings
       bool loanWeightsChanged = _didWeightsChange(loanWeightsBefore, loanWeightsAfter);
       require(!loanWeightsChanged, 'HousecatPool: loan weights changed');
     }
@@ -147,24 +149,26 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     (uint[] memory assetWeightsAfter, uint assetValueAfter) = getAssetWeights();
     (uint[] memory loanWeightsAfter, uint loanValueAfter) = getLoanWeights();
     uint netValueAfter = assetValueAfter.sub(loanValueAfter);
-    
-    if (assetValueAfter > ONE_USD) { // TODO: define threshold value in mgmt settings
+
+    if (assetValueAfter > ONE_USD) {
+      // TODO: define threshold value in mgmt settings
       bool assetWeightsChanged = _didWeightsChange(assetWeightsBefore, assetWeightsAfter);
       require(!assetWeightsChanged, 'HousecatPool: asset weights changed');
     }
 
-    if (loanValueAfter > ONE_USD) { // TODO: define threshold value in mgmt settings
+    if (loanValueAfter > ONE_USD) {
+      // TODO: define threshold value in mgmt settings
       bool loanWeightsChanged = _didWeightsChange(loanWeightsBefore, loanWeightsAfter);
       require(!loanWeightsChanged, 'HousecatPool: loan weights changed');
     }
 
     // burn pool tokens in accordance with the withdrawn value
     {
-    uint withdrawValue = netValueBefore.sub(netValueAfter);
-    uint maxWithdrawValue = netValueBefore.mul(shareInPool).div(PERCENT_100);
-    require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
-    uint amountBurn = totalSupply().mul(withdrawValue).div(netValueBefore);
-    _burn(msg.sender, amountBurn);
+      uint withdrawValue = netValueBefore.sub(netValueAfter);
+      uint maxWithdrawValue = netValueBefore.mul(shareInPool).div(PERCENT_100);
+      require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw value too high');
+      uint amountBurn = totalSupply().mul(withdrawValue).div(netValueBefore);
+      _burn(msg.sender, amountBurn);
     }
 
     // send the received ETH to the withdrawer
@@ -225,7 +229,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getTotalValue(tokenBalances, tokenPrices, decimals);
   }
 
-  function _getWeights(address[] memory _tokens, TokenMeta[] memory _tokensMeta) internal view returns (uint[] memory, uint) {
+  function _getWeights(address[] memory _tokens, TokenMeta[] memory _tokensMeta)
+    internal
+    view
+    returns (uint[] memory, uint)
+  {
     uint[] memory tokenBalances = _getTokenBalances(address(this), _tokens);
     (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
     uint[] memory tokenPrices = _getTokenPrices(priceFeeds);
