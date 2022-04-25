@@ -58,8 +58,8 @@ export interface IDeployHousecat {
   signer: SignerWithAddress
   treasury?: string
   weth: string
-  tokens?: string[]
-  tokensMeta?: TokenMetaStruct[]
+  assets?: string[]
+  assetsMeta?: TokenMetaStruct[]
   manageAssetsAdapter?: string
   depositAdapter?: string
   withdrawAdapter?: string
@@ -70,8 +70,8 @@ export const deployHousecat = async ({
   signer,
   treasury,
   weth,
-  tokens,
-  tokensMeta,
+  assets,
+  assetsMeta,
   manageAssetsAdapter,
   depositAdapter,
   withdrawAdapter,
@@ -80,10 +80,10 @@ export const deployHousecat = async ({
   const poolTemplate = await deployPool(signer)
   const mgmt = await deployManagement(signer, treasury || signer.address, weth)
   const factory = await deployFactory(signer, mgmt.address, poolTemplate.address)
-  if (tokens) {
-    await mgmt.connect(signer).setSupportedTokens(tokens)
-    if (tokensMeta) {
-      await mgmt.connect(signer).setTokenMetaMany(tokens, tokensMeta)
+  if (assets) {
+    await mgmt.connect(signer).setSupportedAssets(assets)
+    if (assetsMeta) {
+      await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta)
     }
   }
   if (manageAssetsAdapter) {

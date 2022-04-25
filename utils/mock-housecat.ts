@@ -1,3 +1,4 @@
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import {
   DepositAdapter,
   HousecatFactory,
@@ -12,9 +13,12 @@ import {
   deployManageAssetsAdapter,
   deployWithdrawAdapter,
 } from './deploy-contracts'
-import { IAmmWithMockTokens, ITokenWithPriceFeed, mockAssets } from './mock-defi'
+import { IWeth, ITokenWithPriceFeed, mockAssets, IToken } from './mock-defi'
 
-interface IMockHousecatProps extends IAmmWithMockTokens {
+interface IMockHousecatProps {
+  signer: SignerWithAddress
+  weth: IWeth
+  assets: IToken[]
   treasury?: string
 }
 
@@ -23,25 +27,25 @@ export interface IMockHousecat {
   factory: HousecatFactory
   amm: IUniswapV2Router02
   weth: ITokenWithPriceFeed
-  tokens: ITokenWithPriceFeed[]
+  assets: ITokenWithPriceFeed[]
   manageAssetsAdapter: ManageAssetsAdapter
   depositAdapter: DepositAdapter
   withdrawAdapter: WithdrawAdapter
 }
 
-export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHousecatProps): Promise<IMockHousecat> => {
-  const [amm, _weth, _tokens] = await mockAssets({
+export const mockHousecat = async ({ signer, treasury, weth, assets }: IMockHousecatProps): Promise<IMockHousecat> => {
+  const [amm, _weth, _assets] = await mockAssets({
     signer,
     weth,
-    tokens,
+    tokens: assets,
   })
-  const tokenAddresses = [_weth.token.address, ..._tokens.map((x) => x.token.address)]
-  const tokensMeta = [
+  const assetAddresses = [_weth.token.address, ..._assets.map((x) => x.token.address)]
+  const assetsMeta = [
     { priceFeed: _weth.priceFeed.address, decimals: await _weth.token.decimals() },
     ...(await Promise.all(
-      _tokens.map(async (t) => ({
-        priceFeed: t.priceFeed.address,
-        decimals: await t.token.decimals(),
+      _assets.map(async (a) => ({
+        priceFeed: a.priceFeed.address,
+        decimals: await a.token.decimals(),
       }))
     )),
   ]
@@ -52,8 +56,8 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
     signer,
     treasury: treasury || signer.address,
     weth: _weth.token.address,
-    tokens: tokenAddresses,
-    tokensMeta,
+    assets: assetAddresses,
+    assetsMeta,
     manageAssetsAdapter: manageAssetsAdapter.address,
     depositAdapter: depositAdapter.address,
     withdrawAdapter: withdrawAdapter.address,
@@ -64,7 +68,7 @@ export const mockHousecat = async ({ signer, treasury, weth, tokens }: IMockHous
     factory,
     amm,
     weth: _weth,
-    tokens: _tokens,
+    assets: _assets,
     manageAssetsAdapter,
     depositAdapter,
     withdrawAdapter,

@@ -46,10 +46,10 @@ describe('integration: deposit-manage-withdraw', () => {
     })
   })
 
-  describe('pool manager trades from 100% weth to 25% of each four token', () => {
+  describe('pool manager trades from 100% weth to 25% of each four asset', () => {
     before(async () => {
-      const { pool, manageAssetsAdapter, amm, weth, tokens } = mock
-      await swapWethToTokens(pool, manager, manageAssetsAdapter, amm, weth, tokens, [
+      const { pool, manageAssetsAdapter, amm, weth, assets } = mock
+      await swapWethToTokens(pool, manager, manageAssetsAdapter, amm, weth, assets, [
         parseEther('2.5'),
         parseEther('2.5'),
         parseEther('2.5'),
@@ -66,7 +66,7 @@ describe('integration: deposit-manage-withdraw', () => {
       expect(totalSupply).equal(parseEther('10'))
     })
 
-    it('pool should hold 25% of each four token', async () => {
+    it('pool should hold 25% of each four asset', async () => {
       const [weights] = await mock.pool.getWeights()
       weights.forEach((weight) => {
         const percent = parseFloat(formatUnits(weight, 8))
@@ -79,9 +79,9 @@ describe('integration: deposit-manage-withdraw', () => {
     let poolValueBefore: BigNumber
 
     before(async () => {
-      const { pool, depositAdapter, amm, weth, tokens } = mock
+      const { pool, depositAdapter, amm, weth, assets } = mock
       poolValueBefore = await pool.getValue()
-      await deposit(pool, mirrorer, depositAdapter, amm, weth, tokens, parseEther('10'))
+      await deposit(pool, mirrorer, depositAdapter, amm, weth, assets, parseEther('10'))
     })
 
     it('pool value should increase by the deposit value minus trade fees', async () => {
@@ -90,7 +90,7 @@ describe('integration: deposit-manage-withdraw', () => {
       expect(change).approximately(10, 0.03)
     })
 
-    it('pool weights should not change (should still hold 25% of each token)', async () => {
+    it('pool weights should not change (should still hold 25% of each asset)', async () => {
       const [weights] = await mock.pool.getWeights()
       weights.forEach((weight) => {
         const percent = parseFloat(formatUnits(weight, 8))
@@ -111,10 +111,10 @@ describe('integration: deposit-manage-withdraw', () => {
     let poolValueBefore: BigNumber
 
     before(async () => {
-      const { pool, withdrawAdapter, amm, weth, tokens } = mock
+      const { pool, withdrawAdapter, amm, weth, assets } = mock
       mirrorerBalanceBefore = await mirrorer.getBalance()
       poolValueBefore = await pool.getValue()
-      await withdraw(pool, mirrorer, withdrawAdapter, amm, weth, tokens, parseEther('5'))
+      await withdraw(pool, mirrorer, withdrawAdapter, amm, weth, assets, parseEther('5'))
     })
 
     it('withdrawer should receive ~5 ETH', async () => {
@@ -129,7 +129,7 @@ describe('integration: deposit-manage-withdraw', () => {
       expect(change).approximately(5, 0.01)
     })
 
-    it('pool weights should not change (should still hold 25% of each token)', async () => {
+    it('pool weights should not change (should still hold 25% of each asset)', async () => {
       const [weights] = await mock.pool.getWeights()
       weights.forEach((weight) => {
         const percent = parseFloat(formatUnits(weight, 8))
@@ -137,7 +137,7 @@ describe('integration: deposit-manage-withdraw', () => {
       })
     })
 
-    it('mirrorer should hold 1/3 of the pool token supply after the withdrawal', async () => {
+    it('mirrorer should hold 1/3 of the pool asset supply after the withdrawal', async () => {
       const totalSupply = parseFloat(formatEther(await mock.pool.totalSupply()))
       const mirrorerBalance = parseFloat(formatEther(await mock.pool.balanceOf(mirrorer.address)))
       const share = mirrorerBalance / totalSupply

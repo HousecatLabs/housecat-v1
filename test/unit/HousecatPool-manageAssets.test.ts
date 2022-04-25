@@ -18,7 +18,7 @@ describe('HousecatPool: manageAssets', () => {
   describe('uniswapV2__swapTokens', () => {
     it('manager should be able to trade tokens on behalf of the pool', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
-      const { pool, manageAssetsAdapter, amm, weth, tokens } = await mockHousecatAndPool(signer, treasury, manager)
+      const { pool, manageAssetsAdapter, amm, weth, assets } = await mockHousecatAndPool(signer, treasury, manager)
 
       // deposit ETH so that the pool has WETH
       await pool.connect(manager).deposit([], { value: parseEther('1') })
@@ -26,22 +26,22 @@ describe('HousecatPool: manageAssets', () => {
       // trade all weth to token0
       const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
         amm.address,
-        [weth.token.address, tokens[0].token.address],
+        [weth.token.address, assets[0].token.address],
         await weth.token.balanceOf(pool.address),
         1,
       ])
       await pool.connect(manager).manageAssets([data])
 
       // check the pool holds token0 but not weth
-      expect(await tokens[0].token.balanceOf(pool.address)).gt(0)
+      expect(await assets[0].token.balanceOf(pool.address)).gt(0)
       expect(await weth.token.balanceOf(pool.address)).equal(0)
     })
     it('should fail to trade on a router which is not whitelisted', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
-      const { pool, manageAssetsAdapter, weth, tokens } = await mockHousecatAndPool(signer, treasury, manager)
+      const { pool, manageAssetsAdapter, weth, assets } = await mockHousecatAndPool(signer, treasury, manager)
       const data = manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
         routers.sushiswap,
-        [weth.token.address, tokens[0].token.address],
+        [weth.token.address, assets[0].token.address],
         await weth.token.balanceOf(pool.address),
         1,
       ])
@@ -63,15 +63,15 @@ describe('HousecatPool: manageAssets', () => {
     })
     it('should succeed to sell tokens that are not whitelisted', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
-      const { management, pool, manageAssetsAdapter, weth, tokens, amm } = await mockHousecatAndPool(
+      const { management, pool, manageAssetsAdapter, weth, assets, amm } = await mockHousecatAndPool(
         signer,
         treasury,
         manager
       )
 
       // remove a token from the whitelist and send that token to the pool
-      await management.connect(signer).setSupportedTokens([weth.token.address])
-      const token = tokens[0].token
+      await management.connect(signer).setSupportedAssets([weth.token.address])
+      const token = assets[0].token
       await token.mint(pool.address, parseEther('1'))
 
       // ensure the pool holds the token

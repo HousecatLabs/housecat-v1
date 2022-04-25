@@ -20,20 +20,20 @@ describe('HousecatPool: withdraw', () => {
       { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
     ])
 
-    const { pool, amm, weth, manageAssetsAdapter, depositAdapter, tokens } = mock
+    const { pool, amm, weth, manageAssetsAdapter, depositAdapter, assets } = mock
 
     // add 10 ETH initial deposit
     await pool.connect(manager).deposit([], { value: parseEther('10') })
 
     // allocate the funds to four tokens 2.5 ETH each
-    await swapWethToTokens(pool, manager, manageAssetsAdapter, amm, weth, tokens, [
+    await swapWethToTokens(pool, manager, manageAssetsAdapter, amm, weth, assets, [
       parseEther('2.5'),
       parseEther('2.5'),
       parseEther('2.5'),
     ])
 
     // mirrorer deposits 10 ETH
-    await deposit(pool, mirrorer, depositAdapter, amm, weth, tokens, parseEther('10'))
+    await deposit(pool, mirrorer, depositAdapter, amm, weth, assets, parseEther('10'))
   })
 
   it('should refuse to change the weights of the pool', async () => {
@@ -49,8 +49,8 @@ describe('HousecatPool: withdraw', () => {
   })
 
   it('should refuse to withdraw more than the withrawer owns in the form of pool tokens', async () => {
-    const { pool, amm, weth, withdrawAdapter, tokens } = mock
-    const tx = withdraw(pool, mirrorer, withdrawAdapter, amm, weth, tokens, parseEther('11'))
+    const { pool, amm, weth, withdrawAdapter, assets } = mock
+    const tx = withdraw(pool, mirrorer, withdrawAdapter, amm, weth, assets, parseEther('11'))
     await expect(tx).revertedWith('HousecatPool: withdraw value too high')
   })
 })

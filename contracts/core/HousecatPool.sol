@@ -51,7 +51,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function getBalances() external view returns (uint[] memory) {
-    address[] memory tokens = management.getSupportedTokens();
+    address[] memory tokens = management.getSupportedAssets();
     return _getTokenBalances(address(this), tokens);
   }
 
@@ -176,7 +176,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function _getValue() internal view returns (uint) {
-    (address[] memory tokens, TokenMeta[] memory tokensMeta) = management.getTokensWithMeta();
+    (address[] memory tokens, TokenMeta[] memory tokensMeta) = management.getAssetsWithMeta();
     uint[] memory tokenBalances = _getTokenBalances(address(this), tokens);
     (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(tokensMeta);
     uint[] memory tokenPrices = _getTokenPrices(priceFeeds);
@@ -184,7 +184,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function _getWeights() internal view returns (uint[] memory, uint) {
-    (address[] memory tokens, TokenMeta[] memory tokensMeta) = management.getTokensWithMeta();
+    (address[] memory tokens, TokenMeta[] memory tokensMeta) = management.getAssetsWithMeta();
     uint[] memory tokenBalances = _getTokenBalances(address(this), tokens);
     (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(tokensMeta);
     uint[] memory tokenPrices = _getTokenPrices(priceFeeds);

@@ -49,7 +49,7 @@ export interface IToken extends IWeth {
   reserveToken: string
 }
 
-export interface IAmmWithMockTokens {
+export interface IMockAssetsProps {
   signer: SignerWithAddress
   weth: IWeth
   tokens: IToken[]
@@ -64,7 +64,7 @@ export const mockAssets = async ({
   signer,
   weth,
   tokens,
-}: IAmmWithMockTokens): Promise<[IUniswapV2Router02, ITokenWithPriceFeed, ITokenWithPriceFeed[]]> => {
+}: IMockAssetsProps): Promise<[IUniswapV2Router02, ITokenWithPriceFeed, ITokenWithPriceFeed[]]> => {
   const amm = await ethers.getContractAt('IUniswapV2Router02', QUICKSWAP_ROUTER)
   const _weth = await mockWETH(signer, 'Wrapped ETH', 'WETH', weth.decimals || 18, 0)
   const wethPriceFeed = await mockPriceFeed(signer, parseUnits(weth.price, 8), 8)

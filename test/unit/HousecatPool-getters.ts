@@ -14,7 +14,7 @@ describe('HousecatPool: getters', () => {
 
     it('returns balances correctly when the pool is not empty', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
-      const { pool, weth, tokens } = await mockHousecatAndPool(signer, treasury, manager)
+      const { pool, weth, assets } = await mockHousecatAndPool(signer, treasury, manager)
 
       // send weth to the pool
       await weth.token.connect(signer).mint(pool.address, parseEther('1'))
@@ -27,15 +27,15 @@ describe('HousecatPool: getters', () => {
       // check other balances are 0
       balances1.slice(1).forEach((x) => expect(x).equal(0))
 
-      // send token0 to the pool
-      await tokens[0].token.connect(signer).mint(pool.address, parseEther('0.5'))
+      // send asset0 to the pool
+      await assets[0].token.connect(signer).mint(pool.address, parseEther('0.5'))
 
       const balances2 = await pool.getBalances()
 
       // check weth balance is still 1
       expect(balances2[0]).equal(parseEther('1'))
 
-      // check token0 balance is 0.5
+      // check asset0 balance is 0.5
       expect(balances2[1]).equal(parseEther('0.5'))
 
       // check other balances are 0
