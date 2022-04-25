@@ -19,7 +19,7 @@ contract DepositAdapter {
     HousecatManagement mgmt = HousecatManagement(pool.management());
     require(mgmt.isIntegration(_router), 'DepositAdapter: unsupported router');
     require(_path[0] == mgmt.weth(), 'DepositAdapter: token from must be weth');
-    require(mgmt.isTokenSupported(_path[_path.length - 1]), 'DepositAdapter: unsupported token to');
+    require(mgmt.isAssetSupported(_path[_path.length - 1]), 'DepositAdapter: unsupported token to');
     IERC20(_path[0]).approve(_router, _amountIn);
     IUniswapV2Router02(_router).swapExactTokensForTokens(
       _amountIn,

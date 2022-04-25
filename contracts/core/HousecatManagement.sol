@@ -19,6 +19,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address public withdrawAdapter;
   mapping(address => bool) private integrations;
   address[] private supportedAssets;
+  address[] private supportedLoans;
   mapping(address => TokenMeta) private tokenMeta;
 
   event UpdateTreasury(address treasury);
@@ -69,6 +70,10 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return supportedAssets;
   }
 
+  function getSupportedLoans() external view returns (address[] memory) {
+    return supportedLoans;
+  }
+
   function getTokenMeta(address _token) external view returns (TokenMeta memory) {
     return tokenMeta[_token];
   }
@@ -81,11 +86,19 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return (supportedAssets, meta);
   }
 
+  function getLoansWithMeta() external view returns (address[] memory, TokenMeta[] memory) {
+    TokenMeta[] memory meta = new TokenMeta[](supportedLoans.length);
+    for (uint i = 0; i < supportedLoans.length; i++) {
+      meta[i] = tokenMeta[supportedLoans[i]];
+    }
+    return (supportedLoans, meta);
+  }
+
   function isIntegration(address _integration) external view returns (bool) {
     return integrations[_integration];
   }
 
-  function isTokenSupported(address _token) external view returns (bool) {
+  function isAssetSupported(address _token) external view returns (bool) {
     for (uint i = 0; i < supportedAssets.length; i++) {
       if (supportedAssets[i] == _token) {
         return true;
@@ -94,8 +107,21 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return false;
   }
 
+  function isLoanSupported(address _token) external view returns (bool) {
+    for (uint i = 0; i < supportedLoans.length; i++) {
+      if (supportedLoans[i] == _token) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function setSupportedAssets(address[] memory _tokens) external onlyOwner {
     supportedAssets = _tokens;
+  }
+
+  function setSupportedLoans(address[] memory _tokens) external onlyOwner {
+    supportedLoans = _tokens;
   }
 
   function setTokenMeta(address _token, TokenMeta memory _tokenMeta) external onlyOwner {

@@ -181,15 +181,27 @@ describe('HousecatManagement', () => {
     })
   })
 
-  describe('isTokenSupported', () => {
-    it('should return correctly whether or not token is included in supportedTokens list', async () => {
+  describe('isAssetSupported', () => {
+    it('should return correctly whether or not token is included in supportedAssets list', async () => {
       const [signer, treasury] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
-      expect(await mgmt.isTokenSupported(otherToken.address)).equal(false)
+      const otherToken = await mockToken(signer, 'Asset A', 'ASSET_A', 18, ethers.utils.parseEther('1'))
+      expect(await mgmt.isAssetSupported(otherToken.address)).equal(false)
       await mgmt.connect(signer).setSupportedAssets([weth.address, otherToken.address])
-      expect(await mgmt.isTokenSupported(otherToken.address)).equal(true)
+      expect(await mgmt.isAssetSupported(otherToken.address)).equal(true)
+    })
+  })
+
+  describe('isLoanSupported', () => {
+    it('should return correctly whether or not token is included in supportedLoans list', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const loanToken = await mockToken(signer, 'Loan A', 'LOANA', 18, ethers.utils.parseEther('1'))
+      expect(await mgmt.isLoanSupported(loanToken.address)).equal(false)
+      await mgmt.connect(signer).setSupportedLoans([loanToken.address])
+      expect(await mgmt.isLoanSupported(loanToken.address)).equal(true)
     })
   })
 

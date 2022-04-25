@@ -16,7 +16,7 @@ contract ManageAssetsAdapter {
     HousecatPool pool = HousecatPool(payable(address(this)));
     HousecatManagement mgmt = HousecatManagement(pool.management());
     require(mgmt.isIntegration(_router), 'ManageAssetsAdapter: unsupported router');
-    require(mgmt.isTokenSupported(_path[_path.length - 1]), 'ManageAssetsAdapter: unsupported token to');
+    require(mgmt.isAssetSupported(_path[_path.length - 1]), 'ManageAssetsAdapter: unsupported token to');
     IERC20(_path[0]).approve(_router, _amountIn);
     IUniswapV2Router02(_router).swapExactTokensForTokens(
       _amountIn,
