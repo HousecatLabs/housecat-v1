@@ -60,10 +60,15 @@ export interface IDeployHousecat {
   weth: string
   assets?: string[]
   assetsMeta?: TokenMetaStruct[]
-  managePositionsAdapter?: string
-  depositAdapter?: string
-  withdrawAdapter?: string
   integrations?: string[]
+}
+
+export interface IHousecat {
+  mgmt: HousecatManagement
+  factory: HousecatFactory
+  managePositionsAdapter: ManagePositionsAdapter
+  depositAdapter: DepositAdapter
+  withdrawAdapter: WithdrawAdapter
 }
 
 export const deployHousecat = async ({
@@ -72,11 +77,8 @@ export const deployHousecat = async ({
   weth,
   assets,
   assetsMeta,
-  managePositionsAdapter,
-  depositAdapter,
-  withdrawAdapter,
   integrations,
-}: IDeployHousecat): Promise<[HousecatManagement, HousecatFactory]> => {
+}: IDeployHousecat): Promise<IHousecat> => {
   const poolTemplate = await deployPool(signer)
   const mgmt = await deployManagement(signer, treasury || signer.address, weth)
   const factory = await deployFactory(signer, mgmt.address, poolTemplate.address)
@@ -86,19 +88,19 @@ export const deployHousecat = async ({
       await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta)
     }
   }
-  if (managePositionsAdapter) {
-    await mgmt.updateManagePositionsAdapter(managePositionsAdapter)
-  }
-  if (depositAdapter) {
-    await mgmt.updateDepositAdapter(depositAdapter)
-  }
-  if (withdrawAdapter) {
-    await mgmt.updateWithdrawAdapter(withdrawAdapter)
-  }
+  const managePositionsAdapter = await deployManagePositionsAdapter(signer)
+  await mgmt.updateManagePositionsAdapter(managePositionsAdapter.address)
+
+  const depositAdapter = await deployDepositAdapter(signer)
+  await mgmt.updateDepositAdapter(depositAdapter.address)
+
+  const withdrawAdapter = await deployWithdrawAdapter(signer)
+  await mgmt.updateWithdrawAdapter(withdrawAdapter.address)
+
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {
       await mgmt.setIntegration(integrations[i], true)
     }
   }
-  return [mgmt, factory]
+  return { mgmt, factory, managePositionsAdapter, depositAdapter, withdrawAdapter }
 }

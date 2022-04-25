@@ -57,13 +57,13 @@ describe('HousecatPool: deposit', () => {
     describe('when pool value changes between deposits', async () => {
       it('sender receives pool tokens an amount corresponding their share of the pool value', async () => {
         const [signer, treasury, manager, otherUser] = await ethers.getSigners()
-        const { pool, management, weth } = await mockHousecatAndPool(signer, treasury, manager)
+        const { pool, mgmt, weth } = await mockHousecatAndPool(signer, treasury, manager)
 
         // manager deposits 1 ETH = 1 USD
         await pool.connect(manager).deposit([], { value: parseEther('1') })
 
         // WETH value doubles
-        await weth.priceFeed.setAnswer((await management.getOneUSD()).mul(2))
+        await weth.priceFeed.setAnswer((await mgmt.getOneUSD()).mul(2))
 
         // another user deposits 0.5 ETH = 1 USD
         await pool.connect(otherUser).deposit([], { value: parseEther('0.5') })
