@@ -38,7 +38,7 @@ export const deposit = async (
   tokens: ITokenWithPriceFeed[],
   amountDeposit: BigNumber
 ) => {
-  const [weights] = await pool.getWeights()
+  const [weights] = await pool.getAssetWeights()
   const [, ...tokenWeights] = weights
   const percent100 = await pool.getPercent100()
   const buyTokenTxs = tokens.map((token, idx) =>
@@ -61,10 +61,10 @@ export const withdraw = async (
   tokens: ITokenWithPriceFeed[],
   amountWithdraw: BigNumber
 ) => {
-  const poolValue = await pool.getValue()
+  const poolValue = await pool.getAssetValue()
   const percent100 = await pool.getPercent100()
   const withdrawPercentage = amountWithdraw.mul(percent100).div(poolValue)
-  const balances = await pool.getBalances()
+  const balances = await pool.getAssetBalances()
   const sellTokenTxs = [weth, ...tokens].map((token, idx) =>
     withdrawAdapter.interface.encodeFunctionData('uniswapV2__swapTokenToETH', [
       amm.address,
