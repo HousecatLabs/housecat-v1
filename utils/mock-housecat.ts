@@ -13,12 +13,12 @@ import {
   deployManageAssetsAdapter,
   deployWithdrawAdapter,
 } from './deploy-contracts'
-import { IWeth, ITokenWithPriceFeed, mockAssets, IToken } from './mock-defi'
+import { ITokenWithPriceFeed, mockAssets, IToken, ITokenWithLiquidity } from './mock-defi'
 
 interface IMockHousecatProps {
   signer: SignerWithAddress
-  weth: IWeth
-  assets: IToken[]
+  weth: IToken
+  assets: ITokenWithLiquidity[]
   treasury?: string
 }
 

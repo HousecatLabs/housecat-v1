@@ -6,6 +6,27 @@ import { BigNumberish } from 'ethers'
 
 const QUICKSWAP_ROUTER = '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff'
 
+export interface IToken {
+  price: string
+  decimals?: number
+}
+
+export interface ITokenWithLiquidity extends IToken {
+  reserveWeth: string
+  reserveToken: string
+}
+
+export interface IMockAssetsProps {
+  signer: SignerWithAddress
+  weth: IToken
+  tokens: ITokenWithLiquidity[]
+}
+
+export interface ITokenWithPriceFeed {
+  token: ERC20Mock | WETHMock
+  priceFeed: AggregatorV3Mock
+}
+
 export const mockToken = async (
   signer: SignerWithAddress,
   name: string,
@@ -37,27 +58,6 @@ export const mockWETH = async (
 export const mockPriceFeed = async (signer: SignerWithAddress, answer: BigNumberish, decimals: BigNumberish) => {
   const AggregatorV3Mock = await ethers.getContractFactory('AggregatorV3Mock')
   return AggregatorV3Mock.connect(signer).deploy(answer, decimals)
-}
-
-export interface IWeth {
-  price: string
-  decimals?: number
-}
-
-export interface IToken extends IWeth {
-  reserveWeth: string
-  reserveToken: string
-}
-
-export interface IMockAssetsProps {
-  signer: SignerWithAddress
-  weth: IWeth
-  tokens: IToken[]
-}
-
-export interface ITokenWithPriceFeed {
-  token: ERC20Mock | WETHMock
-  priceFeed: AggregatorV3Mock
 }
 
 export const mockAssets = async ({
