@@ -110,10 +110,14 @@ describe('HousecatPool: deposit', () => {
       await deposit(pool, mirrorer, depositAdapter, amm, weth, assets, parseEther('10'))
     })
 
-    it('should refuse to deposit if weights are not maintained', async () => {
+    it('should refuse to deposit if the asset weights are not maintained', async () => {
       const { pool } = mock
       const tx = pool.connect(mirrorer).deposit([], { value: parseEther('10') })
-      await expect(tx).revertedWith('HousecatPool: weights changed')
+      await expect(tx).revertedWith('HousecatPool: asset weights changed')
+    })
+
+    it('should refuse to deposit if the loan weights are not maintained', async () => {
+      // TODO
     })
   })
 })

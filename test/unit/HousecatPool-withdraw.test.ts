@@ -36,7 +36,7 @@ describe('HousecatPool: withdraw', () => {
     await deposit(pool, mirrorer, depositAdapter, amm, weth, assets, parseEther('10'))
   })
 
-  it('should refuse to change the weights of the pool', async () => {
+  it('should refuse to change the asset weights of the pool', async () => {
     const { pool, amm, weth, withdrawAdapter } = mock
     const sellTokenTx = withdrawAdapter.interface.encodeFunctionData('uniswapV2__swapTokenToETH', [
       amm.address,
@@ -45,7 +45,11 @@ describe('HousecatPool: withdraw', () => {
       1,
     ])
     const tx = pool.connect(mirrorer).withdraw([sellTokenTx])
-    await expect(tx).revertedWith('HousecatPool: weights changed')
+    await expect(tx).revertedWith('HousecatPool: asset weights changed')
+  })
+
+  it('should refuse to change the loan weights of the pool', async () => {
+    // TODO
   })
 
   it('should refuse to withdraw more than the withrawer owns in the form of pool tokens', async () => {
