@@ -177,8 +177,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(sent, 'HousecatPool: sending ETH failed');
   }
 
-  function manageAssets(bytes[] calldata _data) external onlyOwner whenNotPaused {
-    address adapter = management.manageAssetsAdapter();
+  function managePositions(bytes[] calldata _data) external onlyOwner whenNotPaused {
+    address adapter = management.managePositionsAdapter();
     for (uint i = 0; i < _data.length; i++) {
       (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
       require(success, string(result));

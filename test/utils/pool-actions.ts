@@ -2,7 +2,7 @@ import {
   DepositAdapter,
   HousecatPool,
   IUniswapV2Router02,
-  ManageAssetsAdapter,
+  ManagePositionsAdapter,
   WithdrawAdapter,
 } from '../../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -12,21 +12,21 @@ import { ITokenWithPriceFeed } from '../../utils/mock-defi'
 export const swapWethToTokens = async (
   pool: HousecatPool,
   manager: SignerWithAddress,
-  manageAssetsAdapter: ManageAssetsAdapter,
+  managePositionsAdapter: ManagePositionsAdapter,
   amm: IUniswapV2Router02,
   weth: ITokenWithPriceFeed,
   tokens: ITokenWithPriceFeed[],
   amountsWeth: BigNumber[]
 ) => {
   const buyTokenTxs = tokens.map((token, idx) =>
-    manageAssetsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
+    managePositionsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
       amm.address,
       [weth.token.address, token.token.address],
       amountsWeth[idx],
       1,
     ])
   )
-  return pool.connect(manager).manageAssets(buyTokenTxs)
+  return pool.connect(manager).managePositions(buyTokenTxs)
 }
 
 export const deposit = async (

@@ -4,13 +4,13 @@ import {
   HousecatFactory,
   HousecatManagement,
   IUniswapV2Router02,
-  ManageAssetsAdapter,
+  ManagePositionsAdapter,
   WithdrawAdapter,
 } from '../typechain-types'
 import {
   deployDepositAdapter,
   deployHousecat,
-  deployManageAssetsAdapter,
+  deployManagePositionsAdapter,
   deployWithdrawAdapter,
 } from './deploy-contracts'
 import { ITokenWithPriceFeed, mockAssets, IToken, ITokenWithLiquidity } from './mock-defi'
@@ -28,7 +28,7 @@ export interface IMockHousecat {
   amm: IUniswapV2Router02
   weth: ITokenWithPriceFeed
   assets: ITokenWithPriceFeed[]
-  manageAssetsAdapter: ManageAssetsAdapter
+  managePositionsAdapter: ManagePositionsAdapter
   depositAdapter: DepositAdapter
   withdrawAdapter: WithdrawAdapter
 }
@@ -49,7 +49,7 @@ export const mockHousecat = async ({ signer, treasury, weth, assets }: IMockHous
       }))
     )),
   ]
-  const manageAssetsAdapter = await deployManageAssetsAdapter(signer)
+  const managePositionsAdapter = await deployManagePositionsAdapter(signer)
   const depositAdapter = await deployDepositAdapter(signer)
   const withdrawAdapter = await deployWithdrawAdapter(signer)
   const [management, factory] = await deployHousecat({
@@ -58,7 +58,7 @@ export const mockHousecat = async ({ signer, treasury, weth, assets }: IMockHous
     weth: _weth.token.address,
     assets: assetAddresses,
     assetsMeta,
-    manageAssetsAdapter: manageAssetsAdapter.address,
+    managePositionsAdapter: managePositionsAdapter.address,
     depositAdapter: depositAdapter.address,
     withdrawAdapter: withdrawAdapter.address,
     integrations: [amm.address],
@@ -69,7 +69,7 @@ export const mockHousecat = async ({ signer, treasury, weth, assets }: IMockHous
     amm,
     weth: _weth,
     assets: _assets,
-    manageAssetsAdapter,
+    managePositionsAdapter,
     depositAdapter,
     withdrawAdapter,
   }

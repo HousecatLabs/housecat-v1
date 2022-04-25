@@ -20,13 +20,13 @@ describe('HousecatPool: withdraw', () => {
       { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
     ])
 
-    const { pool, amm, weth, manageAssetsAdapter, depositAdapter, assets } = mock
+    const { pool, amm, weth, managePositionsAdapter, depositAdapter, assets } = mock
 
     // add 10 ETH initial deposit
     await pool.connect(manager).deposit([], { value: parseEther('10') })
 
     // allocate the funds to four tokens 2.5 ETH each
-    await swapWethToTokens(pool, manager, manageAssetsAdapter, amm, weth, assets, [
+    await swapWethToTokens(pool, manager, managePositionsAdapter, amm, weth, assets, [
       parseEther('2.5'),
       parseEther('2.5'),
       parseEther('2.5'),

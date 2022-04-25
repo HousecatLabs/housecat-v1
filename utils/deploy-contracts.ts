@@ -5,7 +5,7 @@ import {
   HousecatFactory,
   HousecatPool,
   HousecatQueries,
-  ManageAssetsAdapter,
+  ManagePositionsAdapter,
   WithdrawAdapter,
   DepositAdapter,
 } from '../typechain-types'
@@ -39,8 +39,8 @@ export const deployFactory = async (
   return HousecatFactory.connect(signer).deploy(management, poolTemplate)
 }
 
-export const deployManageAssetsAdapter = async (signer: SignerWithAddress): Promise<ManageAssetsAdapter> => {
-  const adapter = await ethers.getContractFactory('ManageAssetsAdapter')
+export const deployManagePositionsAdapter = async (signer: SignerWithAddress): Promise<ManagePositionsAdapter> => {
+  const adapter = await ethers.getContractFactory('ManagePositionsAdapter')
   return adapter.connect(signer).deploy()
 }
 
@@ -60,7 +60,7 @@ export interface IDeployHousecat {
   weth: string
   assets?: string[]
   assetsMeta?: TokenMetaStruct[]
-  manageAssetsAdapter?: string
+  managePositionsAdapter?: string
   depositAdapter?: string
   withdrawAdapter?: string
   integrations?: string[]
@@ -72,7 +72,7 @@ export const deployHousecat = async ({
   weth,
   assets,
   assetsMeta,
-  manageAssetsAdapter,
+  managePositionsAdapter,
   depositAdapter,
   withdrawAdapter,
   integrations,
@@ -86,8 +86,8 @@ export const deployHousecat = async ({
       await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta)
     }
   }
-  if (manageAssetsAdapter) {
-    await mgmt.updateManageAssetsAdapter(manageAssetsAdapter)
+  if (managePositionsAdapter) {
+    await mgmt.updateManagePositionsAdapter(managePositionsAdapter)
   }
   if (depositAdapter) {
     await mgmt.updateDepositAdapter(depositAdapter)

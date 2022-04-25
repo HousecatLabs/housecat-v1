@@ -48,8 +48,8 @@ describe('integration: deposit-manage-withdraw', () => {
 
   describe('pool manager trades from 100% weth to 25% of each four asset', () => {
     before(async () => {
-      const { pool, manageAssetsAdapter, amm, weth, assets } = mock
-      await swapWethToTokens(pool, manager, manageAssetsAdapter, amm, weth, assets, [
+      const { pool, managePositionsAdapter, amm, weth, assets } = mock
+      await swapWethToTokens(pool, manager, managePositionsAdapter, amm, weth, assets, [
         parseEther('2.5'),
         parseEther('2.5'),
         parseEther('2.5'),

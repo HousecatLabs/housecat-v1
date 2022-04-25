@@ -95,21 +95,21 @@ describe('HousecatManagement', () => {
     })
   })
 
-  describe('updateManageAssetsAdapter', async () => {
+  describe('updateManagePositionsAdapter', async () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(otherUser).updateManageAssetsAdapter(weth.address)
+      const update = mgmt.connect(otherUser).updateManagePositionsAdapter(weth.address)
       await expect(update).revertedWith('Ownable: caller is not the owner')
     })
-    it('updates manageAssetsAdapter address and emits UpdateManageAssetsAdapter event', async () => {
+    it('updates managePositionsAdapter address and emits UpdateManagePositionsAdapter event', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(signer).updateManageAssetsAdapter(otherUser.address)
-      await expect(update).emit(mgmt, 'UpdateManageAssetsAdapter').withArgs(otherUser.address)
-      expect(await mgmt.manageAssetsAdapter()).equal(otherUser.address)
+      const update = mgmt.connect(signer).updateManagePositionsAdapter(otherUser.address)
+      await expect(update).emit(mgmt, 'UpdateManagePositionsAdapter').withArgs(otherUser.address)
+      expect(await mgmt.managePositionsAdapter()).equal(otherUser.address)
     })
   })
 
