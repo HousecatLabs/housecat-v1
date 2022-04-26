@@ -3,8 +3,7 @@ import { parseUnits } from 'ethers/lib/utils'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { AggregatorV3Mock, ERC20Mock, IUniswapV2Router02, WETHMock } from '../typechain-types'
 import { BigNumberish } from 'ethers'
-
-const QUICKSWAP_ROUTER = '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff'
+import { uniswapV2Routers } from './addresses/polygon'
 
 export interface IToken {
   price: string
@@ -65,7 +64,7 @@ export const mockAssets = async ({
   weth,
   tokens,
 }: IMockAssetsProps): Promise<[IUniswapV2Router02, ITokenWithPriceFeed, ITokenWithPriceFeed[]]> => {
-  const amm = await ethers.getContractAt('IUniswapV2Router02', QUICKSWAP_ROUTER)
+  const amm = await ethers.getContractAt('IUniswapV2Router02', uniswapV2Routers.quickswap)
   const _weth = await mockWETH(signer, 'Wrapped ETH', 'WETH', weth.decimals || 18, 0)
   const wethPriceFeed = await mockPriceFeed(signer, parseUnits(weth.price, 8), 8)
 
