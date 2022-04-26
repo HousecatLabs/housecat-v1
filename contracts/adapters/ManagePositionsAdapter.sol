@@ -15,7 +15,7 @@ contract ManagePositionsAdapter {
   ) external {
     HousecatPool pool = HousecatPool(payable(address(this)));
     HousecatManagement mgmt = HousecatManagement(pool.management());
-    require(mgmt.isIntegration(_router), 'ManagePositionsAdapter: unsupported router');
+    require(mgmt.isIntegrationSupported(_router), 'ManagePositionsAdapter: unsupported router');
     require(mgmt.isAssetSupported(_path[_path.length - 1]), 'ManagePositionsAdapter: unsupported token to');
     IERC20(_path[0]).approve(_router, _amountIn);
     IUniswapV2Router02(_router).swapExactTokensForTokens(

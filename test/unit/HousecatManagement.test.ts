@@ -301,12 +301,12 @@ describe('HousecatManagement', () => {
       expect(meta2.decimals).equal(6)
     })
 
-    describe('setIntegration', () => {
+    describe('setSupportedIntegration', () => {
       it('only owner allowed to call', async () => {
         const [signer, treasury, otherUser] = await ethers.getSigners()
         const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
         const mgmt = await deployManagement(signer, treasury.address, weth.address)
-        const setIntegration = mgmt.connect(otherUser).setIntegration(weth.address, true)
+        const setIntegration = mgmt.connect(otherUser).setSupportedIntegration(weth.address, true)
         await expect(setIntegration).revertedWith('Ownable: caller is not the owner')
       })
 
@@ -314,9 +314,9 @@ describe('HousecatManagement', () => {
         const [signer, treasury] = await ethers.getSigners()
         const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
         const mgmt = await deployManagement(signer, treasury.address, weth.address)
-        expect(await mgmt.isIntegration(weth.address)).equal(false)
-        await mgmt.connect(signer).setIntegration(weth.address, true)
-        expect(await mgmt.isIntegration(weth.address)).equal(true)
+        expect(await mgmt.isIntegrationSupported(weth.address)).equal(false)
+        await mgmt.connect(signer).setSupportedIntegration(weth.address, true)
+        expect(await mgmt.isIntegrationSupported(weth.address)).equal(true)
       })
     })
   })

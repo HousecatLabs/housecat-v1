@@ -109,7 +109,7 @@ export const deployHousecat = async ({
 
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {
-      await mgmt.setIntegration(integrations[i], true)
+      await mgmt.setSupportedIntegration(integrations[i], true)
     }
   }
   return { mgmt, factory, managePositionsAdapter, depositAdapter, withdrawAdapter }

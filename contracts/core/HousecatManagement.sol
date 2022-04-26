@@ -17,7 +17,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address public managePositionsAdapter;
   address public depositAdapter;
   address public withdrawAdapter;
-  mapping(address => bool) private integrations;
+  mapping(address => bool) private supportedIntegrations;
   address[] private supportedAssets;
   address[] private supportedLoans;
   mapping(address => TokenMeta) private tokenMeta;
@@ -94,8 +94,8 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return (supportedLoans, meta);
   }
 
-  function isIntegration(address _integration) external view returns (bool) {
-    return integrations[_integration];
+  function isIntegrationSupported(address _integration) external view returns (bool) {
+    return supportedIntegrations[_integration];
   }
 
   function isAssetSupported(address _token) external view returns (bool) {
@@ -135,8 +135,8 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     }
   }
 
-  function setIntegration(address _integration, bool _value) external onlyOwner {
-    integrations[_integration] = _value;
+  function setSupportedIntegration(address _integration, bool _value) external onlyOwner {
+    supportedIntegrations[_integration] = _value;
   }
 
   function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) internal {
