@@ -6,6 +6,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '../interfaces/IWETH.sol';
+import './structs/PoolTransaction.sol';
 import './HousecatQueries.sol';
 import './HousecatFactory.sol';
 import './HousecatManagement.sol';
@@ -86,7 +87,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return assetValue.sub(loanValue);
   }
 
-  function deposit(bytes[] calldata _data) external payable whenNotPaused {
+  function deposit(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
     // check balances before deposit
     uint ethBalanceBefore = address(this).balance.sub(msg.value);
     (uint[] memory assetWeightsBefore, uint assetValueBefore) = getAssetWeights();
@@ -96,12 +97,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // swap the sent eth to weth
     _buyWETH(management.weth(), msg.value);
 
-    // execute deposit transactions
-    address adapter = management.depositAdapter();
-    for (uint i = 0; i < _data.length; i++) {
-      (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
-      require(success, string(result));
-    }
+    _executeTransactions(_transactions);
 
     // check balances after deposit
     uint ethBalanceAfter = address(this).balance;
@@ -132,7 +128,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     _mint(msg.sender, amountMint);
   }
 
-  function withdraw(bytes[] calldata _data) external whenNotPaused {
+  function withdraw(PoolTransaction[] calldata _transactions) external whenNotPaused {
     // check balances before withdrawal
     uint ethBalanceBefore = address(this).balance;
     (uint[] memory assetWeightsBefore, uint assetValueBefore) = getAssetWeights();
@@ -140,12 +136,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     uint netValueBefore = assetValueBefore.sub(loanValueBefore);
     uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
 
-    // execute withdrawal transactions
-    address adapter = management.withdrawAdapter();
-    for (uint i = 0; i < _data.length; i++) {
-      (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
-      require(success, string(result));
-    }
+    _executeTransactions(_transactions);
 
     // check balances after withdrawal
     uint ethBalanceAfter = address(this).balance;
@@ -182,15 +173,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(sent, 'HousecatPool: sending ETH failed');
   }
 
-  function managePositions(bytes[] calldata _data) external onlyOwner whenNotPaused {
+  function managePositions(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
     uint ethBalanceBefore = address(this).balance;
     uint netValueBefore = getNetValue();
 
-    address adapter = management.managePositionsAdapter();
-    for (uint i = 0; i < _data.length; i++) {
-      (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
-      require(success, string(result));
-    }
+    _executeTransactions(_transactions);
 
     uint ethBalanceAfter = address(this).balance;
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
@@ -204,7 +191,15 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
   }
 
-  function _didWeightsChange(uint[] memory _weightsBefore, uint[] memory _weightsAfter) internal pure returns (bool) {
+  function _executeTransactions(PoolTransaction[] calldata _transactions) private {
+    for (uint i = 0; i < _transactions.length; i++) {
+      require(management.isAdapter(_transactions[i].adapter), 'HousecatPool: unsupported adapter');
+      (bool success, bytes memory result) = _transactions[i].adapter.delegatecall(_transactions[i].data);
+      require(success, string(result));
+    }
+  }
+
+  function _didWeightsChange(uint[] memory _weightsBefore, uint[] memory _weightsAfter) private pure returns (bool) {
     for (uint i; i < _weightsBefore.length; i++) {
       uint diff = _weightsBefore[i] > _weightsAfter[i]
         ? _weightsBefore[i].sub(_weightsAfter[i])
@@ -217,19 +212,19 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return false;
   }
 
-  function _buyWETH(address _weth, uint _amount) internal returns (uint) {
+  function _buyWETH(address _weth, uint _amount) private returns (uint) {
     uint amountBeforeDeposit = IWETH(_weth).balanceOf(address(this));
     IWETH(_weth).deposit{value: _amount}();
     return IWETH(_weth).balanceOf(address(this)).sub(amountBeforeDeposit);
   }
 
-  function _getTokenPrice(address _priceFeed) internal view returns (uint) {
+  function _getTokenPrice(address _priceFeed) private view returns (uint) {
     address[] memory priceFeeds = new address[](1);
     priceFeeds[0] = _priceFeed;
     return _getTokenPrices(priceFeeds)[0];
   }
 
-  function _mapTokensMeta(TokenMeta[] memory _tokensMeta) internal pure returns (address[] memory, uint[] memory) {
+  function _mapTokensMeta(TokenMeta[] memory _tokensMeta) private pure returns (address[] memory, uint[] memory) {
     address[] memory priceFeeds = new address[](_tokensMeta.length);
     uint[] memory decimals = new uint[](_tokensMeta.length);
     for (uint i; i < _tokensMeta.length; i++) {
@@ -239,7 +234,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return (priceFeeds, decimals);
   }
 
-  function _getValue(address[] memory _tokens, TokenMeta[] memory _tokensMeta) internal view returns (uint) {
+  function _getValue(address[] memory _tokens, TokenMeta[] memory _tokensMeta) private view returns (uint) {
     uint[] memory tokenBalances = _getTokenBalances(address(this), _tokens);
     (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
     uint[] memory tokenPrices = _getTokenPrices(priceFeeds);
@@ -247,7 +242,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function _getWeights(address[] memory _tokens, TokenMeta[] memory _tokensMeta)
-    internal
+    private
     view
     returns (uint[] memory, uint)
   {

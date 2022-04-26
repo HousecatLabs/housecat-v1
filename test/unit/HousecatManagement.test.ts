@@ -95,57 +95,21 @@ describe('HousecatManagement', () => {
     })
   })
 
-  describe('updateManagePositionsAdapter', async () => {
+  describe('setAdapter', async () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(otherUser).updateManagePositionsAdapter(weth.address)
+      const update = mgmt.connect(otherUser).setAdapter(weth.address, true)
       await expect(update).revertedWith('Ownable: caller is not the owner')
     })
-    it('updates managePositionsAdapter address and emits UpdateManagePositionsAdapter event', async () => {
+    it('sets adapter value and emits SetAdapter event', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(signer).updateManagePositionsAdapter(otherUser.address)
-      await expect(update).emit(mgmt, 'UpdateManagePositionsAdapter').withArgs(otherUser.address)
-      expect(await mgmt.managePositionsAdapter()).equal(otherUser.address)
-    })
-  })
-
-  describe('updateWithdrawAdapter', async () => {
-    it('only owner allowed to call', async () => {
-      const [signer, treasury, otherUser] = await ethers.getSigners()
-      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
-      const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(otherUser).updateWithdrawAdapter(weth.address)
-      await expect(update).revertedWith('Ownable: caller is not the owner')
-    })
-    it('updates withdrawAdapter address and emits UpdateWithdrawAdapter event', async () => {
-      const [signer, treasury, otherUser] = await ethers.getSigners()
-      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
-      const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(signer).updateWithdrawAdapter(otherUser.address)
-      await expect(update).emit(mgmt, 'UpdateWithdrawAdapter').withArgs(otherUser.address)
-      expect(await mgmt.withdrawAdapter()).equal(otherUser.address)
-    })
-  })
-
-  describe('updateDepositAdapter', async () => {
-    it('only owner allowed to call', async () => {
-      const [signer, treasury, otherUser] = await ethers.getSigners()
-      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
-      const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(otherUser).updateDepositAdapter(weth.address)
-      await expect(update).revertedWith('Ownable: caller is not the owner')
-    })
-    it('updates depositAdapter address and emits UpdateDepositAdapter event', async () => {
-      const [signer, treasury, otherUser] = await ethers.getSigners()
-      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
-      const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(signer).updateDepositAdapter(otherUser.address)
-      await expect(update).emit(mgmt, 'UpdateDepositAdapter').withArgs(otherUser.address)
-      expect(await mgmt.depositAdapter()).equal(otherUser.address)
+      const update = mgmt.connect(signer).setAdapter(otherUser.address, true)
+      await expect(update).emit(mgmt, 'SetAdapter').withArgs(otherUser.address, true)
+      expect(await mgmt.isAdapter(otherUser.address)).equal(true)
     })
   })
 
