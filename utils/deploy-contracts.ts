@@ -6,6 +6,7 @@ import {
   HousecatPool,
   HousecatQueries,
   UniswapV2Adapter,
+  AaveV2Adapter,
 } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 
@@ -39,11 +40,13 @@ export const deployFactory = async (
 
 export interface IAdapters {
   uniswapV2Adapter: UniswapV2Adapter
+  aaveV2Adapter: AaveV2Adapter
 }
 
 export const deployAdapters = async (signer: SignerWithAddress): Promise<IAdapters> => {
   const uniswapV2Adapter = await (await ethers.getContractFactory('UniswapV2Adapter')).connect(signer).deploy()
-  return { uniswapV2Adapter }
+  const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy()
+  return { uniswapV2Adapter, aaveV2Adapter }
 }
 
 export interface IDeployHousecat {
@@ -89,9 +92,9 @@ export const deployHousecat = async ({
     }
   }
   const adapters = await deployAdapters(signer)
-
-  await mgmt.setAdapter(adapters.uniswapV2Adapter.address, true)
-
+  await Promise.all(Object.values(adapters).map(async (adapter) => {
+    await mgmt.setAdapter(adapter.address, true)
+  }))
 
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {
