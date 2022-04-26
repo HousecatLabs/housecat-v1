@@ -12,7 +12,7 @@ const mockHousecatAndPool = async (
   treasury: SignerWithAddress,
   manager: SignerWithAddress,
   weth = { price: '1' },
-  tokens = [
+  assets = [
     { price: '1', reserveToken: '10000', reserveWeth: '10000' },
     { price: '2', reserveToken: '5000', reserveWeth: '10000' },
     { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
@@ -22,7 +22,7 @@ const mockHousecatAndPool = async (
     signer,
     treasury: treasury.address,
     weth,
-    tokens,
+    assets,
   })
   await mock.factory.connect(manager).createPool()
   const pool = await ethers.getContractAt('HousecatPool', await mock.factory.getPool(0))

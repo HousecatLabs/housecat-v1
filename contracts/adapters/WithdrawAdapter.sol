@@ -18,7 +18,7 @@ contract WithdrawAdapter {
     HousecatManagement mgmt = HousecatManagement(pool.management());
     address weth = mgmt.weth();
     require(mgmt.isIntegration(_router), 'WithdrawAdapter: unsupported router');
-    require(mgmt.isTokenSupported(_path[0]), 'WithdrawAdapter: unsupported token from');
+    require(mgmt.isAssetSupported(_path[0]), 'WithdrawAdapter: unsupported token from');
     require(_path[_path.length - 1] == weth, 'WithdrawAdapter: token to must be weth');
     uint amountWeth = _amountIn;
     if (_path[0] != weth) {

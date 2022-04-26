@@ -57,13 +57,13 @@ describe('HousecatPool: deposit', () => {
     describe('when pool value changes between deposits', async () => {
       it('sender receives pool tokens an amount corresponding their share of the pool value', async () => {
         const [signer, treasury, manager, otherUser] = await ethers.getSigners()
-        const { pool, management, weth } = await mockHousecatAndPool(signer, treasury, manager)
+        const { pool, mgmt, weth } = await mockHousecatAndPool(signer, treasury, manager)
 
         // manager deposits 1 ETH = 1 USD
         await pool.connect(manager).deposit([], { value: parseEther('1') })
 
         // WETH value doubles
-        await weth.priceFeed.setAnswer((await management.getOneUSD()).mul(2))
+        await weth.priceFeed.setAnswer((await mgmt.getOneUSD()).mul(2))
 
         // another user deposits 0.5 ETH = 1 USD
         await pool.connect(otherUser).deposit([], { value: parseEther('0.5') })
@@ -92,13 +92,13 @@ describe('HousecatPool: deposit', () => {
         { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
       ])
 
-      const { pool, amm, weth, manageAssetsAdapter, tokens } = mock
+      const { pool, amm, weth, managePositionsAdapter, assets } = mock
 
       // add 10 ETH initial deposit
       await pool.connect(manager).deposit([], { value: parseEther('10') })
 
-      // allocate the funds to four tokens 2.5 ETH each
-      await swapWethToTokens(pool, manager, manageAssetsAdapter, amm, weth, tokens, [
+      // allocate the funds to four assets 2.5 ETH each
+      await swapWethToTokens(pool, manager, managePositionsAdapter, amm, weth, assets, [
         parseEther('2.5'),
         parseEther('2.5'),
         parseEther('2.5'),
@@ -106,14 +106,18 @@ describe('HousecatPool: deposit', () => {
     })
 
     it('should be able to deposit if weights are maintained', async () => {
-      const { pool, amm, weth, depositAdapter, tokens } = mock
-      await deposit(pool, mirrorer, depositAdapter, amm, weth, tokens, parseEther('10'))
+      const { pool, amm, weth, depositAdapter, assets } = mock
+      await deposit(pool, mirrorer, depositAdapter, amm, weth, assets, parseEther('10'))
     })
 
-    it('should refuse to deposit if weights are not maintained', async () => {
+    it('should refuse to deposit if the asset weights are not maintained', async () => {
       const { pool } = mock
       const tx = pool.connect(mirrorer).deposit([], { value: parseEther('10') })
-      await expect(tx).revertedWith('HousecatPool: weights changed')
+      await expect(tx).revertedWith('HousecatPool: asset weights changed')
+    })
+
+    it('should refuse to deposit if the loan weights are not maintained', async () => {
+      // TODO
     })
   })
 })

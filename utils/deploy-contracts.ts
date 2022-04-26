@@ -5,7 +5,7 @@ import {
   HousecatFactory,
   HousecatPool,
   HousecatQueries,
-  ManageAssetsAdapter,
+  ManagePositionsAdapter,
   WithdrawAdapter,
   DepositAdapter,
 } from '../typechain-types'
@@ -39,8 +39,8 @@ export const deployFactory = async (
   return HousecatFactory.connect(signer).deploy(management, poolTemplate)
 }
 
-export const deployManageAssetsAdapter = async (signer: SignerWithAddress): Promise<ManageAssetsAdapter> => {
-  const adapter = await ethers.getContractFactory('ManageAssetsAdapter')
+export const deployManagePositionsAdapter = async (signer: SignerWithAddress): Promise<ManagePositionsAdapter> => {
+  const adapter = await ethers.getContractFactory('ManagePositionsAdapter')
   return adapter.connect(signer).deploy()
 }
 
@@ -58,47 +58,59 @@ export interface IDeployHousecat {
   signer: SignerWithAddress
   treasury?: string
   weth: string
-  tokens?: string[]
-  tokensMeta?: TokenMetaStruct[]
-  manageAssetsAdapter?: string
-  depositAdapter?: string
-  withdrawAdapter?: string
+  assets?: string[]
+  assetsMeta?: TokenMetaStruct[]
+  loans?: string[]
+  loansMeta?: TokenMetaStruct[]
   integrations?: string[]
+}
+
+export interface IHousecat {
+  mgmt: HousecatManagement
+  factory: HousecatFactory
+  managePositionsAdapter: ManagePositionsAdapter
+  depositAdapter: DepositAdapter
+  withdrawAdapter: WithdrawAdapter
 }
 
 export const deployHousecat = async ({
   signer,
   treasury,
   weth,
-  tokens,
-  tokensMeta,
-  manageAssetsAdapter,
-  depositAdapter,
-  withdrawAdapter,
+  assets,
+  assetsMeta,
+  loans,
+  loansMeta,
   integrations,
-}: IDeployHousecat): Promise<[HousecatManagement, HousecatFactory]> => {
+}: IDeployHousecat): Promise<IHousecat> => {
   const poolTemplate = await deployPool(signer)
   const mgmt = await deployManagement(signer, treasury || signer.address, weth)
   const factory = await deployFactory(signer, mgmt.address, poolTemplate.address)
-  if (tokens) {
-    await mgmt.connect(signer).setSupportedTokens(tokens)
-    if (tokensMeta) {
-      await mgmt.connect(signer).setTokenMetaMany(tokens, tokensMeta)
+  if (assets) {
+    await mgmt.connect(signer).setSupportedAssets(assets)
+    if (assetsMeta) {
+      await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta)
     }
   }
-  if (manageAssetsAdapter) {
-    await mgmt.updateManageAssetsAdapter(manageAssetsAdapter)
+  if (loans) {
+    await mgmt.connect(signer).setSupportedLoans(loans)
+    if (loansMeta) {
+      await mgmt.connect(signer).setTokenMetaMany(loans, loansMeta)
+    }
   }
-  if (depositAdapter) {
-    await mgmt.updateDepositAdapter(depositAdapter)
-  }
-  if (withdrawAdapter) {
-    await mgmt.updateWithdrawAdapter(withdrawAdapter)
-  }
+  const managePositionsAdapter = await deployManagePositionsAdapter(signer)
+  await mgmt.updateManagePositionsAdapter(managePositionsAdapter.address)
+
+  const depositAdapter = await deployDepositAdapter(signer)
+  await mgmt.updateDepositAdapter(depositAdapter.address)
+
+  const withdrawAdapter = await deployWithdrawAdapter(signer)
+  await mgmt.updateWithdrawAdapter(withdrawAdapter.address)
+
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {
       await mgmt.setIntegration(integrations[i], true)
     }
   }
-  return [mgmt, factory]
+  return { mgmt, factory, managePositionsAdapter, depositAdapter, withdrawAdapter }
 }

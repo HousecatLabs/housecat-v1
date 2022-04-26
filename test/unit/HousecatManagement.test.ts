@@ -95,21 +95,21 @@ describe('HousecatManagement', () => {
     })
   })
 
-  describe('updateManageAssetsAdapter', async () => {
+  describe('updateManagePositionsAdapter', async () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(otherUser).updateManageAssetsAdapter(weth.address)
+      const update = mgmt.connect(otherUser).updateManagePositionsAdapter(weth.address)
       await expect(update).revertedWith('Ownable: caller is not the owner')
     })
-    it('updates manageAssetsAdapter address and emits UpdateManageAssetsAdapter event', async () => {
+    it('updates managePositionsAdapter address and emits UpdateManagePositionsAdapter event', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const update = mgmt.connect(signer).updateManageAssetsAdapter(otherUser.address)
-      await expect(update).emit(mgmt, 'UpdateManageAssetsAdapter').withArgs(otherUser.address)
-      expect(await mgmt.manageAssetsAdapter()).equal(otherUser.address)
+      const update = mgmt.connect(signer).updateManagePositionsAdapter(otherUser.address)
+      await expect(update).emit(mgmt, 'UpdateManagePositionsAdapter').withArgs(otherUser.address)
+      expect(await mgmt.managePositionsAdapter()).equal(otherUser.address)
     })
   })
 
@@ -159,37 +159,49 @@ describe('HousecatManagement', () => {
     })
   })
 
-  describe('setSupportedTokens', () => {
+  describe('setSupportedAssets', () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const tx = mgmt.connect(otherUser).setSupportedTokens([weth.address])
+      const tx = mgmt.connect(otherUser).setSupportedAssets([weth.address])
       await expect(tx).revertedWith('Ownable: caller is not the owner')
     })
 
-    it('should set the list of supported tokens if called by the owner', async () => {
+    it('should set the list of supported assets if called by the owner', async () => {
       const [signer, treasury] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
       const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
-      await mgmt.connect(signer).setSupportedTokens([weth.address, otherToken.address])
-      expect(await mgmt.getSupportedTokens()).have.members([weth.address, otherToken.address])
+      await mgmt.connect(signer).setSupportedAssets([weth.address, otherToken.address])
+      expect(await mgmt.getSupportedAssets()).have.members([weth.address, otherToken.address])
 
-      await mgmt.connect(signer).setSupportedTokens([weth.address])
-      expect(await mgmt.getSupportedTokens()).have.members([weth.address])
+      await mgmt.connect(signer).setSupportedAssets([weth.address])
+      expect(await mgmt.getSupportedAssets()).have.members([weth.address])
     })
   })
 
-  describe('isTokenSupported', () => {
-    it('should return correctly whether or not token is included in supportedTokens list', async () => {
+  describe('isAssetSupported', () => {
+    it('should return correctly whether or not token is included in supportedAssets list', async () => {
       const [signer, treasury] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
-      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
-      expect(await mgmt.isTokenSupported(otherToken.address)).equal(false)
-      await mgmt.connect(signer).setSupportedTokens([weth.address, otherToken.address])
-      expect(await mgmt.isTokenSupported(otherToken.address)).equal(true)
+      const otherToken = await mockToken(signer, 'Asset A', 'ASSET_A', 18, ethers.utils.parseEther('1'))
+      expect(await mgmt.isAssetSupported(otherToken.address)).equal(false)
+      await mgmt.connect(signer).setSupportedAssets([weth.address, otherToken.address])
+      expect(await mgmt.isAssetSupported(otherToken.address)).equal(true)
+    })
+  })
+
+  describe('isLoanSupported', () => {
+    it('should return correctly whether or not token is included in supportedLoans list', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const loanToken = await mockToken(signer, 'Loan A', 'LOANA', 18, ethers.utils.parseEther('1'))
+      expect(await mgmt.isLoanSupported(loanToken.address)).equal(false)
+      await mgmt.connect(signer).setSupportedLoans([loanToken.address])
+      expect(await mgmt.isLoanSupported(loanToken.address)).equal(true)
     })
   })
 

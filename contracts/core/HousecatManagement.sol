@@ -14,16 +14,17 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   address public treasury;
   address public weth;
-  address public manageAssetsAdapter;
+  address public managePositionsAdapter;
   address public depositAdapter;
   address public withdrawAdapter;
   mapping(address => bool) private integrations;
-  address[] private supportedTokens;
+  address[] private supportedAssets;
+  address[] private supportedLoans;
   mapping(address => TokenMeta) private tokenMeta;
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
-  event UpdateManageAssetsAdapter(address adapter);
+  event UpdateManagePositionsAdapter(address adapter);
   event UpdateDepositAdapter(address adapter);
   event UpdateWithdrawAdapter(address adapter);
 
@@ -50,9 +51,9 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     emit UpdateWETH(_weth);
   }
 
-  function updateManageAssetsAdapter(address _adapter) external onlyOwner {
-    manageAssetsAdapter = _adapter;
-    emit UpdateManageAssetsAdapter(_adapter);
+  function updateManagePositionsAdapter(address _adapter) external onlyOwner {
+    managePositionsAdapter = _adapter;
+    emit UpdateManagePositionsAdapter(_adapter);
   }
 
   function updateDepositAdapter(address _adapter) external onlyOwner {
@@ -65,37 +66,62 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     emit UpdateWithdrawAdapter(_adapter);
   }
 
-  function getSupportedTokens() external view returns (address[] memory) {
-    return supportedTokens;
+  function getSupportedAssets() external view returns (address[] memory) {
+    return supportedAssets;
+  }
+
+  function getSupportedLoans() external view returns (address[] memory) {
+    return supportedLoans;
   }
 
   function getTokenMeta(address _token) external view returns (TokenMeta memory) {
     return tokenMeta[_token];
   }
 
-  function getTokensWithMeta() external view returns (address[] memory, TokenMeta[] memory) {
-    TokenMeta[] memory meta = new TokenMeta[](supportedTokens.length);
-    for (uint i = 0; i < supportedTokens.length; i++) {
-      meta[i] = tokenMeta[supportedTokens[i]];
+  function getAssetsWithMeta() external view returns (address[] memory, TokenMeta[] memory) {
+    TokenMeta[] memory meta = new TokenMeta[](supportedAssets.length);
+    for (uint i = 0; i < supportedAssets.length; i++) {
+      meta[i] = tokenMeta[supportedAssets[i]];
     }
-    return (supportedTokens, meta);
+    return (supportedAssets, meta);
+  }
+
+  function getLoansWithMeta() external view returns (address[] memory, TokenMeta[] memory) {
+    TokenMeta[] memory meta = new TokenMeta[](supportedLoans.length);
+    for (uint i = 0; i < supportedLoans.length; i++) {
+      meta[i] = tokenMeta[supportedLoans[i]];
+    }
+    return (supportedLoans, meta);
   }
 
   function isIntegration(address _integration) external view returns (bool) {
     return integrations[_integration];
   }
 
-  function isTokenSupported(address _token) external view returns (bool) {
-    for (uint i = 0; i < supportedTokens.length; i++) {
-      if (supportedTokens[i] == _token) {
+  function isAssetSupported(address _token) external view returns (bool) {
+    for (uint i = 0; i < supportedAssets.length; i++) {
+      if (supportedAssets[i] == _token) {
         return true;
       }
     }
     return false;
   }
 
-  function setSupportedTokens(address[] memory _tokens) external onlyOwner {
-    supportedTokens = _tokens;
+  function isLoanSupported(address _token) external view returns (bool) {
+    for (uint i = 0; i < supportedLoans.length; i++) {
+      if (supportedLoans[i] == _token) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function setSupportedAssets(address[] memory _tokens) external onlyOwner {
+    supportedAssets = _tokens;
+  }
+
+  function setSupportedLoans(address[] memory _tokens) external onlyOwner {
+    supportedLoans = _tokens;
   }
 
   function setTokenMeta(address _token, TokenMeta memory _tokenMeta) external onlyOwner {

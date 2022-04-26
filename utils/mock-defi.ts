@@ -6,6 +6,27 @@ import { BigNumberish } from 'ethers'
 
 const QUICKSWAP_ROUTER = '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff'
 
+export interface IToken {
+  price: string
+  decimals?: number
+}
+
+export interface ITokenWithLiquidity extends IToken {
+  reserveWeth: string
+  reserveToken: string
+}
+
+export interface IMockAssetsProps {
+  signer: SignerWithAddress
+  weth: IToken
+  tokens: ITokenWithLiquidity[]
+}
+
+export interface ITokenWithPriceFeed {
+  token: ERC20Mock | WETHMock
+  priceFeed: AggregatorV3Mock
+}
+
 export const mockToken = async (
   signer: SignerWithAddress,
   name: string,
@@ -39,32 +60,11 @@ export const mockPriceFeed = async (signer: SignerWithAddress, answer: BigNumber
   return AggregatorV3Mock.connect(signer).deploy(answer, decimals)
 }
 
-export interface IWeth {
-  price: string
-  decimals?: number
-}
-
-export interface IToken extends IWeth {
-  reserveWeth: string
-  reserveToken: string
-}
-
-export interface IAmmWithMockTokens {
-  signer: SignerWithAddress
-  weth: IWeth
-  tokens: IToken[]
-}
-
-export interface ITokenWithPriceFeed {
-  token: ERC20Mock | WETHMock
-  priceFeed: AggregatorV3Mock
-}
-
 export const mockAssets = async ({
   signer,
   weth,
   tokens,
-}: IAmmWithMockTokens): Promise<[IUniswapV2Router02, ITokenWithPriceFeed, ITokenWithPriceFeed[]]> => {
+}: IMockAssetsProps): Promise<[IUniswapV2Router02, ITokenWithPriceFeed, ITokenWithPriceFeed[]]> => {
   const amm = await ethers.getContractAt('IUniswapV2Router02', QUICKSWAP_ROUTER)
   const _weth = await mockWETH(signer, 'Wrapped ETH', 'WETH', weth.decimals || 18, 0)
   const wethPriceFeed = await mockPriceFeed(signer, parseUnits(weth.price, 8), 8)
