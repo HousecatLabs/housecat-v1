@@ -180,8 +180,4 @@ describe('UniswapV2Adapter', () => {
       expect(parseFloat(formatEther(ethBalanceIncreased))).approximately(2, 0.01)
     })
   })
-
-  describe('swapWETHToToken', () => {
-    //
-  })
 })

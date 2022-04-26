@@ -49,25 +49,4 @@ contract UniswapV2Adapter is BaseAdapter {
     }
     IWETH(weth).withdraw(amountWeth);
   }
-
-  function swapWETHToToken(
-    address _router,
-    address[] memory _path,
-    uint _amountIn,
-    uint _amountOutMin
-  ) external payable {
-    HousecatPool pool = HousecatPool(payable(address(this)));
-    HousecatManagement mgmt = HousecatManagement(pool.management());
-    require(mgmt.isIntegrationSupported(_router), 'UniswapV2Adapter: unsupported router');
-    require(_path[0] == mgmt.weth(), 'UniswapV2Adapter: token from must be weth');
-    require(mgmt.isAssetSupported(_path[_path.length - 1]), 'UniswapV2Adapter: unsupported token to');
-    IERC20(_path[0]).approve(_router, _amountIn);
-    IUniswapV2Router02(_router).swapExactTokensForTokens(
-      _amountIn,
-      _amountOutMin,
-      _path,
-      address(this),
-      block.timestamp
-    );
-  }
 }
