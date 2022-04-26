@@ -14,9 +14,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   address public treasury;
   address public weth;
-  address public managePositionsAdapter;
-  address public depositAdapter;
-  address public withdrawAdapter;
+  mapping(address => bool) private adapters;
   mapping(address => bool) private supportedIntegrations;
   address[] private supportedAssets;
   address[] private supportedLoans;
@@ -24,9 +22,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
-  event UpdateManagePositionsAdapter(address adapter);
-  event UpdateDepositAdapter(address adapter);
-  event UpdateWithdrawAdapter(address adapter);
+  event SetAdapter(address adapter, bool enabled);
 
   constructor(address _treasury, address _weth) {
     treasury = _treasury;
@@ -51,19 +47,13 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     emit UpdateWETH(_weth);
   }
 
-  function updateManagePositionsAdapter(address _adapter) external onlyOwner {
-    managePositionsAdapter = _adapter;
-    emit UpdateManagePositionsAdapter(_adapter);
+  function isAdapter(address _adapter) external view returns (bool) {
+    return adapters[_adapter];
   }
 
-  function updateDepositAdapter(address _adapter) external onlyOwner {
-    depositAdapter = _adapter;
-    emit UpdateDepositAdapter(_adapter);
-  }
-
-  function updateWithdrawAdapter(address _adapter) external onlyOwner {
-    withdrawAdapter = _adapter;
-    emit UpdateWithdrawAdapter(_adapter);
+  function setAdapter(address _adapter, bool _enabled) external onlyOwner {
+    adapters[_adapter] = _enabled;
+    emit SetAdapter(_adapter, _enabled);
   }
 
   function getSupportedAssets() external view returns (address[] memory) {

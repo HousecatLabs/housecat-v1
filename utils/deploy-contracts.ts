@@ -5,9 +5,7 @@ import {
   HousecatFactory,
   HousecatPool,
   HousecatQueries,
-  ManagePositionsAdapter,
-  WithdrawAdapter,
-  DepositAdapter,
+  UniswapV2Adapter,
 } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 
@@ -39,19 +37,13 @@ export const deployFactory = async (
   return HousecatFactory.connect(signer).deploy(management, poolTemplate)
 }
 
-export const deployManagePositionsAdapter = async (signer: SignerWithAddress): Promise<ManagePositionsAdapter> => {
-  const adapter = await ethers.getContractFactory('ManagePositionsAdapter')
-  return adapter.connect(signer).deploy()
+export interface IAdapters {
+  uniswapV2Adapter: UniswapV2Adapter
 }
 
-export const deployDepositAdapter = async (signer: SignerWithAddress): Promise<DepositAdapter> => {
-  const adapter = await ethers.getContractFactory('DepositAdapter')
-  return adapter.connect(signer).deploy()
-}
-
-export const deployWithdrawAdapter = async (signer: SignerWithAddress): Promise<WithdrawAdapter> => {
-  const adapter = await ethers.getContractFactory('WithdrawAdapter')
-  return adapter.connect(signer).deploy()
+export const deployAdapters = async (signer: SignerWithAddress): Promise<IAdapters> => {
+  const uniswapV2Adapter = await (await ethers.getContractFactory('UniswapV2Adapter')).connect(signer).deploy()
+  return { uniswapV2Adapter }
 }
 
 export interface IDeployHousecat {
@@ -68,9 +60,7 @@ export interface IDeployHousecat {
 export interface IHousecat {
   mgmt: HousecatManagement
   factory: HousecatFactory
-  managePositionsAdapter: ManagePositionsAdapter
-  depositAdapter: DepositAdapter
-  withdrawAdapter: WithdrawAdapter
+  adapters: IAdapters
 }
 
 export const deployHousecat = async ({
@@ -98,19 +88,15 @@ export const deployHousecat = async ({
       await mgmt.connect(signer).setTokenMetaMany(loans, loansMeta)
     }
   }
-  const managePositionsAdapter = await deployManagePositionsAdapter(signer)
-  await mgmt.updateManagePositionsAdapter(managePositionsAdapter.address)
+  const adapters = await deployAdapters(signer)
 
-  const depositAdapter = await deployDepositAdapter(signer)
-  await mgmt.updateDepositAdapter(depositAdapter.address)
+  await mgmt.setAdapter(adapters.uniswapV2Adapter.address, true)
 
-  const withdrawAdapter = await deployWithdrawAdapter(signer)
-  await mgmt.updateWithdrawAdapter(withdrawAdapter.address)
 
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {
       await mgmt.setSupportedIntegration(integrations[i], true)
     }
   }
-  return { mgmt, factory, managePositionsAdapter, depositAdapter, withdrawAdapter }
+  return { mgmt, factory, adapters }
 }

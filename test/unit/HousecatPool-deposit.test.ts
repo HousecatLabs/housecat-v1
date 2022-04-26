@@ -92,13 +92,13 @@ describe('HousecatPool: deposit', () => {
         { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
       ])
 
-      const { pool, amm, weth, managePositionsAdapter, assets } = mock
+      const { pool, amm, weth, adapters, assets } = mock
 
       // add 10 ETH initial deposit
       await pool.connect(manager).deposit([], { value: parseEther('10') })
 
       // allocate the funds to four assets 2.5 ETH each
-      await swapWethToTokens(pool, manager, managePositionsAdapter, amm, weth, assets, [
+      await swapWethToTokens(pool, manager, adapters, amm, weth, assets, [
         parseEther('2.5'),
         parseEther('2.5'),
         parseEther('2.5'),
@@ -106,8 +106,8 @@ describe('HousecatPool: deposit', () => {
     })
 
     it('should be able to deposit if weights are maintained', async () => {
-      const { pool, amm, weth, depositAdapter, assets } = mock
-      await deposit(pool, mirrorer, depositAdapter, amm, weth, assets, parseEther('10'))
+      const { pool, amm, weth, adapters, assets } = mock
+      await deposit(pool, mirrorer, adapters, amm, weth, assets, parseEther('10'))
     })
 
     it('should refuse to deposit if the asset weights are not maintained', async () => {

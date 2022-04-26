@@ -48,8 +48,8 @@ describe('integration: deposit-manage-withdraw', () => {
 
   describe('pool manager trades from 100% weth to 25% of each four asset', () => {
     before(async () => {
-      const { pool, managePositionsAdapter, amm, weth, assets } = mock
-      await swapWethToTokens(pool, manager, managePositionsAdapter, amm, weth, assets, [
+      const { pool, adapters, amm, weth, assets } = mock
+      await swapWethToTokens(pool, manager, adapters, amm, weth, assets, [
         parseEther('2.5'),
         parseEther('2.5'),
         parseEther('2.5'),
@@ -79,9 +79,9 @@ describe('integration: deposit-manage-withdraw', () => {
     let poolValueBefore: BigNumber
 
     before(async () => {
-      const { pool, depositAdapter, amm, weth, assets } = mock
+      const { pool, adapters, amm, weth, assets } = mock
       poolValueBefore = await pool.getAssetValue()
-      await deposit(pool, mirrorer, depositAdapter, amm, weth, assets, parseEther('10'))
+      await deposit(pool, mirrorer, adapters, amm, weth, assets, parseEther('10'))
     })
 
     it('pool value should increase by the deposit value minus trade fees', async () => {
@@ -111,10 +111,10 @@ describe('integration: deposit-manage-withdraw', () => {
     let poolValueBefore: BigNumber
 
     before(async () => {
-      const { pool, withdrawAdapter, amm, weth, assets } = mock
+      const { pool, adapters, amm, weth, assets } = mock
       mirrorerBalanceBefore = await mirrorer.getBalance()
       poolValueBefore = await pool.getAssetValue()
-      await withdraw(pool, mirrorer, withdrawAdapter, amm, weth, assets, parseEther('5'))
+      await withdraw(pool, mirrorer, adapters, amm, weth, assets, parseEther('5'))
     })
 
     it('withdrawer should receive ~5 ETH', async () => {
