@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
 
-describe('HousecatPool: getters', () => {
+describe('HousecatPool', () => {
   describe('getAssetBalances', () => {
     it('returns 0 balances when the pool is empty', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()

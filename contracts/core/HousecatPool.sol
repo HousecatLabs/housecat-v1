@@ -173,7 +173,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(sent, 'HousecatPool: sending ETH failed');
   }
 
-  function managePositions(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
+  function manage(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
     uint ethBalanceBefore = address(this).balance;
     uint netValueBefore = getNetValue();
 

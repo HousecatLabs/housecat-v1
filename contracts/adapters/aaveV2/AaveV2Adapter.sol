@@ -26,6 +26,10 @@ contract AaveV2Adapter is BaseAdapter {
     pool.deposit(_token, _amount, address(this), 0);
   }
 
+  function withdraw() external {
+    // TODO
+  }
+
   function borrow(
     address _pool,
     address _token,
@@ -41,5 +45,9 @@ contract AaveV2Adapter is BaseAdapter {
     require(mgmt.isLoanSupported(reserveData.variableDebtTokenAddress), 'AaveV2Adapter: unsupported loan');
 
     pool.borrow(_token, _amount, 2, 0, address(this));
+  }
+
+  function repay() external {
+    // TODO
   }
 }

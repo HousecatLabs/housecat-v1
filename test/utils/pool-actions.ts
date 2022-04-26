@@ -22,7 +22,7 @@ export const swapWethToTokens = async (
       1,
     ]),
   }))
-  return pool.connect(manager).managePositions(buyTokenTxs)
+  return pool.connect(manager).manage(buyTokenTxs)
 }
 
 export const deposit = async (
@@ -39,7 +39,7 @@ export const deposit = async (
   const percent100 = await pool.getPercent100()
   const buyTokenTxs = tokens.map((token, idx) => ({
     adapter: adapters.uniswapV2Adapter.address,
-    data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapWETHToToken', [
+    data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
       amm.address,
       [weth.token.address, token.token.address],
       amountDeposit.mul(tokenWeights[idx]).div(percent100),

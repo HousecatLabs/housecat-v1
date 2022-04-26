@@ -11,7 +11,7 @@ contract UniswapV2Adapter is BaseAdapter {
     address[] memory _path,
     uint _amountIn,
     uint _amountOutMin
-  ) external {
+  ) external payable {
     HousecatManagement mgmt = _getMgmt();
     require(mgmt.isIntegrationSupported(_router), 'UniswapV2Adapter: unsupported router');
     require(mgmt.isAssetSupported(_path[_path.length - 1]), 'UniswapV2Adapter: unsupported token to');
@@ -30,7 +30,7 @@ contract UniswapV2Adapter is BaseAdapter {
     address[] memory _path,
     uint _amountIn,
     uint _amountOutMin
-  ) external {
+  ) external payable {
     HousecatManagement mgmt = _getMgmt();
     address weth = mgmt.weth();
     require(mgmt.isIntegrationSupported(_router), 'UniswapV2Adapter: unsupported router');

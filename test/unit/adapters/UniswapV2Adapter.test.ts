@@ -1,10 +1,10 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { formatEther, parseEther } from 'ethers/lib/utils'
-import mockHousecatAndPool, { IMockHousecatAndPool } from '../mock/mock-housecat-and-pool'
+import mockHousecatAndPool, { IMockHousecatAndPool } from '../../mock/mock-housecat-and-pool'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { mockAssets } from '../../utils/mock-defi'
-import { uniswapV2Routers } from '../../utils/addresses/polygon'
+import { mockAssets } from '../../../utils/mock-defi'
+import { uniswapV2Routers } from '../../../utils/addresses/polygon'
 
 
 describe('UniswapV2Adapter', () => {
@@ -30,7 +30,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).managePositions([{
+      const tx = mock.pool.connect(manager).manage([{
         adapter: mock.adapters.uniswapV2Adapter.address,
         data: tradeWethToToken0
       }])
@@ -50,7 +50,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).managePositions([{
+      const tx = mock.pool.connect(manager).manage([{
         adapter: mock.adapters.uniswapV2Adapter.address,
         data: tradeWethToUnsupportedToken
       }])
@@ -64,7 +64,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      await mock.pool.connect(manager).managePositions([{
+      await mock.pool.connect(manager).manage([{
         adapter: mock.adapters.uniswapV2Adapter.address,
         data: tradeWethToToken0
       }])
