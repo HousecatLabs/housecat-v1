@@ -3,10 +3,9 @@ pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
-import '../../core/HousecatPool.sol';
-import '../../core/HousecatManagement.sol';
+import '../BaseAdapter.sol';
 
-contract UniswapV2Adapter {
+contract UniswapV2Adapter is BaseAdapter {
   function swapTokens(
     address _router,
     address[] memory _path,
@@ -70,10 +69,5 @@ contract UniswapV2Adapter {
       address(this),
       block.timestamp
     );
-  }
-
-  function _getMgmt() private view returns (HousecatManagement) {
-    HousecatPool pool = HousecatPool(payable(address(this)));
-    return HousecatManagement(pool.management());
   }
 }
