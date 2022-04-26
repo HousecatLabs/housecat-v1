@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
-import { routers } from '../../utils/addresses/polygon'
+import { uniswapV2Routers } from '../../utils/addresses/polygon'
 import { mockToken } from '../../utils/mock-defi'
 
 describe('HousecatPool: managePositions', () => {
@@ -40,7 +40,7 @@ describe('HousecatPool: managePositions', () => {
       const [signer, treasury, manager] = await ethers.getSigners()
       const { pool, managePositionsAdapter, weth, assets } = await mockHousecatAndPool(signer, treasury, manager)
       const data = managePositionsAdapter.interface.encodeFunctionData('uniswapV2__swapTokens', [
-        routers.sushiswap,
+        uniswapV2Routers.sushiswap,
         [weth.token.address, assets[0].token.address],
         await weth.token.balanceOf(pool.address),
         1,

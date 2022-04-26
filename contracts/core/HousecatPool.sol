@@ -65,6 +65,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getValue(tokens, meta);
   }
 
+  function getLoanBalances() public view returns (uint[] memory) {
+    address[] memory tokens = management.getSupportedLoans();
+    return _getTokenBalances(address(this), tokens);
+  }
+
   function getLoanWeights() public view returns (uint[] memory, uint) {
     (address[] memory tokens, TokenMeta[] memory meta) = management.getLoansWithMeta();
     return _getWeights(tokens, meta);

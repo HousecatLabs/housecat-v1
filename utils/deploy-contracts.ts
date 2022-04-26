@@ -60,6 +60,8 @@ export interface IDeployHousecat {
   weth: string
   assets?: string[]
   assetsMeta?: TokenMetaStruct[]
+  loans?: string[]
+  loansMeta?: TokenMetaStruct[]
   integrations?: string[]
 }
 
@@ -77,6 +79,8 @@ export const deployHousecat = async ({
   weth,
   assets,
   assetsMeta,
+  loans,
+  loansMeta,
   integrations,
 }: IDeployHousecat): Promise<IHousecat> => {
   const poolTemplate = await deployPool(signer)
@@ -86,6 +90,12 @@ export const deployHousecat = async ({
     await mgmt.connect(signer).setSupportedAssets(assets)
     if (assetsMeta) {
       await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta)
+    }
+  }
+  if (loans) {
+    await mgmt.connect(signer).setSupportedLoans(loans)
+    if (loansMeta) {
+      await mgmt.connect(signer).setTokenMetaMany(loans, loansMeta)
     }
   }
   const managePositionsAdapter = await deployManagePositionsAdapter(signer)
