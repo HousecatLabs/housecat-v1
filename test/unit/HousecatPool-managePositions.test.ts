@@ -63,11 +63,7 @@ describe('HousecatPool: managePositions', () => {
     })
     it('should succeed to sell tokens that are not whitelisted', async () => {
       const [signer, treasury, manager] = await ethers.getSigners()
-      const { mgmt, pool, adapters, weth, assets, amm } = await mockHousecatAndPool(
-        signer,
-        treasury,
-        manager
-      )
+      const { mgmt, pool, adapters, weth, assets, amm } = await mockHousecatAndPool(signer, treasury, manager)
 
       // remove a token from the whitelist and send that token to the pool
       await mgmt.connect(signer).setSupportedAssets([weth.token.address])

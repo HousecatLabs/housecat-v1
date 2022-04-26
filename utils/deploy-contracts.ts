@@ -92,9 +92,11 @@ export const deployHousecat = async ({
     }
   }
   const adapters = await deployAdapters(signer)
-  await Promise.all(Object.values(adapters).map(async (adapter) => {
-    await mgmt.setAdapter(adapter.address, true)
-  }))
+  await Promise.all(
+    Object.values(adapters).map(async (adapter) => {
+      await mgmt.setAdapter(adapter.address, true)
+    })
+  )
 
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {

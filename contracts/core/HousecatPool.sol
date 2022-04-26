@@ -96,7 +96,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // swap the sent eth to weth
     _buyWETH(management.weth(), msg.value);
-    
+
     _executeTransactions(_transactions);
 
     // check balances after deposit

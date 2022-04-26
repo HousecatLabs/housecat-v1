@@ -1,7 +1,4 @@
-import {
-  HousecatPool,
-  IUniswapV2Router02,
-} from '../../typechain-types'
+import { HousecatPool, IUniswapV2Router02 } from '../../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber } from 'ethers'
 import { ITokenWithPriceFeed } from '../../utils/mock-defi'
@@ -16,8 +13,7 @@ export const swapWethToTokens = async (
   tokens: ITokenWithPriceFeed[],
   amountsWeth: BigNumber[]
 ) => {
-  const buyTokenTxs = tokens.map((token, idx) =>
-  ({
+  const buyTokenTxs = tokens.map((token, idx) => ({
     adapter: adapters.uniswapV2Adapter.address,
     data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
       amm.address,
@@ -25,8 +21,7 @@ export const swapWethToTokens = async (
       amountsWeth[idx],
       1,
     ]),
-  })
-  )
+  }))
   return pool.connect(manager).managePositions(buyTokenTxs)
 }
 
@@ -49,7 +44,7 @@ export const deposit = async (
       [weth.token.address, token.token.address],
       amountDeposit.mul(tokenWeights[idx]).div(percent100),
       1,
-    ])
+    ]),
   }))
   return pool.connect(mirrorer).deposit(buyTokenTxs, { value: amountDeposit })
 }
@@ -74,7 +69,7 @@ export const withdraw = async (
       [token.token.address, weth.token.address],
       balances[idx].mul(withdrawPercentage).div(percent100),
       1,
-    ])
+    ]),
   }))
   return pool.connect(withdrawer).withdraw(sellTokenTxs)
 }

@@ -1,9 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import {
-  HousecatFactory,
-  HousecatManagement,
-  IUniswapV2Router02,
-} from '../typechain-types'
+import { HousecatFactory, HousecatManagement, IUniswapV2Router02 } from '../typechain-types'
 import { deployHousecat, IAdapters } from './deploy-contracts'
 import { ITokenWithPriceFeed, mockAssets, IToken, ITokenWithLiquidity } from './mock-defi'
 
@@ -20,7 +16,7 @@ export interface IMockHousecat {
   amm: IUniswapV2Router02
   weth: ITokenWithPriceFeed
   assets: ITokenWithPriceFeed[]
-  adapters: IAdapters,
+  adapters: IAdapters
 }
 
 export const mockHousecat = async ({ signer, treasury, weth, assets }: IMockHousecatProps): Promise<IMockHousecat> => {
