@@ -33,9 +33,9 @@ contract UniswapV2Adapter is BaseAdapter {
   ) external {
     HousecatManagement mgmt = _getMgmt();
     address weth = mgmt.weth();
-    require(mgmt.isIntegrationSupported(_router), 'WAUniswapV2: unsupported router');
-    require(mgmt.isAssetSupported(_path[0]), 'WAUniswapV2: unsupported token from');
-    require(_path[_path.length - 1] == weth, 'WAUniswapV2: token to must be weth');
+    require(mgmt.isIntegrationSupported(_router), 'UniswapV2Adapter: unsupported router');
+    require(mgmt.isAssetSupported(_path[0]), 'UniswapV2Adapter: unsupported token');
+    require(_path[_path.length - 1] == weth, 'UniswapV2Adapter: token to must be weth');
     uint amountWeth = _amountIn;
     if (_path[0] != weth) {
       IERC20(_path[0]).approve(_router, _amountIn);
@@ -58,9 +58,9 @@ contract UniswapV2Adapter is BaseAdapter {
   ) external payable {
     HousecatPool pool = HousecatPool(payable(address(this)));
     HousecatManagement mgmt = HousecatManagement(pool.management());
-    require(mgmt.isIntegrationSupported(_router), 'DAUniswapV2: unsupported router');
-    require(_path[0] == mgmt.weth(), 'DAUniswapV2: token from must be weth');
-    require(mgmt.isAssetSupported(_path[_path.length - 1]), 'DAUniswapV2: unsupported token to');
+    require(mgmt.isIntegrationSupported(_router), 'UniswapV2Adapter: unsupported router');
+    require(_path[0] == mgmt.weth(), 'UniswapV2Adapter: token from must be weth');
+    require(mgmt.isAssetSupported(_path[_path.length - 1]), 'UniswapV2Adapter: unsupported token to');
     IERC20(_path[0]).approve(_router, _amountIn);
     IUniswapV2Router02(_router).swapExactTokensForTokens(
       _amountIn,
