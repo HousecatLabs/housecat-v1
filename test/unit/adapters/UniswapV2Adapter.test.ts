@@ -6,7 +6,6 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { mockAssets } from '../../../utils/mock-defi'
 import { uniswapV2Routers } from '../../../utils/addresses/polygon'
 
-
 describe('UniswapV2Adapter', () => {
   describe('swapTokens', () => {
     let deployer: SignerWithAddress
@@ -30,10 +29,12 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).manage([{
-        adapter: mock.adapters.uniswapV2Adapter.address,
-        data: tradeWethToToken0
-      }])
+      const tx = mock.pool.connect(manager).manage([
+        {
+          adapter: mock.adapters.uniswapV2Adapter.address,
+          data: tradeWethToToken0,
+        },
+      ])
       await expect(tx).revertedWith('UniswapV2Adapter: unsupported router')
     })
 
@@ -41,7 +42,7 @@ describe('UniswapV2Adapter', () => {
       const mockUnsuportedAssets = await mockAssets({
         signer: deployer,
         weth: { price: '1', decimals: 18 },
-        tokens: [{ price: '1', decimals: 18, reserveToken: '10000', reserveWeth: '10000' }]
+        tokens: [{ price: '1', decimals: 18, reserveToken: '10000', reserveWeth: '10000' }],
       })
       const unsupportedAsset = mockUnsuportedAssets[2][0]
       const tradeWethToUnsupportedToken = mock.adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
@@ -50,10 +51,12 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).manage([{
-        adapter: mock.adapters.uniswapV2Adapter.address,
-        data: tradeWethToUnsupportedToken
-      }])
+      const tx = mock.pool.connect(manager).manage([
+        {
+          adapter: mock.adapters.uniswapV2Adapter.address,
+          data: tradeWethToUnsupportedToken,
+        },
+      ])
       await expect(tx).revertedWith('UniswapV2Adapter: unsupported token')
     })
 
@@ -64,10 +67,12 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      await mock.pool.connect(manager).manage([{
-        adapter: mock.adapters.uniswapV2Adapter.address,
-        data: tradeWethToToken0
-      }])
+      await mock.pool.connect(manager).manage([
+        {
+          adapter: mock.adapters.uniswapV2Adapter.address,
+          data: tradeWethToToken0,
+        },
+      ])
 
       const wethBalance = await mock.weth.token.balanceOf(mock.pool.address)
       expect(parseFloat(formatEther(wethBalance))).approximately(4, 0.04)
@@ -102,10 +107,12 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).withdraw([{
-        adapter: mock.adapters.uniswapV2Adapter.address,
-        data: tradeToken0ToETH
-      }])
+      const tx = mock.pool.connect(manager).withdraw([
+        {
+          adapter: mock.adapters.uniswapV2Adapter.address,
+          data: tradeToken0ToETH,
+        },
+      ])
       await expect(tx).revertedWith('UniswapV2Adapter: unsupported router')
     })
 
@@ -113,7 +120,7 @@ describe('UniswapV2Adapter', () => {
       const mockUnsuportedAssets = await mockAssets({
         signer: deployer,
         weth: { price: '1', decimals: 18 },
-        tokens: [{ price: '1', decimals: 18, reserveToken: '10000', reserveWeth: '10000' }]
+        tokens: [{ price: '1', decimals: 18, reserveToken: '10000', reserveWeth: '10000' }],
       })
       const unsupportedAsset = mockUnsuportedAssets[2][0]
       const tradeUnsupportedTokenToETH = mock.adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
@@ -122,10 +129,12 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).withdraw([{
-        adapter: mock.adapters.uniswapV2Adapter.address,
-        data: tradeUnsupportedTokenToETH
-      }])
+      const tx = mock.pool.connect(manager).withdraw([
+        {
+          adapter: mock.adapters.uniswapV2Adapter.address,
+          data: tradeUnsupportedTokenToETH,
+        },
+      ])
       await expect(tx).revertedWith('UniswapV2Adapter: unsupported token')
     })
 
@@ -136,10 +145,12 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).withdraw([{
-        adapter: mock.adapters.uniswapV2Adapter.address,
-        data: tradeToken0ToToken1
-      }])
+      const tx = mock.pool.connect(manager).withdraw([
+        {
+          adapter: mock.adapters.uniswapV2Adapter.address,
+          data: tradeToken0ToToken1,
+        },
+      ])
       await expect(tx).revertedWith('UniswapV2Adapter: token to must be weth')
     })
 
@@ -161,11 +172,11 @@ describe('UniswapV2Adapter', () => {
       await mock.pool.connect(manager).withdraw([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
-          data: tradeWethToETH
+          data: tradeWethToETH,
         },
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
-          data: tradeToken0ToETH
+          data: tradeToken0ToETH,
         },
       ])
 

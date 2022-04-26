@@ -1,4 +1,3 @@
-
 describe('AaveV2Adapter', () => {
   describe('deposit', () => {
     // TODO
