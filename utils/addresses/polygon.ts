@@ -16,7 +16,7 @@ export const priceFeeds = {
 }
 
 export const aaveV2LendingPools = {
-  aave: '0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf'
+  aave: '0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf',
 }
 
 export const aaveV2Tokens = {

@@ -184,8 +184,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   function managePositions(bytes[] calldata _data) external onlyOwner whenNotPaused {
     uint ethBalanceBefore = address(this).balance;
-    uint netValueBefore = getNetValue(); 
-    
+    uint netValueBefore = getNetValue();
+
     address adapter = management.managePositionsAdapter();
     for (uint i = 0; i < _data.length; i++) {
       (bool success, bytes memory result) = adapter.delegatecall(_data[i]);
