@@ -177,7 +177,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     if (netValueAfter < netValueBefore) {
       uint valueReduced = netValueBefore.sub(netValueAfter);
       uint percentsValueReduced = valueReduced.mul(PERCENT_100).div(netValueBefore);
-      require(percentsValueReduced < PERCENT_100.div(100), 'HousecatPool: value reduced too much'); // TODO: define slippage limit in mgmt settings
+      require(percentsValueReduced < PERCENT_100.div(100), 'HousecatPool: pool value reduced'); // TODO: define slippage limit in mgmt settings
     }
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
   }
