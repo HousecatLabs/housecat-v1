@@ -9,33 +9,40 @@ import {
   AaveV2Adapter,
 } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
+import { BigNumber } from 'ethers'
 
-export const deployQueries = async (signer: SignerWithAddress): Promise<HousecatQueries> => {
+export const deployQueries = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<HousecatQueries> => {
   const HousecatQueries = await ethers.getContractFactory('HousecatQueries')
-  return HousecatQueries.connect(signer).deploy()
+  const contract = await HousecatQueries.connect(signer).deploy({ gasPrice })
+  return contract.deployed()
 }
 
-export const deployPool = async (signer: SignerWithAddress): Promise<HousecatPool> => {
+export const deployPool = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<HousecatPool> => {
   const HousecatPool = await ethers.getContractFactory('HousecatPool')
-  return HousecatPool.connect(signer).deploy()
+  const contract = await HousecatPool.connect(signer).deploy({ gasPrice })
+  return contract.deployed()
 }
 
 export const deployManagement = async (
   signer: SignerWithAddress,
   treasury: string,
-  weth: string
+  weth: string,
+  gasPrice?: BigNumber,
 ): Promise<HousecatManagement> => {
   const HousecatManagement = await ethers.getContractFactory('HousecatManagement')
-  return HousecatManagement.connect(signer).deploy(treasury, weth)
+  const contract = await HousecatManagement.connect(signer).deploy(treasury, weth, { gasPrice })
+  return contract.deployed()
 }
 
 export const deployFactory = async (
   signer: SignerWithAddress,
   management: string,
-  poolTemplate: string
+  poolTemplate: string,
+  gasPrice?: BigNumber,
 ): Promise<HousecatFactory> => {
   const HousecatFactory = await ethers.getContractFactory('HousecatFactory')
-  return HousecatFactory.connect(signer).deploy(management, poolTemplate)
+  const contract = await HousecatFactory.connect(signer).deploy(management, poolTemplate, { gasPrice })
+  return contract.deployed()
 }
 
 export interface IAdapters {
@@ -43,9 +50,11 @@ export interface IAdapters {
   aaveV2Adapter: AaveV2Adapter
 }
 
-export const deployAdapters = async (signer: SignerWithAddress): Promise<IAdapters> => {
-  const uniswapV2Adapter = await (await ethers.getContractFactory('UniswapV2Adapter')).connect(signer).deploy()
-  const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy()
+export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<IAdapters> => {
+  const uniswapV2Adapter = await (await ethers.getContractFactory('UniswapV2Adapter')).connect(signer).deploy({ gasPrice })
+  await uniswapV2Adapter.deployed()
+  const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy({ gasPrice })
+  await aaveV2Adapter.deployed()
   return { uniswapV2Adapter, aaveV2Adapter }
 }
 
@@ -57,12 +66,14 @@ export interface IDeployHousecat {
   assetsMeta?: TokenMetaStruct[]
   loans?: string[]
   loansMeta?: TokenMetaStruct[]
-  integrations?: string[]
+  integrations?: string[],
+  gasPrice?: BigNumber
 }
 
 export interface IHousecat {
   mgmt: HousecatManagement
   factory: HousecatFactory
+  poolTemplate: HousecatPool
   adapters: IAdapters
 }
 
@@ -75,33 +86,34 @@ export const deployHousecat = async ({
   loans,
   loansMeta,
   integrations,
+  gasPrice,
 }: IDeployHousecat): Promise<IHousecat> => {
-  const poolTemplate = await deployPool(signer)
-  const mgmt = await deployManagement(signer, treasury || signer.address, weth)
-  const factory = await deployFactory(signer, mgmt.address, poolTemplate.address)
+  const poolTemplate = await deployPool(signer, gasPrice)
+  const mgmt = await deployManagement(signer, treasury || signer.address, weth, gasPrice)
+  const factory = await deployFactory(signer, mgmt.address, poolTemplate.address, gasPrice)
   if (assets) {
-    await mgmt.connect(signer).setSupportedAssets(assets)
+    await (await mgmt.connect(signer).setSupportedAssets(assets, { gasPrice })).wait()
     if (assetsMeta) {
-      await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta)
+      await (await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta, { gasPrice })).wait()
     }
   }
   if (loans) {
-    await mgmt.connect(signer).setSupportedLoans(loans)
+    await (await mgmt.connect(signer).setSupportedLoans(loans, { gasPrice })).wait()
     if (loansMeta) {
-      await mgmt.connect(signer).setTokenMetaMany(loans, loansMeta)
+      await (await mgmt.connect(signer).setTokenMetaMany(loans, loansMeta, { gasPrice })).wait()
     }
   }
-  const adapters = await deployAdapters(signer)
+  const adapters = await deployAdapters(signer, gasPrice)
   await Promise.all(
     Object.values(adapters).map(async (adapter) => {
-      await mgmt.setAdapter(adapter.address, true)
+      await (await mgmt.setAdapter(adapter.address, true, { gasPrice })).wait()
     })
   )
 
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {
-      await mgmt.setSupportedIntegration(integrations[i], true)
+      await (await mgmt.setSupportedIntegration(integrations[i], true, { gasPrice })).wait()
     }
   }
-  return { mgmt, factory, adapters }
+  return { mgmt, factory, poolTemplate, adapters }
 }
