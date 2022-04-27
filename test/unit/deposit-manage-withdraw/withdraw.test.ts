@@ -15,13 +15,13 @@ describe('HousecatPool: withdraw', () => {
     const tx = pool.connect(manager).withdraw([
       {
         adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData("swapTokens", [
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
           amm.address,
           [weth.token.address, assets[0].token.address],
           parseEther('1'),
-          1
-        ])
-      }
+          1,
+        ]),
+      },
     ])
     await expect(tx).revertedWith('HousecatPool: weights changed')
   })
@@ -38,7 +38,7 @@ describe('HousecatPool: withdraw', () => {
       manager,
       { price: '1' },
       [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
-      [{ price: '1' }],
+      [{ price: '1' }]
     )
 
     // deposit ETH
@@ -51,13 +51,13 @@ describe('HousecatPool: withdraw', () => {
     const tx = pool.connect(manager).withdraw([
       {
         adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData("swapTokenToETH", [
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
           amm.address,
           [weth.token.address, weth.token.address],
           parseEther('1'),
-          1
-        ])
-      }
+          1,
+        ]),
+      },
     ])
     await expect(tx).revertedWith('HousecatPool: weights changed')
   })
@@ -70,7 +70,7 @@ describe('HousecatPool: withdraw', () => {
       manager,
       { price: '1' },
       [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
-      [{ price: '1' }],
+      [{ price: '1' }]
     )
 
     // deposit by manager
@@ -83,13 +83,13 @@ describe('HousecatPool: withdraw', () => {
     const tx = pool.connect(manager).withdraw([
       {
         adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData("swapTokenToETH", [
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
           amm.address,
           [weth.token.address, weth.token.address],
           parseEther('5').add(1),
-          1
-        ])
-      }
+          1,
+        ]),
+      },
     ])
     await expect(tx).revertedWith('withdraw balance exceeded')
   })
@@ -102,7 +102,7 @@ describe('HousecatPool: withdraw', () => {
       manager,
       { price: '1' },
       [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
-      [{ price: '1' }],
+      [{ price: '1' }]
     )
 
     // initial deposit by manager
@@ -115,13 +115,13 @@ describe('HousecatPool: withdraw', () => {
     await pool.connect(withdrawer).withdraw([
       {
         adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData("swapTokenToETH", [
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
           amm.address,
           [weth.token.address, weth.token.address],
           parseEther('2'),
-          1
-        ])
-      }
+          1,
+        ]),
+      },
     ])
 
     const totalSupply = await pool.totalSupply()

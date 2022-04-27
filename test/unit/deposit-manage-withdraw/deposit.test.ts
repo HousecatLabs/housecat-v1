@@ -12,17 +12,20 @@ describe('HousecatPool: deposit', () => {
     await assets[0].token.connect(signer).mint(pool.address, parseEther('10'))
 
     // deposit ETH without trading all to Asset0
-    const tx = pool.deposit([
-      {
-        adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData("swapTokens", [
-          amm.address,
-          [weth.token.address, assets[0].token.address],
-          parseEther('0.5'),
-          1
-        ])
-      }
-    ], { value: parseEther('1') })
+    const tx = pool.deposit(
+      [
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('0.5'),
+            1,
+          ]),
+        },
+      ],
+      { value: parseEther('1') }
+    )
     await expect(tx).revertedWith('HousecatPool: weights changed')
   })
 
@@ -38,7 +41,7 @@ describe('HousecatPool: deposit', () => {
       manager,
       { price: '1' },
       [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
-      [{ price: '1' }],
+      [{ price: '1' }]
     )
 
     // send Asset0 to the empty pool
@@ -48,17 +51,20 @@ describe('HousecatPool: deposit', () => {
     await loans[0].token.connect(signer).mint(pool.address, parseEther('1'))
 
     // deposit ETH and trade all to Asset0 without adjusting Loan0 position
-    const tx = pool.deposit([
-      {
-        adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData("swapTokens", [
-          amm.address,
-          [weth.token.address, assets[0].token.address],
-          parseEther('1'),
-          1
-        ])
-      }
-    ], { value: parseEther('1') })
+    const tx = pool.deposit(
+      [
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('1'),
+            1,
+          ]),
+        },
+      ],
+      { value: parseEther('1') }
+    )
     await expect(tx).revertedWith('HousecatPool: weights changed')
   })
 
@@ -80,13 +86,13 @@ describe('HousecatPool: deposit', () => {
     const tx = pool.deposit([
       {
         adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData("swapTokenToETH", [
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
           amm.address,
           [weth.token.address, weth.token.address],
           parseEther('1'),
-          1
-        ])
-      }
+          1,
+        ]),
+      },
     ])
     await expect(tx).revertedWith('HousecatPool: pool value reduced')
   })

@@ -21,7 +21,13 @@ export interface IMockHousecat {
   adapters: IAdapters
 }
 
-export const mockHousecat = async ({ signer, treasury, weth, assets, loans }: IMockHousecatProps): Promise<IMockHousecat> => {
+export const mockHousecat = async ({
+  signer,
+  treasury,
+  weth,
+  assets,
+  loans,
+}: IMockHousecatProps): Promise<IMockHousecat> => {
   const [amm, _weth, _assets] = await mockAssets({
     signer,
     weth,
@@ -39,7 +45,7 @@ export const mockHousecat = async ({ signer, treasury, weth, assets, loans }: IM
   ]
 
   const _loans = await mockLoans({ signer, tokens: loans })
-  const loanAddresses = _loans.map(x => x.token.address)
+  const loanAddresses = _loans.map((x) => x.token.address)
   const loansMeta = await Promise.all(
     _loans.map(async (l) => ({
       priceFeed: l.priceFeed.address,
