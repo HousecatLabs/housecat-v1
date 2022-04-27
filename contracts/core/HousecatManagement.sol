@@ -84,6 +84,21 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return (supportedLoans, meta);
   }
 
+  function getAllTokensWithMeta() external view returns (address[] memory, TokenMeta[] memory) {
+    uint length = supportedAssets.length + supportedLoans.length;
+    address[] memory tokens = new address[](length);
+    TokenMeta[] memory meta = new TokenMeta[](length);
+    for (uint i = 0; i < supportedAssets.length; i++) {
+      tokens[i] = supportedAssets[i];
+      meta[i] = tokenMeta[supportedAssets[i]];
+    }
+    for (uint i = 0; i < supportedLoans.length; i++) {
+      tokens[supportedAssets.length + i] = supportedLoans[i];
+      meta[supportedAssets.length + i] = tokenMeta[supportedLoans[i]];
+    }
+    return (tokens, meta);
+  }
+
   function isIntegrationSupported(address _integration) external view returns (bool) {
     return supportedIntegrations[_integration];
   }
