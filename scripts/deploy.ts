@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { deployHousecat } from '../utils/deploy-contracts'
+import { deployHousecat, deployQueries } from '../utils/deploy-contracts'
 import polygon from '../utils/addresses/polygon'
 
 const gasPrice = ethers.utils.parseUnits('35', 'gwei')
@@ -23,9 +23,13 @@ const main = async () => {
     gasPrice
   })
 
+
   console.log('HousecatManagement:', mgmt.address)
   console.log('HousecatFactory:', factory.address)
   console.log('HousecatPool:', poolTemplate.address)
+
+  const queries = await deployQueries(owner, gasPrice)
+  console.log('HousecatQueries:', queries.address)
 }
 
 main().catch((error) => {
