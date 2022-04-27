@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
+import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
 
 describe('HousecatPool: manage', () => {
   it('only manager allowed to call', async () => {

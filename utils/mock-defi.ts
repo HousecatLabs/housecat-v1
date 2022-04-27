@@ -21,6 +21,11 @@ export interface IMockAssetsProps {
   tokens: ITokenWithLiquidity[]
 }
 
+export interface IMockLoansProps {
+  signer: SignerWithAddress
+  tokens: IToken[]
+}
+
 export interface ITokenWithPriceFeed {
   token: ERC20Mock | WETHMock
   priceFeed: AggregatorV3Mock
@@ -98,4 +103,17 @@ export const mockAssets = async ({
   }
   const wethWithFeed = { token: _weth, priceFeed: wethPriceFeed }
   return [amm, wethWithFeed, tokensWithFeeds]
+}
+
+export const mockLoans = async ({ signer, tokens }: IMockLoansProps): Promise<ITokenWithPriceFeed[]> => {
+  const tokensWithFeeds: ITokenWithPriceFeed[] = []
+  for (let i = 0; i < tokens.length; i++) {
+    const token = await mockToken(signer, 'Token' + i, 'TOKEN' + i, tokens[i].decimals || 18, 0)
+    const priceFeed = await mockPriceFeed(signer, parseUnits(tokens[i].price, 8), 8)
+    tokensWithFeeds.push({
+      token,
+      priceFeed,
+    })
+  }
+  return tokensWithFeeds
 }
