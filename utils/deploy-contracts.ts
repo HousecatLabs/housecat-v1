@@ -27,7 +27,7 @@ export const deployManagement = async (
   signer: SignerWithAddress,
   treasury: string,
   weth: string,
-  gasPrice?: BigNumber,
+  gasPrice?: BigNumber
 ): Promise<HousecatManagement> => {
   const HousecatManagement = await ethers.getContractFactory('HousecatManagement')
   const contract = await HousecatManagement.connect(signer).deploy(treasury, weth, { gasPrice })
@@ -38,7 +38,7 @@ export const deployFactory = async (
   signer: SignerWithAddress,
   management: string,
   poolTemplate: string,
-  gasPrice?: BigNumber,
+  gasPrice?: BigNumber
 ): Promise<HousecatFactory> => {
   const HousecatFactory = await ethers.getContractFactory('HousecatFactory')
   const contract = await HousecatFactory.connect(signer).deploy(management, poolTemplate, { gasPrice })
@@ -51,7 +51,9 @@ export interface IAdapters {
 }
 
 export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<IAdapters> => {
-  const uniswapV2Adapter = await (await ethers.getContractFactory('UniswapV2Adapter')).connect(signer).deploy({ gasPrice })
+  const uniswapV2Adapter = await (await ethers.getContractFactory('UniswapV2Adapter'))
+    .connect(signer)
+    .deploy({ gasPrice })
   await uniswapV2Adapter.deployed()
   const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy({ gasPrice })
   await aaveV2Adapter.deployed()
@@ -66,7 +68,7 @@ export interface IDeployHousecat {
   assetsMeta?: TokenMetaStruct[]
   loans?: string[]
   loansMeta?: TokenMetaStruct[]
-  integrations?: string[],
+  integrations?: string[]
   gasPrice?: BigNumber
 }
 
@@ -104,11 +106,12 @@ export const deployHousecat = async ({
     }
   }
   const adapters = await deployAdapters(signer, gasPrice)
-  await Promise.all(
-    Object.values(adapters).map(async (adapter) => {
-      await (await mgmt.setAdapter(adapter.address, true, { gasPrice })).wait()
-    })
-  )
+
+  for (let i = 0; i < Object.keys(adapters).length; i++) {
+    const key = Object.keys(adapters)[i] as keyof IAdapters
+    const adapter = adapters[key]
+    await (await mgmt.setAdapter(adapter.address, true, { gasPrice })).wait()
+  }
 
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {

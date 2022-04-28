@@ -46,7 +46,6 @@ export const aaveV2Tokens = {
   },
 }
 
-
 export default {
   uniswapV2Routers,
   assets,
