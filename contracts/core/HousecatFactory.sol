@@ -43,4 +43,12 @@ contract HousecatFactory {
   function getNPools() external view returns (uint) {
     return pools.length;
   }
+
+  function getPools(uint _fromIdx, uint _toIdx) external view returns (address[] memory) {
+    address[] memory pools_ = new address[](_toIdx.sub(_fromIdx));
+    for (uint i = 0; i < pools_.length; i++) {
+      pools_[i] = pools[i];
+    }
+    return pools_;
+  }
 }
