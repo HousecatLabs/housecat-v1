@@ -8,18 +8,16 @@ import { uniswapV2Routers } from '../../../utils/addresses/polygon'
 
 describe('UniswapV2Adapter', () => {
   describe('swapTokens', () => {
-    let deployer: SignerWithAddress
-    let manager: SignerWithAddress
+    let owner: SignerWithAddress
     let mock: IMockHousecatAndPool
 
     before(async () => {
-      const [deployer_, treasury, manager_] = await ethers.getSigners()
-      deployer = deployer_
-      manager = manager_
-      mock = await mockHousecatAndPool(deployer, treasury, manager)
+      const [owner_, treasury, mirrored, mirrorer] = await ethers.getSigners()
+      owner = owner_
+      mock = await mockHousecatAndPool(owner, treasury, mirrored)
 
       // deposit ETH so that the pool has WETH
-      await mock.pool.connect(manager).deposit([], { value: parseEther('5') })
+      await mock.pool.connect(mirrorer).deposit([], { value: parseEther('5') })
     })
 
     it('should fail to use an unsupported AMM router', async () => {
@@ -29,7 +27,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).manage([
+      const tx = mock.pool.connect(owner).manage([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeWethToToken0,
@@ -40,7 +38,7 @@ describe('UniswapV2Adapter', () => {
 
     it('should fail to buy unsupported tokens', async () => {
       const mockUnsuportedAssets = await mockAssets({
-        signer: deployer,
+        signer: owner,
         weth: { price: '1', decimals: 18 },
         tokens: [{ price: '1', decimals: 18, reserveToken: '10000', reserveWeth: '10000' }],
       })
@@ -51,7 +49,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).manage([
+      const tx = mock.pool.connect(owner).manage([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeWethToUnsupportedToken,
@@ -67,7 +65,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      await mock.pool.connect(manager).manage([
+      await mock.pool.connect(owner).manage([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeWethToToken0,
@@ -84,17 +82,17 @@ describe('UniswapV2Adapter', () => {
 
   describe('swapTokenToETH', () => {
     let deployer: SignerWithAddress
-    let manager: SignerWithAddress
+    let mirrorer: SignerWithAddress
     let mock: IMockHousecatAndPool
 
     before(async () => {
-      const [deployer_, treasury, manager_] = await ethers.getSigners()
+      const [deployer_, treasury, mirrored, mirrorer_] = await ethers.getSigners()
       deployer = deployer_
-      manager = manager_
-      mock = await mockHousecatAndPool(deployer, treasury, manager)
+      mirrorer = mirrorer_
+      mock = await mockHousecatAndPool(deployer, treasury, mirrored)
 
       // deposit ETH so that the pool has WETH
-      await mock.pool.connect(manager).deposit([], { value: parseEther('5') })
+      await mock.pool.connect(mirrorer).deposit([], { value: parseEther('5') })
 
       // send token0 to the pool
       await mock.assets[0].token.mint(mock.pool.address, parseEther('5'))
@@ -107,7 +105,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).withdraw([
+      const tx = mock.pool.connect(mirrorer).withdraw([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeToken0ToETH,
@@ -129,7 +127,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).withdraw([
+      const tx = mock.pool.connect(mirrorer).withdraw([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeUnsupportedTokenToETH,
@@ -145,7 +143,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(manager).withdraw([
+      const tx = mock.pool.connect(mirrorer).withdraw([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeToken0ToToken1,
@@ -155,7 +153,7 @@ describe('UniswapV2Adapter', () => {
     })
 
     it('should succeed to sell tokens for ETH when both amm and path are valid', async () => {
-      const ethBalanceBefore = await manager.getBalance()
+      const ethBalanceBefore = await mirrorer.getBalance()
 
       const tradeWethToETH = mock.adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
         mock.amm.address,
@@ -169,7 +167,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      await mock.pool.connect(manager).withdraw([
+      await mock.pool.connect(mirrorer).withdraw([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeWethToETH,
@@ -186,7 +184,7 @@ describe('UniswapV2Adapter', () => {
       const token0Balance = await mock.assets[0].token.balanceOf(mock.pool.address)
       expect(parseFloat(formatEther(token0Balance))).approximately(4, 0.01)
 
-      const ethBalanceAfter = await manager.getBalance()
+      const ethBalanceAfter = await mirrorer.getBalance()
       const ethBalanceIncreased = ethBalanceAfter.sub(ethBalanceBefore)
       expect(parseFloat(formatEther(ethBalanceIncreased))).approximately(2, 0.01)
     })

@@ -31,6 +31,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   bool private initialized;
   HousecatFactory public factory;
   HousecatManagement public management;
+  address public mirrored;
   string private tokenName;
   string private tokenSymbol;
 
@@ -46,13 +47,15 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   function initialize(
     address _owner,
     address _factory,
-    address _management
+    address _management,
+    address _mirrored
   ) external {
     require(!initialized, 'HousecatPool: already initialized');
     _transferOwnership(_owner);
     factory = HousecatFactory(payable(_factory));
     management = HousecatManagement(_management);
-    tokenName = 'Housecat Pool Position'; // TODO: let manager set name and symbol
+    mirrored = _mirrored;
+    tokenName = 'Housecat Pool Position';
     tokenSymbol = 'HCAT-PP';
     initialized = true;
   }
