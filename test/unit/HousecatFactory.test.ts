@@ -61,7 +61,6 @@ describe('HousecatFactory', () => {
 
       // sender should hold 5 pool tokens
       const pool = await ethers.getContractAt('HousecatPool', poolAddress)
-      console.log(await pool.totalSupply())
       expect(await pool.balanceOf(manager.address)).equal(parseEther('5'))
     })
 

@@ -42,7 +42,7 @@ describe('HousecatPool: withdraw', () => {
     )
 
     // deposit ETH
-    await pool.connect(manager).deposit([], { value: parseEther('2') })
+    await pool.connect(manager).deposit([], { value: parseEther('3') })
 
     // send Loan0
     await loans[0].token.connect(signer).mint(pool.address, parseEther('1'))

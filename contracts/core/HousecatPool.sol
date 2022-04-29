@@ -11,6 +11,20 @@ import './HousecatQueries.sol';
 import './HousecatFactory.sol';
 import './HousecatManagement.sol';
 
+struct TokenData {
+  address[] tokens;
+  uint[] decimals;
+  uint[] prices;
+}
+
+struct PoolFigures {
+  uint[] assetWeights;
+  uint[] loanWeights;
+  uint assetValue;
+  uint loanValue;
+  uint netValue;
+}
+
 contract HousecatPool is HousecatQueries, ERC20, Ownable {
   using SafeMath for uint;
 
@@ -62,41 +76,24 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function getAssetWeights() public view returns (uint[] memory, uint) {
-    (address[] memory tokens, TokenMeta[] memory meta) = management.getAssetsWithMeta();
-    return _getWeights(tokens, meta);
+    TokenData memory data = _getAssetData();
+    uint[] memory balances = _getTokenBalances(address(this), data.tokens);
+    return _getTokenWeights(balances, data.prices, data.decimals);
   }
 
   function getLoanWeights() public view returns (uint[] memory, uint) {
-    (address[] memory tokens, TokenMeta[] memory meta) = management.getLoansWithMeta();
-    return _getWeights(tokens, meta);
-  }
-
-  function getAllWeights() public view returns (uint[] memory, uint) {
-    (address[] memory tokens, TokenMeta[] memory meta) = management.getAllTokensWithMeta();
-    return _getWeights(tokens, meta);
-  }
-
-  function getAssetValue() public view returns (uint) {
-    (address[] memory tokens, TokenMeta[] memory meta) = management.getAssetsWithMeta();
-    return _getValue(tokens, meta);
-  }
-
-  function getLoanValue() public view returns (uint) {
-    (address[] memory tokens, TokenMeta[] memory meta) = management.getLoansWithMeta();
-    return _getValue(tokens, meta);
-  }
-
-  function getNetValue() public view returns (uint) {
-    uint assetValue = getAssetValue();
-    uint loanValue = getLoanValue();
-    return assetValue.sub(loanValue);
+    TokenData memory data = _getLoanData();
+    uint[] memory balances = _getTokenBalances(address(this), data.tokens);
+    return _getTokenWeights(balances, data.prices, data.decimals);
   }
 
   function deposit(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
+    TokenData memory assets = _getAssetData();
+    TokenData memory loans = _getLoanData();
+
     // check balances before deposit
     uint ethBalanceBefore = address(this).balance.sub(msg.value);
-    (uint[] memory weightsBefore, uint absValueBefore) = getAllWeights();
-    uint netValueBefore = getNetValue();
+    PoolFigures memory figuresBefore = _getPoolFigures(assets, loans);
 
     // swap the sent eth to weth
     _buyWETH(management.weth(), msg.value);
@@ -105,56 +102,55 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // check balances after deposit
     uint ethBalanceAfter = address(this).balance;
+    PoolFigures memory figuresAfter = _getPoolFigures(assets, loans);
+
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
+    require(figuresAfter.netValue >= figuresBefore.netValue, 'HousecatPool: pool value reduced');
 
-    (uint[] memory weightsAfter, ) = getAllWeights();
-    uint netValueAfter = getNetValue();
-
-    require(netValueAfter >= netValueBefore, 'HousecatPool: pool value reduced');
-
-    if (absValueBefore > ONE_USD) {
+    if (figuresBefore.assetValue > ONE_USD) {
       // TODO: define threshold value in mgmt settings
-      bool weightsChanged = _didWeightsChange(weightsBefore, weightsAfter);
+      bool weightsChanged = _didWeightsChange(figuresBefore, figuresAfter);
       require(!weightsChanged, 'HousecatPool: weights changed');
     }
 
     // mint pool tokens corresponding the deposit value
-    uint depositValue = netValueAfter.sub(netValueBefore);
+    uint depositValue = figuresAfter.netValue.sub(figuresBefore.netValue);
     uint amountMint = depositValue;
     if (totalSupply() > 0) {
-      amountMint = totalSupply().mul(depositValue).div(netValueBefore);
+      amountMint = totalSupply().mul(depositValue).div(figuresBefore.netValue);
     }
     _mint(msg.sender, amountMint);
   }
 
   function withdraw(PoolTransaction[] calldata _transactions) external whenNotPaused {
+    TokenData memory assets = _getAssetData();
+    TokenData memory loans = _getLoanData();
+
     // check balances before withdrawal
     uint ethBalanceBefore = address(this).balance;
-    (uint[] memory weightsBefore, ) = getAllWeights();
-    uint netValueBefore = getNetValue();
-    uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
+    PoolFigures memory figuresBefore = _getPoolFigures(assets, loans);
 
     _executeTransactions(_transactions);
 
     // check balances after withdrawal
     uint ethBalanceAfter = address(this).balance;
+    PoolFigures memory figuresAfter = _getPoolFigures(assets, loans);
+    
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
-
-    (uint[] memory weightsAfter, uint absValueAfter) = getAllWeights();
-    uint netValueAfter = getNetValue();
-
-    if (absValueAfter > ONE_USD) {
+    
+    if (figuresAfter.assetValue > ONE_USD) {
       // TODO: define threshold value in mgmt settings
-      bool weightsChanged = _didWeightsChange(weightsBefore, weightsAfter);
+      bool weightsChanged = _didWeightsChange(figuresBefore, figuresAfter);
       require(!weightsChanged, 'HousecatPool: weights changed');
     }
 
     // burn pool tokens in accordance with the withdrawn value
     {
-      uint withdrawValue = netValueBefore.sub(netValueAfter);
-      uint maxWithdrawValue = netValueBefore.mul(shareInPool).div(PERCENT_100);
+      uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
+      uint withdrawValue = figuresBefore.netValue.sub(figuresAfter.netValue);
+      uint maxWithdrawValue = figuresBefore.netValue.mul(shareInPool).div(PERCENT_100);
       require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw balance exceeded');
-      uint amountBurn = totalSupply().mul(withdrawValue).div(netValueBefore);
+      uint amountBurn = totalSupply().mul(withdrawValue).div(figuresBefore.netValue);
       _burn(msg.sender, amountBurn);
     }
 
@@ -165,21 +161,58 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function manage(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
+    TokenData memory assets = _getAssetData();
+    TokenData memory loans = _getLoanData();
+
     uint ethBalanceBefore = address(this).balance;
-    uint netValueBefore = getNetValue();
+    PoolFigures memory figuresBefore = _getPoolFigures(assets, loans);
 
     _executeTransactions(_transactions);
 
     uint ethBalanceAfter = address(this).balance;
+    PoolFigures memory figuresAfter = _getPoolFigures(assets, loans);
+    
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
-
-    uint netValueAfter = getNetValue();
-    if (netValueAfter < netValueBefore) {
-      uint valueReduced = netValueBefore.sub(netValueAfter);
-      uint percentsValueReduced = valueReduced.mul(PERCENT_100).div(netValueBefore);
+    
+    if (figuresAfter.netValue < figuresBefore.netValue) {
+      uint valueReduced = figuresBefore.netValue.sub(figuresAfter.netValue);
+      uint percentsValueReduced = valueReduced.mul(PERCENT_100).div(figuresBefore.netValue);
       require(percentsValueReduced < PERCENT_100.div(100), 'HousecatPool: pool value reduced'); // TODO: define slippage limit in mgmt settings
     }
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
+  }
+
+  function _mapTokensMeta(TokenMeta[] memory _tokensMeta) private pure returns (address[] memory, uint[] memory) {
+    address[] memory priceFeeds = new address[](_tokensMeta.length);
+    uint[] memory decimals = new uint[](_tokensMeta.length);
+    for (uint i; i < _tokensMeta.length; i++) {
+      priceFeeds[i] = _tokensMeta[i].priceFeed;
+      decimals[i] = _tokensMeta[i].decimals;
+    }
+    return (priceFeeds, decimals);
+  }
+  
+  function _getTokenData(
+    address[] memory _tokens, 
+    TokenMeta[] memory _tokensMeta
+  ) private view returns (TokenData memory) {
+    (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
+    uint[] memory prices = _getTokenPrices(priceFeeds);
+    return TokenData({
+      tokens: _tokens,
+      decimals: decimals,
+      prices: prices
+    });
+  }
+
+  function _getAssetData() private view returns (TokenData memory) {
+    (address[] memory assets, TokenMeta[] memory assetsMeta) = management.getAssetsWithMeta();
+    return _getTokenData(assets, assetsMeta);
+  }
+
+  function _getLoanData() private view returns (TokenData memory) {
+    (address[] memory loans, TokenMeta[] memory loansMeta) = management.getLoansWithMeta();
+    return _getTokenData(loans, loansMeta);
   }
 
   function _executeTransactions(PoolTransaction[] calldata _transactions) private {
@@ -190,11 +223,24 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
   }
 
-  function _didWeightsChange(uint[] memory _weightsBefore, uint[] memory _weightsAfter) private pure returns (bool) {
-    for (uint i; i < _weightsBefore.length; i++) {
-      uint diff = _weightsBefore[i] > _weightsAfter[i]
-        ? _weightsBefore[i].sub(_weightsAfter[i])
-        : _weightsAfter[i].sub(_weightsBefore[i]);
+  function _combineWeights(PoolFigures memory _pf) internal pure returns (uint[] memory) {
+    uint[] memory combined = new uint[](_pf.assetWeights.length + _pf.loanWeights.length);
+    for (uint i = 0; i < _pf.assetWeights.length; i++) {
+      combined[i] = _pf.assetWeights[i].mul(_pf.assetValue).div(_pf.netValue);
+    }
+    for (uint i = 0; i < _pf.loanWeights.length; i++) {
+      combined[i + _pf.assetWeights.length] = _pf.loanWeights[i].mul(_pf.loanValue).div(_pf.netValue);
+    }
+    return combined;
+  }
+
+  function _didWeightsChange(PoolFigures memory _figuresBefore, PoolFigures memory _figuresAfter) private pure returns (bool) {
+    uint[] memory weightsBefore = _combineWeights(_figuresBefore);
+    uint[] memory weightsAfter = _combineWeights(_figuresAfter);
+    for (uint i; i < weightsBefore.length; i++) {
+      uint diff = weightsBefore[i] > weightsAfter[i]
+        ? weightsBefore[i].sub(weightsAfter[i])
+        : weightsAfter[i].sub(weightsBefore[i]);
       if (diff > PERCENT_100.div(100)) {
         // TODO: define max diff in mgmt settings
         return true;
@@ -215,31 +261,28 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getTokenPrices(priceFeeds)[0];
   }
 
-  function _mapTokensMeta(TokenMeta[] memory _tokensMeta) private pure returns (address[] memory, uint[] memory) {
-    address[] memory priceFeeds = new address[](_tokensMeta.length);
-    uint[] memory decimals = new uint[](_tokensMeta.length);
-    for (uint i; i < _tokensMeta.length; i++) {
-      priceFeeds[i] = _tokensMeta[i].priceFeed;
-      decimals[i] = _tokensMeta[i].decimals;
-    }
-    return (priceFeeds, decimals);
-  }
-
-  function _getValue(address[] memory _tokens, TokenMeta[] memory _tokensMeta) private view returns (uint) {
-    uint[] memory tokenBalances = _getTokenBalances(address(this), _tokens);
-    (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
-    uint[] memory tokenPrices = _getTokenPrices(priceFeeds);
-    return _getTotalValue(tokenBalances, tokenPrices, decimals);
-  }
-
-  function _getWeights(address[] memory _tokens, TokenMeta[] memory _tokensMeta)
-    private
-    view
-    returns (uint[] memory, uint)
-  {
-    uint[] memory tokenBalances = _getTokenBalances(address(this), _tokens);
-    (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
-    uint[] memory tokenPrices = _getTokenPrices(priceFeeds);
-    return _getTokenWeights(tokenBalances, tokenPrices, decimals);
+  function _getPoolFigures(
+    TokenData memory _assetData,
+    TokenData memory _loanData
+  ) private view returns (PoolFigures memory) {
+    uint[] memory assetBalances = _getTokenBalances(address(this), _assetData.tokens);
+    (uint[] memory assetWeights, uint assetValue) = _getTokenWeights(
+      assetBalances,
+      _assetData.prices,
+      _assetData.decimals
+    );
+    uint[] memory loanBalances = _getTokenBalances(address(this), _loanData.tokens);
+    (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(
+      loanBalances,
+      _loanData.prices,
+      _loanData.decimals
+    );
+    return PoolFigures({
+      assetWeights: assetWeights,
+      loanWeights: loanWeights,
+      assetValue: assetValue,
+      loanValue: loanValue,
+      netValue: assetValue.sub(loanValue)
+    });
   }
 }
