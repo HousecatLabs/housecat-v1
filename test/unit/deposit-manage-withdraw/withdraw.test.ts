@@ -5,14 +5,14 @@ import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
 
 describe('HousecatPool: withdraw', () => {
   it('should fail to change the asset weights of the pool', async () => {
-    const [signer, treasury, manager, mirrored] = await ethers.getSigners()
-    const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool(signer, treasury, manager, mirrored)
+    const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
+    const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
 
     // initial deposit
-    await pool.connect(manager).deposit([], { value: parseEther('10') })
+    await pool.connect(mirrorer).deposit([], { value: parseEther('10') })
 
     // try to trade WETH to Asset0 on withdraw
-    const tx = pool.connect(manager).withdraw([
+    const tx = pool.connect(mirrorer).withdraw([
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
@@ -31,11 +31,10 @@ describe('HousecatPool: withdraw', () => {
   })
 
   it('should fail to change the loan ratio of the pool', async () => {
-    const [signer, treasury, manager, mirrored] = await ethers.getSigners()
+    const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
     const { pool, adapters, amm, loans, weth } = await mockHousecatAndPool(
       signer,
       treasury,
-      manager,
       mirrored,
       { price: '1' },
       [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
@@ -43,13 +42,13 @@ describe('HousecatPool: withdraw', () => {
     )
 
     // deposit ETH
-    await pool.connect(manager).deposit([], { value: parseEther('3') })
+    await pool.connect(mirrorer).deposit([], { value: parseEther('3') })
 
     // send Loan0
     await loans[0].token.connect(signer).mint(pool.address, parseEther('1'))
 
     // try to withdraw without adjusting the loan position
-    const tx = pool.connect(manager).withdraw([
+    const tx = pool.connect(mirrorer).withdraw([
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
@@ -64,25 +63,24 @@ describe('HousecatPool: withdraw', () => {
   })
 
   it('should fail to withdraw more than what the withdrawer owns', async () => {
-    const [signer, treasury, manager, mirrored, depositor] = await ethers.getSigners()
+    const [signer, treasury, mirrored, mirrorer1, mirrorer2] = await ethers.getSigners()
     const { pool, adapters, amm, weth } = await mockHousecatAndPool(
       signer,
       treasury,
-      manager,
       mirrored,
       { price: '1' },
       [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
       [{ price: '1' }]
     )
 
-    // deposit by manager
-    await pool.connect(manager).deposit([], { value: parseEther('5') })
+    // deposit by mirrorer1
+    await pool.connect(mirrorer1).deposit([], { value: parseEther('5') })
 
     // deposit by another user
-    await pool.connect(depositor).deposit([], { value: parseEther('5') })
+    await pool.connect(mirrorer2).deposit([], { value: parseEther('5') })
 
     // withdraw by manager
-    const tx = pool.connect(manager).withdraw([
+    const tx = pool.connect(mirrorer1).withdraw([
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
@@ -97,25 +95,24 @@ describe('HousecatPool: withdraw', () => {
   })
 
   it('should burn pool tokens the amount being equal to the reduction of pool net value', async () => {
-    const [signer, treasury, manager, mirrored, withdrawer] = await ethers.getSigners()
+    const [signer, treasury, mirrored, mirrorer1, mirrorer2] = await ethers.getSigners()
     const { pool, adapters, amm, weth } = await mockHousecatAndPool(
       signer,
       treasury,
-      manager,
       mirrored,
       { price: '1' },
       [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
       [{ price: '1' }]
     )
 
-    // initial deposit by manager
-    await pool.connect(manager).deposit([], { value: parseEther('8') })
+    // initial deposit by mirrorer1
+    await pool.connect(mirrorer1).deposit([], { value: parseEther('8') })
 
-    // deposit by another user
-    await pool.connect(withdrawer).deposit([], { value: parseEther('4') })
+    // deposit by mirrorer2
+    await pool.connect(mirrorer2).deposit([], { value: parseEther('4') })
 
-    // withdraw by withdrawer
-    await pool.connect(withdrawer).withdraw([
+    // withdraw by mirrorer2
+    await pool.connect(mirrorer2).withdraw([
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
@@ -129,10 +126,10 @@ describe('HousecatPool: withdraw', () => {
 
     const totalSupply = await pool.totalSupply()
 
-    // manager should hold 8 / 10 of total supply after the withdraw
-    expect(await pool.balanceOf(manager.address)).equal(totalSupply.mul(8).div(10))
+    // mirrorer1 should hold 8 / 10 of total supply after the withdraw
+    expect(await pool.balanceOf(mirrorer1.address)).equal(totalSupply.mul(8).div(10))
 
-    // withdrawer should hold 2 / 10 of total supply after the withdraw
-    expect(await pool.balanceOf(withdrawer.address)).equal(totalSupply.mul(2).div(10))
+    // mirrorer2 should hold 2 / 10 of total supply after the withdraw
+    expect(await pool.balanceOf(mirrorer2.address)).equal(totalSupply.mul(2).div(10))
   })
 })

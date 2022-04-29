@@ -13,6 +13,7 @@ contract HousecatFactory {
   address private managementContract;
   address private poolTemplateContract;
   address[] private pools;
+  mapping(address => address) private mirroredPool;
 
   modifier whenNotPaused() {
     HousecatManagement housecatManagement = HousecatManagement(managementContract);
@@ -28,10 +29,13 @@ contract HousecatFactory {
   receive() external payable {}
 
   function createPool(address _mirrored, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
+    require(mirroredPool[_mirrored] == address(0), 'HousecatFactory: already mirrored');
     address poolAddress = Clones.clone(poolTemplateContract);
     HousecatPool pool = HousecatPool(payable(poolAddress));
-    pool.initialize(msg.sender, address(this), managementContract, _mirrored);
+    HousecatManagement mgmt = HousecatManagement(managementContract);
+    pool.initialize(mgmt.owner(), address(this), managementContract, _mirrored); // in the future make pools ownerless
     pools.push(poolAddress);
+    mirroredPool[_mirrored] = poolAddress;
     if (msg.value > 0) {
       pool.deposit{value: msg.value}(_transactions);
       pool.transfer(msg.sender, pool.balanceOf(address(this)));

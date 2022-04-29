@@ -11,7 +11,6 @@ export interface IMockHousecatAndPool extends IMockHousecat {
 const mockHousecatAndPool = async (
   signer: SignerWithAddress,
   treasury: SignerWithAddress,
-  manager: SignerWithAddress,
   mirrored: SignerWithAddress,
   weth = { price: '1' },
   assets: ITokenWithLiquidity[] = [
@@ -28,7 +27,7 @@ const mockHousecatAndPool = async (
     assets,
     loans,
   })
-  await mock.factory.connect(manager).createPool(mirrored.address, [])
+  await mock.factory.connect(signer).createPool(mirrored.address, [])
   const pool = await ethers.getContractAt('HousecatPool', await mock.factory.getPool(0))
   return { pool, ...mock }
 }
