@@ -27,10 +27,10 @@ contract HousecatFactory {
 
   receive() external payable {}
 
-  function createPool(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
+  function createPool(address _mirrored, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
     address poolAddress = Clones.clone(poolTemplateContract);
     HousecatPool pool = HousecatPool(payable(poolAddress));
-    pool.initialize(msg.sender, address(this), managementContract);
+    pool.initialize(msg.sender, address(this), managementContract, _mirrored);
     pools.push(poolAddress);
     if (msg.value > 0) {
       pool.deposit{value: msg.value}(_transactions);

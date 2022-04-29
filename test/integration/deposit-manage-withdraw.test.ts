@@ -82,12 +82,13 @@ describe('integration: deposit-manage-withdraw', () => {
   let owner: SignerWithAddress
   let treasury: SignerWithAddress
   let manager: SignerWithAddress
+  let mirrored: SignerWithAddress
   let mirrorer: SignerWithAddress
   let mock: IMockHousecatAndPool
 
   before(async () => {
-    ;[owner, treasury, manager, mirrorer] = await ethers.getSigners()
-    mock = await mockHousecatAndPool(owner, treasury, manager, { price: '1' }, [
+    ;[owner, treasury, manager, mirrorer, mirrored] = await ethers.getSigners()
+    mock = await mockHousecatAndPool(owner, treasury, manager, mirrored, { price: '1' }, [
       { price: '1', reserveToken: '10000', reserveWeth: '10000' },
       { price: '2', reserveToken: '5000', reserveWeth: '10000' },
       { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },

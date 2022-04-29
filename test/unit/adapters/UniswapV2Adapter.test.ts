@@ -13,10 +13,10 @@ describe('UniswapV2Adapter', () => {
     let mock: IMockHousecatAndPool
 
     before(async () => {
-      const [deployer_, treasury, manager_] = await ethers.getSigners()
+      const [deployer_, treasury, manager_, mirrored] = await ethers.getSigners()
       deployer = deployer_
       manager = manager_
-      mock = await mockHousecatAndPool(deployer, treasury, manager)
+      mock = await mockHousecatAndPool(deployer, treasury, manager, mirrored)
 
       // deposit ETH so that the pool has WETH
       await mock.pool.connect(manager).deposit([], { value: parseEther('5') })
@@ -88,10 +88,10 @@ describe('UniswapV2Adapter', () => {
     let mock: IMockHousecatAndPool
 
     before(async () => {
-      const [deployer_, treasury, manager_] = await ethers.getSigners()
+      const [deployer_, treasury, manager_, mirrored] = await ethers.getSigners()
       deployer = deployer_
       manager = manager_
-      mock = await mockHousecatAndPool(deployer, treasury, manager)
+      mock = await mockHousecatAndPool(deployer, treasury, manager, mirrored)
 
       // deposit ETH so that the pool has WETH
       await mock.pool.connect(manager).deposit([], { value: parseEther('5') })

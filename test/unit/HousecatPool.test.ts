@@ -6,15 +6,15 @@ import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
 describe('HousecatPool', () => {
   describe('getAssetBalances', () => {
     it('returns 0 balances when the pool is empty', async () => {
-      const [signer, treasury, manager] = await ethers.getSigners()
-      const { pool } = await mockHousecatAndPool(signer, treasury, manager)
+      const [signer, treasury, manager, mirrored] = await ethers.getSigners()
+      const { pool } = await mockHousecatAndPool(signer, treasury, manager, mirrored)
       const balances = await pool.getAssetBalances()
       balances.forEach((x) => expect(x).equal(0))
     })
 
     it('returns balances correctly when the pool is not empty', async () => {
-      const [signer, treasury, manager] = await ethers.getSigners()
-      const { pool, weth, assets } = await mockHousecatAndPool(signer, treasury, manager)
+      const [signer, treasury, manager, mirrored] = await ethers.getSigners()
+      const { pool, weth, assets } = await mockHousecatAndPool(signer, treasury, manager, mirrored)
 
       // send weth to the pool
       await weth.token.connect(signer).mint(pool.address, parseEther('1'))

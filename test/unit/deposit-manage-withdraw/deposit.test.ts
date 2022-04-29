@@ -5,8 +5,8 @@ import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
 
 describe('HousecatPool: deposit', () => {
   it('should fail to change the asset weights of the pool', async () => {
-    const [signer, treasury, manager] = await ethers.getSigners()
-    const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool(signer, treasury, manager)
+    const [signer, treasury, manager, mirrored] = await ethers.getSigners()
+    const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool(signer, treasury, manager, mirrored)
 
     // send Asset0 to the empty pool
     await assets[0].token.connect(signer).mint(pool.address, parseEther('10'))
@@ -34,11 +34,12 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should fail to change the loan ratio of the pool', async () => {
-    const [signer, treasury, manager] = await ethers.getSigners()
+    const [signer, treasury, manager, mirrored] = await ethers.getSigners()
     const { pool, adapters, amm, assets, loans, weth } = await mockHousecatAndPool(
       signer,
       treasury,
       manager,
+      mirrored,
       { price: '1' },
       [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
       [{ price: '1' }]
@@ -69,15 +70,15 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should succeed to deposit to a pool without rebalance trades when the pool holds nothing or only WETH', async () => {
-    const [signer, treasury, manager] = await ethers.getSigners()
-    const { pool, weth } = await mockHousecatAndPool(signer, treasury, manager)
+    const [signer, treasury, manager, mirrored] = await ethers.getSigners()
+    const { pool, weth } = await mockHousecatAndPool(signer, treasury, manager, mirrored)
     await pool.deposit([], { value: parseEther('1') })
     expect(await weth.token.balanceOf(pool.address)).equal(parseEther('1'))
   })
 
   it('should fail to reduce the net value of the pool', async () => {
-    const [signer, treasury, manager] = await ethers.getSigners()
-    const { pool, weth, adapters, amm } = await mockHousecatAndPool(signer, treasury, manager)
+    const [signer, treasury, manager, mirrored] = await ethers.getSigners()
+    const { pool, weth, adapters, amm } = await mockHousecatAndPool(signer, treasury, manager, mirrored)
 
     // send initial deposit of 1 ETH
     await pool.deposit([], { value: parseEther('10') })
@@ -98,15 +99,15 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should mint pool tokens an amount equal to the deposit value when the pool total supply is zero', async () => {
-    const [signer, treasury, manager, depositor] = await ethers.getSigners()
-    const { pool } = await mockHousecatAndPool(signer, treasury, manager)
+    const [signer, treasury, manager, depositor, mirrored] = await ethers.getSigners()
+    const { pool } = await mockHousecatAndPool(signer, treasury, manager, mirrored)
     await pool.connect(depositor).deposit([], { value: parseEther('10') })
     expect(await pool.balanceOf(depositor.address)).equal(parseEther('10'))
   })
 
   it('should mint pool tokens the correct amount when the pool has existing holders', async () => {
-    const [signer, treasury, manager, depositor] = await ethers.getSigners()
-    const { pool } = await mockHousecatAndPool(signer, treasury, manager)
+    const [signer, treasury, manager, depositor, mirrored] = await ethers.getSigners()
+    const { pool } = await mockHousecatAndPool(signer, treasury, manager, mirrored)
 
     // initial deposit by manager
     await pool.connect(manager).deposit([], { value: parseEther('8') })
