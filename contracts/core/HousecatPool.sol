@@ -135,9 +135,9 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // check balances after withdrawal
     uint ethBalanceAfter = address(this).balance;
     PoolFigures memory figuresAfter = _getPoolFigures(assets, loans);
-    
+
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
-    
+
     if (figuresAfter.assetValue > ONE_USD) {
       // TODO: define threshold value in mgmt settings
       bool weightsChanged = _didWeightsChange(figuresBefore, figuresAfter);
@@ -171,9 +171,9 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     uint ethBalanceAfter = address(this).balance;
     PoolFigures memory figuresAfter = _getPoolFigures(assets, loans);
-    
+
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
-    
+
     if (figuresAfter.netValue < figuresBefore.netValue) {
       uint valueReduced = figuresBefore.netValue.sub(figuresAfter.netValue);
       uint percentsValueReduced = valueReduced.mul(PERCENT_100).div(figuresBefore.netValue);
@@ -191,18 +191,15 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
     return (priceFeeds, decimals);
   }
-  
-  function _getTokenData(
-    address[] memory _tokens, 
-    TokenMeta[] memory _tokensMeta
-  ) private view returns (TokenData memory) {
+
+  function _getTokenData(address[] memory _tokens, TokenMeta[] memory _tokensMeta)
+    private
+    view
+    returns (TokenData memory)
+  {
     (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
     uint[] memory prices = _getTokenPrices(priceFeeds);
-    return TokenData({
-      tokens: _tokens,
-      decimals: decimals,
-      prices: prices
-    });
+    return TokenData({tokens: _tokens, decimals: decimals, prices: prices});
   }
 
   function _getAssetData() private view returns (TokenData memory) {
@@ -234,7 +231,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return combined;
   }
 
-  function _didWeightsChange(PoolFigures memory _figuresBefore, PoolFigures memory _figuresAfter) private pure returns (bool) {
+  function _didWeightsChange(PoolFigures memory _figuresBefore, PoolFigures memory _figuresAfter)
+    private
+    pure
+    returns (bool)
+  {
     uint[] memory weightsBefore = _combineWeights(_figuresBefore);
     uint[] memory weightsAfter = _combineWeights(_figuresAfter);
     for (uint i; i < weightsBefore.length; i++) {
@@ -261,10 +262,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getTokenPrices(priceFeeds)[0];
   }
 
-  function _getPoolFigures(
-    TokenData memory _assetData,
-    TokenData memory _loanData
-  ) private view returns (PoolFigures memory) {
+  function _getPoolFigures(TokenData memory _assetData, TokenData memory _loanData)
+    private
+    view
+    returns (PoolFigures memory)
+  {
     uint[] memory assetBalances = _getTokenBalances(address(this), _assetData.tokens);
     (uint[] memory assetWeights, uint assetValue) = _getTokenWeights(
       assetBalances,
@@ -272,17 +274,14 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
       _assetData.decimals
     );
     uint[] memory loanBalances = _getTokenBalances(address(this), _loanData.tokens);
-    (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(
-      loanBalances,
-      _loanData.prices,
-      _loanData.decimals
-    );
-    return PoolFigures({
-      assetWeights: assetWeights,
-      loanWeights: loanWeights,
-      assetValue: assetValue,
-      loanValue: loanValue,
-      netValue: assetValue.sub(loanValue)
-    });
+    (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(loanBalances, _loanData.prices, _loanData.decimals);
+    return
+      PoolFigures({
+        assetWeights: assetWeights,
+        loanWeights: loanWeights,
+        assetValue: assetValue,
+        loanValue: loanValue,
+        netValue: assetValue.sub(loanValue)
+      });
   }
 }
