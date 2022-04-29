@@ -27,7 +27,7 @@ const mockHousecatAndPool = async (
     assets,
     loans,
   })
-  await mock.factory.connect(manager).createPool()
+  await mock.factory.connect(manager).createPool([])
   const pool = await ethers.getContractAt('HousecatPool', await mock.factory.getPool(0))
   return { pool, ...mock }
 }

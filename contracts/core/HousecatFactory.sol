@@ -2,15 +2,13 @@
 pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/proxy/Clones.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import './HousecatManagement.sol';
 import './HousecatPool.sol';
+import './structs/PoolTransaction.sol';
 
 contract HousecatFactory {
   using SafeMath for uint;
-  using SafeERC20 for IERC20;
 
   address private managementContract;
   address private poolTemplateContract;
@@ -29,11 +27,15 @@ contract HousecatFactory {
 
   receive() external payable {}
 
-  function createPool() external payable whenNotPaused {
+  function createPool(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
     address poolAddress = Clones.clone(poolTemplateContract);
     HousecatPool pool = HousecatPool(payable(poolAddress));
     pool.initialize(msg.sender, address(this), managementContract);
     pools.push(poolAddress);
+    if (msg.value > 0) {
+      pool.deposit{value: msg.value}(_transactions);
+      pool.transfer(msg.sender, pool.balanceOf(address(this)));
+    }
   }
 
   function getPool(uint _index) external view returns (address) {
