@@ -70,16 +70,10 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return tokenSymbol;
   }
 
-  function getPoolPortfolio() external view returns (Portfolio memory) {
+  function getPortfolio(address _account) external view returns (Portfolio memory) {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
-    return _getPortfolio(address(this), assets, loans);
-  }
-
-  function getMirroredPortfolio() external view returns (Portfolio memory) {
-    TokenData memory assets = _getAssetData();
-    TokenData memory loans = _getLoanData();
-    return _getPortfolio(mirrored, assets, loans);
+    return _getPortfolio(_account, assets, loans);
   }
 
   function deposit(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
@@ -258,17 +252,17 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function _getPortfolio(
-    address _portfolio,
+    address _account,
     TokenData memory _assetData,
     TokenData memory _loanData
   ) private view returns (Portfolio memory) {
-    uint[] memory assetBalances = _getTokenBalances(_portfolio, _assetData.tokens);
+    uint[] memory assetBalances = _getTokenBalances(_account, _assetData.tokens);
     (uint[] memory assetWeights, uint assetValue) = _getTokenWeights(
       assetBalances,
       _assetData.prices,
       _assetData.decimals
     );
-    uint[] memory loanBalances = _getTokenBalances(_portfolio, _loanData.tokens);
+    uint[] memory loanBalances = _getTokenBalances(_account, _loanData.tokens);
     (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(loanBalances, _loanData.prices, _loanData.decimals);
     return
       Portfolio({

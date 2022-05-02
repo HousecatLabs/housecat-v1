@@ -26,7 +26,7 @@ describe('HousecatFactory', () => {
         weth: ethers.constants.AddressZero,
       })
       await factory.connect(mirrorer).createPool(mirrored.address, [])
-      const poolAddress = await factory.getPool(0)
+      const [poolAddress] = await factory.getPools(0, 1)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
 
       // signer is the owner of the pool
@@ -57,7 +57,7 @@ describe('HousecatFactory', () => {
         ],
       })
       await factory.connect(mirrorer).createPool(mirrored.address, [], { value: parseEther('5') })
-      const poolAddress = await factory.getPool(0)
+      const [poolAddress] = await factory.getPools(0, 1)
 
       // pool should hold 5 WETH
       expect(await weth.balanceOf(poolAddress)).equal(parseEther('5'))
@@ -75,7 +75,7 @@ describe('HousecatFactory', () => {
         weth: ethers.constants.AddressZero,
       })
       await factory.connect(mirrorer).createPool(mirrored.address, [])
-      const poolAddress = await factory.getPool(0)
+      const [poolAddress] = await factory.getPools(0, 1)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
       const init = instance.initialize(otherUser.address, factory.address, mgmt.address, mirrored.address)
       await expect(init).revertedWith('HousecatPool: already initialized')
@@ -102,7 +102,7 @@ describe('HousecatFactory', () => {
       weth: ethers.constants.AddressZero,
     })
     await factory.connect(mirrorer).createPool(mirrored.address, [])
-    const poolAddress = await factory.getPool(0)
+    const [poolAddress] = await factory.getPools(0, 1)
     const instance = await ethers.getContractAt('HousecatPool', poolAddress)
     const init = instance.initialize(otherUser.address, factory.address, mgmt.address, mirrored.address)
     await expect(init).revertedWith('HousecatPool: already initialized')

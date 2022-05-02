@@ -28,7 +28,7 @@ const mockHousecatAndPool = async (
     loans,
   })
   await mock.factory.connect(signer).createPool(mirrored.address, [])
-  const pool = await ethers.getContractAt('HousecatPool', await mock.factory.getPool(0))
+  const pool = await ethers.getContractAt('HousecatPool', (await mock.factory.getPools(0, 1))[0])
   return { pool, ...mock }
 }
 

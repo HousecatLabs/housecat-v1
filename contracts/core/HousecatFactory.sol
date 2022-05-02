@@ -42,8 +42,8 @@ contract HousecatFactory {
     }
   }
 
-  function getPool(uint _index) external view returns (address) {
-    return pools[_index];
+  function getPoolByMirrored(address _mirrored) external view returns (address) {
+    return mirroredPool[_mirrored];
   }
 
   function getNPools() external view returns (uint) {
