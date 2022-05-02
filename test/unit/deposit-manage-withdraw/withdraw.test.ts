@@ -26,7 +26,7 @@ describe('HousecatPool: withdraw', () => {
     await expect(tx).revertedWith('HousecatPool: weights changed')
   })
 
-  it('should fail to change the loan weights of the pool', async () => {
+  it('TODO: should fail to change the loan weights of the pool', async () => {
     // TODO: implement when mock Aave implemented
   })
 

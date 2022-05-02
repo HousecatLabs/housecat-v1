@@ -18,6 +18,8 @@ struct TokenData {
 }
 
 struct PoolFigures {
+  uint[] assetBalances;
+  uint[] loanBalances;
   uint[] assetWeights;
   uint[] loanWeights;
   uint assetValue;
@@ -68,26 +70,10 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return tokenSymbol;
   }
 
-  function getAssetBalances() public view returns (uint[] memory) {
-    address[] memory tokens = management.getSupportedAssets();
-    return _getTokenBalances(address(this), tokens);
-  }
-
-  function getLoanBalances() public view returns (uint[] memory) {
-    address[] memory tokens = management.getSupportedLoans();
-    return _getTokenBalances(address(this), tokens);
-  }
-
-  function getAssetWeights() public view returns (uint[] memory, uint) {
-    TokenData memory data = _getAssetData();
-    uint[] memory balances = _getTokenBalances(address(this), data.tokens);
-    return _getTokenWeights(balances, data.prices, data.decimals);
-  }
-
-  function getLoanWeights() public view returns (uint[] memory, uint) {
-    TokenData memory data = _getLoanData();
-    uint[] memory balances = _getTokenBalances(address(this), data.tokens);
-    return _getTokenWeights(balances, data.prices, data.decimals);
+  function getPoolFigures() external view returns (PoolFigures memory) {
+    TokenData memory assets = _getAssetData();
+    TokenData memory loans = _getLoanData();
+    return _getPoolFigures(assets, loans);
   }
 
   function deposit(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
@@ -280,6 +266,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(loanBalances, _loanData.prices, _loanData.decimals);
     return
       PoolFigures({
+        assetBalances: assetBalances,
+        loanBalances: loanBalances,
         assetWeights: assetWeights,
         loanWeights: loanWeights,
         assetValue: assetValue,
