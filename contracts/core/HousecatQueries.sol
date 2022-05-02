@@ -7,6 +7,9 @@ import '@openzeppelin/contracts/utils/math/SafeCast.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 import './Constants.sol';
+import './structs/TokenMeta.sol';
+import './structs/TokenData.sol';
+import './structs/Portfolio.sol';
 
 contract HousecatQueries is Constants {
   using SafeMath for uint;
@@ -50,6 +53,22 @@ contract HousecatQueries is Constants {
     uint[] memory _tokenDecimals
   ) external pure returns (uint[] memory) {
     return _getTokenAmounts(_weights, _totalValue, _tokenPrices, _tokenDecimals);
+  }
+
+  function getTokenData(address[] memory _tokens, TokenMeta[] memory _tokensMeta)
+    external
+    view
+    returns (TokenData memory)
+  {
+    return _getTokenData(_tokens, _tokensMeta);
+  }
+
+  function getPortfolio(
+    address _account,
+    TokenData memory _assetData,
+    TokenData memory _loanData
+  ) external view returns (Portfolio memory) {
+    return _getPortfolio(_account, _assetData, _loanData);
   }
 
   function _getTokenPrices(address[] memory _priceFeeds) internal view returns (uint[] memory) {
@@ -127,5 +146,50 @@ contract HousecatQueries is Constants {
       amounts[i] = _getTokenAmount(value, _tokenPrices[i], _tokenDecimals[i]);
     }
     return amounts;
+  }
+
+  function _mapTokensMeta(TokenMeta[] memory _tokensMeta) internal pure returns (address[] memory, uint[] memory) {
+    address[] memory priceFeeds = new address[](_tokensMeta.length);
+    uint[] memory decimals = new uint[](_tokensMeta.length);
+    for (uint i; i < _tokensMeta.length; i++) {
+      priceFeeds[i] = _tokensMeta[i].priceFeed;
+      decimals[i] = _tokensMeta[i].decimals;
+    }
+    return (priceFeeds, decimals);
+  }
+
+  function _getTokenData(address[] memory _tokens, TokenMeta[] memory _tokensMeta)
+    internal
+    view
+    returns (TokenData memory)
+  {
+    (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
+    uint[] memory prices = _getTokenPrices(priceFeeds);
+    return TokenData({tokens: _tokens, decimals: decimals, prices: prices});
+  }
+
+  function _getPortfolio(
+    address _account,
+    TokenData memory _assetData,
+    TokenData memory _loanData
+  ) internal view returns (Portfolio memory) {
+    uint[] memory assetBalances = _getTokenBalances(_account, _assetData.tokens);
+    (uint[] memory assetWeights, uint assetValue) = _getTokenWeights(
+      assetBalances,
+      _assetData.prices,
+      _assetData.decimals
+    );
+    uint[] memory loanBalances = _getTokenBalances(_account, _loanData.tokens);
+    (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(loanBalances, _loanData.prices, _loanData.decimals);
+    return
+      Portfolio({
+        assetBalances: assetBalances,
+        loanBalances: loanBalances,
+        assetWeights: assetWeights,
+        loanWeights: loanWeights,
+        assetValue: assetValue,
+        loanValue: loanValue,
+        netValue: assetValue.sub(loanValue)
+      });
   }
 }

@@ -11,22 +11,6 @@ import './HousecatQueries.sol';
 import './HousecatFactory.sol';
 import './HousecatManagement.sol';
 
-struct TokenData {
-  address[] tokens;
-  uint[] decimals;
-  uint[] prices;
-}
-
-struct Portfolio {
-  uint[] assetBalances;
-  uint[] loanBalances;
-  uint[] assetWeights;
-  uint[] loanWeights;
-  uint assetValue;
-  uint loanValue;
-  uint netValue;
-}
-
 contract HousecatPool is HousecatQueries, ERC20, Ownable {
   using SafeMath for uint;
 
@@ -68,12 +52,6 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   function symbol() public view override(ERC20) returns (string memory) {
     return tokenSymbol;
-  }
-
-  function getPortfolio(address _account) external view returns (Portfolio memory) {
-    TokenData memory assets = _getAssetData();
-    TokenData memory loans = _getLoanData();
-    return _getPortfolio(_account, assets, loans);
   }
 
   function deposit(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
@@ -171,26 +149,6 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
   }
 
-  function _mapTokensMeta(TokenMeta[] memory _tokensMeta) private pure returns (address[] memory, uint[] memory) {
-    address[] memory priceFeeds = new address[](_tokensMeta.length);
-    uint[] memory decimals = new uint[](_tokensMeta.length);
-    for (uint i; i < _tokensMeta.length; i++) {
-      priceFeeds[i] = _tokensMeta[i].priceFeed;
-      decimals[i] = _tokensMeta[i].decimals;
-    }
-    return (priceFeeds, decimals);
-  }
-
-  function _getTokenData(address[] memory _tokens, TokenMeta[] memory _tokensMeta)
-    private
-    view
-    returns (TokenData memory)
-  {
-    (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
-    uint[] memory prices = _getTokenPrices(priceFeeds);
-    return TokenData({tokens: _tokens, decimals: decimals, prices: prices});
-  }
-
   function _getAssetData() private view returns (TokenData memory) {
     (address[] memory assets, TokenMeta[] memory assetsMeta) = management.getAssetsWithMeta();
     return _getTokenData(assets, assetsMeta);
@@ -249,30 +207,5 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     address[] memory priceFeeds = new address[](1);
     priceFeeds[0] = _priceFeed;
     return _getTokenPrices(priceFeeds)[0];
-  }
-
-  function _getPortfolio(
-    address _account,
-    TokenData memory _assetData,
-    TokenData memory _loanData
-  ) private view returns (Portfolio memory) {
-    uint[] memory assetBalances = _getTokenBalances(_account, _assetData.tokens);
-    (uint[] memory assetWeights, uint assetValue) = _getTokenWeights(
-      assetBalances,
-      _assetData.prices,
-      _assetData.decimals
-    );
-    uint[] memory loanBalances = _getTokenBalances(_account, _loanData.tokens);
-    (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(loanBalances, _loanData.prices, _loanData.decimals);
-    return
-      Portfolio({
-        assetBalances: assetBalances,
-        loanBalances: loanBalances,
-        assetWeights: assetWeights,
-        loanWeights: loanWeights,
-        assetValue: assetValue,
-        loanValue: loanValue,
-        netValue: assetValue.sub(loanValue)
-      });
   }
 }
