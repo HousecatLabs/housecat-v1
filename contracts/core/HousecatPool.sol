@@ -17,7 +17,7 @@ struct TokenData {
   uint[] prices;
 }
 
-struct PoolFigures {
+struct Portfolio {
   uint[] assetBalances;
   uint[] loanBalances;
   uint[] assetWeights;
@@ -70,10 +70,16 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return tokenSymbol;
   }
 
-  function getPoolFigures() external view returns (PoolFigures memory) {
+  function getPoolPortfolio() external view returns (Portfolio memory) {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
-    return _getPoolFigures(assets, loans);
+    return _getPortfolio(address(this), assets, loans);
+  }
+
+  function getMirroredPortfolio() external view returns (Portfolio memory) {
+    TokenData memory assets = _getAssetData();
+    TokenData memory loans = _getLoanData();
+    return _getPortfolio(mirrored, assets, loans);
   }
 
   function deposit(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
@@ -82,7 +88,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // check balances before deposit
     uint ethBalanceBefore = address(this).balance.sub(msg.value);
-    PoolFigures memory figuresBefore = _getPoolFigures(assets, loans);
+    Portfolio memory figuresBefore = _getPortfolio(address(this), assets, loans);
 
     // swap the sent eth to weth
     _buyWETH(management.weth(), msg.value);
@@ -91,7 +97,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // check balances after deposit
     uint ethBalanceAfter = address(this).balance;
-    PoolFigures memory figuresAfter = _getPoolFigures(assets, loans);
+    Portfolio memory figuresAfter = _getPortfolio(address(this), assets, loans);
 
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
     require(figuresAfter.netValue >= figuresBefore.netValue, 'HousecatPool: pool value reduced');
@@ -117,13 +123,13 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // check balances before withdrawal
     uint ethBalanceBefore = address(this).balance;
-    PoolFigures memory figuresBefore = _getPoolFigures(assets, loans);
+    Portfolio memory figuresBefore = _getPortfolio(address(this), assets, loans);
 
     _executeTransactions(_transactions);
 
     // check balances after withdrawal
     uint ethBalanceAfter = address(this).balance;
-    PoolFigures memory figuresAfter = _getPoolFigures(assets, loans);
+    Portfolio memory figuresAfter = _getPortfolio(address(this), assets, loans);
 
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
 
@@ -154,12 +160,12 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     TokenData memory loans = _getLoanData();
 
     uint ethBalanceBefore = address(this).balance;
-    PoolFigures memory figuresBefore = _getPoolFigures(assets, loans);
+    Portfolio memory figuresBefore = _getPortfolio(address(this), assets, loans);
 
     _executeTransactions(_transactions);
 
     uint ethBalanceAfter = address(this).balance;
-    PoolFigures memory figuresAfter = _getPoolFigures(assets, loans);
+    Portfolio memory figuresAfter = _getPortfolio(address(this), assets, loans);
 
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
 
@@ -209,7 +215,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
   }
 
-  function _combineWeights(PoolFigures memory _pf) internal pure returns (uint[] memory) {
+  function _combineWeights(Portfolio memory _pf) internal pure returns (uint[] memory) {
     uint[] memory combined = new uint[](_pf.assetWeights.length + _pf.loanWeights.length);
     for (uint i = 0; i < _pf.assetWeights.length; i++) {
       combined[i] = _pf.assetWeights[i].mul(_pf.assetValue).div(_pf.netValue);
@@ -220,7 +226,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return combined;
   }
 
-  function _didWeightsChange(PoolFigures memory _figuresBefore, PoolFigures memory _figuresAfter)
+  function _didWeightsChange(Portfolio memory _figuresBefore, Portfolio memory _figuresAfter)
     private
     pure
     returns (bool)
@@ -251,21 +257,21 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getTokenPrices(priceFeeds)[0];
   }
 
-  function _getPoolFigures(TokenData memory _assetData, TokenData memory _loanData)
-    private
-    view
-    returns (PoolFigures memory)
-  {
-    uint[] memory assetBalances = _getTokenBalances(address(this), _assetData.tokens);
+  function _getPortfolio(
+    address _portfolio,
+    TokenData memory _assetData,
+    TokenData memory _loanData
+  ) private view returns (Portfolio memory) {
+    uint[] memory assetBalances = _getTokenBalances(_portfolio, _assetData.tokens);
     (uint[] memory assetWeights, uint assetValue) = _getTokenWeights(
       assetBalances,
       _assetData.prices,
       _assetData.decimals
     );
-    uint[] memory loanBalances = _getTokenBalances(address(this), _loanData.tokens);
+    uint[] memory loanBalances = _getTokenBalances(_portfolio, _loanData.tokens);
     (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(loanBalances, _loanData.prices, _loanData.decimals);
     return
-      PoolFigures({
+      Portfolio({
         assetBalances: assetBalances,
         loanBalances: loanBalances,
         assetWeights: assetWeights,
