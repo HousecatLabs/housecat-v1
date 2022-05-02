@@ -37,18 +37,18 @@ repository. Deploy new frontend with the new contract addresses.
 
 ## Deployed addresses (Polygon mainnet):
 
-Date: 28/04/2022
+Date: 02/05/2022
 
-Version: 15297c3
+Version: 3765011
 
-HousecatManagement: `0xD185F0531dCE880954c548f53fdd701673461eE3`
+HousecatManagement: `0x0F811B00072b2A1fcaACcFD51eE4CB0DB8e6D343`
 
-HousecatFactory: `0xae47c12236A7d1b9dc5277Cf1E05e879886069EE`
+HousecatFactory: `0x8E980a8cC9AaDc1953C4a37B76Aab644E6C8D5d8`
 
-HousecatPool: `0x2c07113Da42C88e74c013e2Af2C2368f00972457`
+HousecatPool: `0x18AA83106cC57A60C1EF7E2cD2B6bfa37f2bfFB1`
 
-uniswapV2Adapter: `0x3235F113DA62f0bfF05d493A0b4f896A6D95F4C3`
+uniswapV2Adapter: `0x76Be1fe9497B4feB41dFE748C8D1B621420C9fdc`
 
-aaveV2Adapter: `0x61Da7bF9eFC6E4e0774F059e74A3A9f923B0F560`
+aaveV2Adapter: `0xa049af185A718b609476743E529E0617274fbd7d`
 
-HousecatQueries: `0x161AB431365c5a97933E000F1e0B68a934C54d0E`
+HousecatQueries: `0x0ab0198850D9F1b1568636A89d4e94bc8800E996`
