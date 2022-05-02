@@ -60,7 +60,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // check balances before deposit
     uint ethBalanceBefore = address(this).balance.sub(msg.value);
-    Portfolio memory figuresBefore = _getPortfolio(address(this), assets, loans);
+    Portfolio memory portfolioBefore = _getPortfolio(address(this), assets, loans);
 
     // swap the sent eth to weth
     _buyWETH(management.weth(), msg.value);
@@ -69,22 +69,22 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // check balances after deposit
     uint ethBalanceAfter = address(this).balance;
-    Portfolio memory figuresAfter = _getPortfolio(address(this), assets, loans);
+    Portfolio memory portfolioAfter = _getPortfolio(address(this), assets, loans);
 
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
-    require(figuresAfter.netValue >= figuresBefore.netValue, 'HousecatPool: pool value reduced');
+    require(portfolioAfter.netValue >= portfolioBefore.netValue, 'HousecatPool: pool value reduced');
 
-    if (figuresBefore.assetValue > ONE_USD) {
+    if (portfolioBefore.assetValue > ONE_USD) {
       // TODO: define threshold value in mgmt settings
-      bool weightsChanged = _didWeightsChange(figuresBefore, figuresAfter);
+      bool weightsChanged = _didWeightsChange(portfolioBefore, portfolioAfter);
       require(!weightsChanged, 'HousecatPool: weights changed');
     }
 
     // mint pool tokens corresponding the deposit value
-    uint depositValue = figuresAfter.netValue.sub(figuresBefore.netValue);
+    uint depositValue = portfolioAfter.netValue.sub(portfolioBefore.netValue);
     uint amountMint = depositValue;
     if (totalSupply() > 0) {
-      amountMint = totalSupply().mul(depositValue).div(figuresBefore.netValue);
+      amountMint = totalSupply().mul(depositValue).div(portfolioBefore.netValue);
     }
     _mint(msg.sender, amountMint);
   }
@@ -95,29 +95,29 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // check balances before withdrawal
     uint ethBalanceBefore = address(this).balance;
-    Portfolio memory figuresBefore = _getPortfolio(address(this), assets, loans);
+    Portfolio memory portfolioBefore = _getPortfolio(address(this), assets, loans);
 
     _executeTransactions(_transactions);
 
     // check balances after withdrawal
     uint ethBalanceAfter = address(this).balance;
-    Portfolio memory figuresAfter = _getPortfolio(address(this), assets, loans);
+    Portfolio memory portfolioAfter = _getPortfolio(address(this), assets, loans);
 
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
 
-    if (figuresAfter.assetValue > ONE_USD) {
+    if (portfolioAfter.assetValue > ONE_USD) {
       // TODO: define threshold value in mgmt settings
-      bool weightsChanged = _didWeightsChange(figuresBefore, figuresAfter);
+      bool weightsChanged = _didWeightsChange(portfolioBefore, portfolioAfter);
       require(!weightsChanged, 'HousecatPool: weights changed');
     }
 
     // burn pool tokens in accordance with the withdrawn value
     {
       uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
-      uint withdrawValue = figuresBefore.netValue.sub(figuresAfter.netValue);
-      uint maxWithdrawValue = figuresBefore.netValue.mul(shareInPool).div(PERCENT_100);
+      uint withdrawValue = portfolioBefore.netValue.sub(portfolioAfter.netValue);
+      uint maxWithdrawValue = portfolioBefore.netValue.mul(shareInPool).div(PERCENT_100);
       require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw balance exceeded');
-      uint amountBurn = totalSupply().mul(withdrawValue).div(figuresBefore.netValue);
+      uint amountBurn = totalSupply().mul(withdrawValue).div(portfolioBefore.netValue);
       _burn(msg.sender, amountBurn);
     }
 
@@ -132,18 +132,18 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     TokenData memory loans = _getLoanData();
 
     uint ethBalanceBefore = address(this).balance;
-    Portfolio memory figuresBefore = _getPortfolio(address(this), assets, loans);
+    Portfolio memory portfolioBefore = _getPortfolio(address(this), assets, loans);
 
     _executeTransactions(_transactions);
 
     uint ethBalanceAfter = address(this).balance;
-    Portfolio memory figuresAfter = _getPortfolio(address(this), assets, loans);
+    Portfolio memory portfolioAfter = _getPortfolio(address(this), assets, loans);
 
     require(ethBalanceAfter >= ethBalanceBefore, 'HousecatPool: ETH balance reduced');
 
-    if (figuresAfter.netValue < figuresBefore.netValue) {
-      uint valueReduced = figuresBefore.netValue.sub(figuresAfter.netValue);
-      uint percentsValueReduced = valueReduced.mul(PERCENT_100).div(figuresBefore.netValue);
+    if (portfolioAfter.netValue < portfolioBefore.netValue) {
+      uint valueReduced = portfolioBefore.netValue.sub(portfolioAfter.netValue);
+      uint percentsValueReduced = valueReduced.mul(PERCENT_100).div(portfolioBefore.netValue);
       require(percentsValueReduced < PERCENT_100.div(100), 'HousecatPool: pool value reduced'); // TODO: define slippage limit in mgmt settings
     }
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
@@ -178,13 +178,13 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return combined;
   }
 
-  function _didWeightsChange(Portfolio memory _figuresBefore, Portfolio memory _figuresAfter)
+  function _didWeightsChange(Portfolio memory _portfolioBefore, Portfolio memory _portfolioAfter)
     private
     pure
     returns (bool)
   {
-    uint[] memory weightsBefore = _combineWeights(_figuresBefore);
-    uint[] memory weightsAfter = _combineWeights(_figuresAfter);
+    uint[] memory weightsBefore = _combineWeights(_portfolioBefore);
+    uint[] memory weightsAfter = _combineWeights(_portfolioAfter);
     for (uint i; i < weightsBefore.length; i++) {
       uint diff = weightsBefore[i] > weightsAfter[i]
         ? weightsBefore[i].sub(weightsAfter[i])
