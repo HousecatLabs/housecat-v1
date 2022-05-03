@@ -9,10 +9,10 @@ describe('HousecatPool: withdraw', () => {
     const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
 
     // initial deposit
-    await pool.connect(mirrorer).deposit([], { value: parseEther('10') })
+    await pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('10') })
 
     // try to trade WETH to Asset0 on withdraw
-    const tx = pool.connect(mirrorer).withdraw([
+    const tx = pool.connect(mirrorer).withdraw(mirrorer.address, [
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
@@ -42,13 +42,13 @@ describe('HousecatPool: withdraw', () => {
     )
 
     // deposit ETH
-    await pool.connect(mirrorer).deposit([], { value: parseEther('3') })
+    await pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('3') })
 
     // send Loan0
     await loans[0].token.connect(signer).mint(pool.address, parseEther('1'))
 
     // try to withdraw without adjusting the loan position
-    const tx = pool.connect(mirrorer).withdraw([
+    const tx = pool.connect(mirrorer).withdraw(mirrorer.address, [
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
@@ -74,13 +74,13 @@ describe('HousecatPool: withdraw', () => {
     )
 
     // deposit by mirrorer1
-    await pool.connect(mirrorer1).deposit([], { value: parseEther('5') })
+    await pool.connect(mirrorer1).deposit(mirrorer1.address, [], { value: parseEther('5') })
 
     // deposit by another user
-    await pool.connect(mirrorer2).deposit([], { value: parseEther('5') })
+    await pool.connect(mirrorer2).deposit(mirrorer2.address, [], { value: parseEther('5') })
 
     // withdraw by manager
-    const tx = pool.connect(mirrorer1).withdraw([
+    const tx = pool.connect(mirrorer1).withdraw(mirrorer1.address, [
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
@@ -106,13 +106,13 @@ describe('HousecatPool: withdraw', () => {
     )
 
     // initial deposit by mirrorer1
-    await pool.connect(mirrorer1).deposit([], { value: parseEther('8') })
+    await pool.connect(mirrorer1).deposit(mirrorer1.address, [], { value: parseEther('8') })
 
     // deposit by mirrorer2
-    await pool.connect(mirrorer2).deposit([], { value: parseEther('4') })
+    await pool.connect(mirrorer2).deposit(mirrorer2.address, [], { value: parseEther('4') })
 
     // withdraw by mirrorer2
-    await pool.connect(mirrorer2).withdraw([
+    await pool.connect(mirrorer2).withdraw(mirrorer2.address, [
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
@@ -131,5 +131,58 @@ describe('HousecatPool: withdraw', () => {
 
     // mirrorer2 should hold 2 / 10 of total supply after the withdraw
     expect(await pool.balanceOf(mirrorer2.address)).equal(totalSupply.mul(2).div(10))
+  })
+
+  it('should withdraw on behalf of another address', async () => {
+    const [signer, treasury, mirrorer, mirrored, otherUser] = await ethers.getSigners()
+    const { pool, adapters, amm, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
+
+    // deposit
+    await pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('10') })
+
+    // balance of otherUser before
+    const balanceBefore = await otherUser.getBalance()
+
+    // withdraw to otherUser
+    await pool.connect(mirrorer).withdraw(otherUser.address, [
+      {
+        adapter: adapters.uniswapV2Adapter.address,
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
+          amm.address,
+          [weth.token.address, weth.token.address],
+          parseEther('5'),
+          1,
+        ]),
+      },
+    ])
+
+    // balance of otherUser after
+    const balanceAfter = await otherUser.getBalance()
+
+    expect(balanceAfter.sub(balanceBefore)).eq(parseEther('5'))
+  })
+
+  it('should emit WithdrawFromPool event', async () => {
+    const [signer, treasury, mirrorer, mirrored, otherUser] = await ethers.getSigners()
+    const { pool, adapters, amm, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
+
+    // deposit
+    await pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('10') })
+
+    // withdraw to otherUser
+    const tx = pool.connect(mirrorer).withdraw(otherUser.address, [
+      {
+        adapter: adapters.uniswapV2Adapter.address,
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
+          amm.address,
+          [weth.token.address, weth.token.address],
+          parseEther('5'),
+          1,
+        ]),
+      },
+    ])
+
+    // the emitted event should include the address of the account who sent pool tokens, not otherUser
+    await expect(tx).emit(pool, 'WithdrawFromPool').withArgs(parseEther('5'), parseEther('5'), mirrorer.address)
   })
 })

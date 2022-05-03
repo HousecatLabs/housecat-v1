@@ -17,7 +17,7 @@ describe('UniswapV2Adapter', () => {
       mock = await mockHousecatAndPool(owner, treasury, mirrored)
 
       // deposit ETH so that the pool has WETH
-      await mock.pool.connect(mirrorer).deposit([], { value: parseEther('5') })
+      await mock.pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('5') })
     })
 
     it('should fail to use an unsupported AMM router', async () => {
@@ -92,7 +92,7 @@ describe('UniswapV2Adapter', () => {
       mock = await mockHousecatAndPool(deployer, treasury, mirrored)
 
       // deposit ETH so that the pool has WETH
-      await mock.pool.connect(mirrorer).deposit([], { value: parseEther('5') })
+      await mock.pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('5') })
 
       // send token0 to the pool
       await mock.assets[0].token.mint(mock.pool.address, parseEther('5'))
@@ -105,7 +105,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(mirrorer).withdraw([
+      const tx = mock.pool.connect(mirrorer).withdraw(mirrorer.address, [
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeToken0ToETH,
@@ -127,7 +127,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(mirrorer).withdraw([
+      const tx = mock.pool.connect(mirrorer).withdraw(mirrorer.address, [
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeUnsupportedTokenToETH,
@@ -143,7 +143,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(mirrorer).withdraw([
+      const tx = mock.pool.connect(mirrorer).withdraw(mirrorer.address, [
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeToken0ToToken1,
@@ -167,7 +167,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      await mock.pool.connect(mirrorer).withdraw([
+      await mock.pool.connect(mirrorer).withdraw(mirrorer.address, [
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeWethToETH,

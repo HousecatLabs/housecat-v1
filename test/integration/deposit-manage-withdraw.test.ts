@@ -50,7 +50,7 @@ export const deposit = async (
       1,
     ]),
   }))
-  return pool.connect(mirrorer).deposit(buyTokenTxs, { value: amountDeposit })
+  return pool.connect(mirrorer).deposit(mirrorer.address, buyTokenTxs, { value: amountDeposit })
 }
 
 export const withdraw = async (
@@ -74,7 +74,7 @@ export const withdraw = async (
       1,
     ]),
   }))
-  return pool.connect(withdrawer).withdraw(sellTokenTxs)
+  return pool.connect(withdrawer).withdraw(withdrawer.address, sellTokenTxs)
 }
 
 describe('integration: deposit-manage-withdraw', () => {
@@ -97,7 +97,7 @@ describe('integration: deposit-manage-withdraw', () => {
   describe('initial deposit of 10 ETH by mirrorer1', () => {
     before(async () => {
       const { pool } = mock
-      await pool.connect(mirrorer1).deposit([], { value: parseEther('10') })
+      await pool.connect(mirrorer1).deposit(mirrorer1.address, [], { value: parseEther('10') })
     })
 
     it('mirrorer1 pool token balance should equal the deposit value', async () => {

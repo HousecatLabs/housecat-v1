@@ -13,6 +13,7 @@ describe('HousecatPool: deposit', () => {
 
     // deposit ETH without trading all to Asset0
     const tx = pool.deposit(
+      signer.address,
       [
         {
           adapter: adapters.uniswapV2Adapter.address,
@@ -52,6 +53,7 @@ describe('HousecatPool: deposit', () => {
 
     // deposit ETH and trade all to Asset0 without adjusting Loan0 position
     const tx = pool.deposit(
+      signer.address,
       [
         {
           adapter: adapters.uniswapV2Adapter.address,
@@ -71,7 +73,7 @@ describe('HousecatPool: deposit', () => {
   it('should succeed to deposit to a pool without rebalance trades when the pool holds nothing or only WETH', async () => {
     const [signer, treasury, mirrored] = await ethers.getSigners()
     const { pool, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
-    await pool.deposit([], { value: parseEther('1') })
+    await pool.deposit(signer.address, [], { value: parseEther('1') })
     expect(await weth.token.balanceOf(pool.address)).equal(parseEther('1'))
   })
 
@@ -80,10 +82,10 @@ describe('HousecatPool: deposit', () => {
     const { pool, weth, adapters, amm } = await mockHousecatAndPool(signer, treasury, mirrored)
 
     // send initial deposit of 1 ETH
-    await pool.deposit([], { value: parseEther('10') })
+    await pool.deposit(signer.address, [], { value: parseEther('10') })
 
     // try to swap WETH to ETH (reducing the net value of the assets)
-    const tx = pool.deposit([
+    const tx = pool.deposit(signer.address, [
       {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
@@ -100,7 +102,7 @@ describe('HousecatPool: deposit', () => {
   it('should mint pool tokens an amount equal to the deposit value when the pool total supply is zero', async () => {
     const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
     const { pool } = await mockHousecatAndPool(signer, treasury, mirrored)
-    await pool.connect(mirrorer).deposit([], { value: parseEther('10') })
+    await pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('10') })
     expect(await pool.balanceOf(mirrorer.address)).equal(parseEther('10'))
   })
 
@@ -109,10 +111,10 @@ describe('HousecatPool: deposit', () => {
     const { pool } = await mockHousecatAndPool(signer, treasury, mirrored)
 
     // initial deposit by mirrorer1
-    await pool.connect(mirrorer1).deposit([], { value: parseEther('8') })
+    await pool.connect(mirrorer1).deposit(mirrorer1.address, [], { value: parseEther('8') })
 
     // deposit by another user
-    await pool.connect(mirrorer2).deposit([], { value: parseEther('4') })
+    await pool.connect(mirrorer2).deposit(mirrorer2.address, [], { value: parseEther('4') })
 
     const totalSupply = await pool.totalSupply()
 
@@ -121,5 +123,20 @@ describe('HousecatPool: deposit', () => {
 
     // mirrorer2 should hold 1/3 of total supply
     expect(await pool.balanceOf(mirrorer2.address)).equal(totalSupply.mul(1).div(3))
+  })
+
+  it('should deposit on behalf of another address', async () => {
+    const [signer, treasury, depositor, otherUser, mirrored] = await ethers.getSigners()
+    const { pool } = await mockHousecatAndPool(signer, treasury, mirrored)
+    await pool.connect(depositor).deposit(otherUser.address, [], { value: parseEther('8') })
+    expect(await pool.balanceOf(depositor.address)).eq(0)
+    expect(await pool.balanceOf(otherUser.address)).gt(0)
+  })
+
+  it('should emit DepositToPool event', async () => {
+    const [signer, treasury, depositor, otherUser, mirrored] = await ethers.getSigners()
+    const { pool } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const tx = pool.connect(depositor).deposit(otherUser.address, [], { value: parseEther('8') })
+    await expect(tx).emit(pool, 'DepositToPool').withArgs(parseEther('8'), parseEther('8'), otherUser.address)
   })
 })

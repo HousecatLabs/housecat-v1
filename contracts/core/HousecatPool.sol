@@ -26,6 +26,9 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     _;
   }
 
+  event DepositToPool(uint poolTokenAmount, uint value, address indexed account);
+  event WithdrawFromPool(uint poolTokenAmount, uint value, address indexed account);
+
   constructor() ERC20('Housecat Pool Base', 'HCAT-Base') {}
 
   receive() external payable {}
@@ -66,7 +69,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getContent(mirrored, assets, loans);
   }
 
-  function deposit(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
+  function deposit(address _to, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
 
@@ -98,10 +101,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     if (totalSupply() > 0) {
       amountMint = totalSupply().mul(depositValue).div(contentBefore.netValue);
     }
-    _mint(msg.sender, amountMint);
+    _mint(_to, amountMint);
+    emit DepositToPool(amountMint, depositValue, _to);
   }
 
-  function withdraw(PoolTransaction[] calldata _transactions) external whenNotPaused {
+  function withdraw(address _to, PoolTransaction[] calldata _transactions) external whenNotPaused {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
 
@@ -124,19 +128,18 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
 
     // burn pool tokens in accordance with the withdrawn value
-    {
-      uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
-      uint withdrawValue = contentBefore.netValue.sub(contentAfter.netValue);
-      uint maxWithdrawValue = contentBefore.netValue.mul(shareInPool).div(PERCENT_100);
-      require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw balance exceeded');
-      uint amountBurn = totalSupply().mul(withdrawValue).div(contentBefore.netValue);
-      _burn(msg.sender, amountBurn);
-    }
+    uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
+    uint withdrawValue = contentBefore.netValue.sub(contentAfter.netValue);
+    uint maxWithdrawValue = contentBefore.netValue.mul(shareInPool).div(PERCENT_100);
+    require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw balance exceeded');
+    uint amountBurn = totalSupply().mul(withdrawValue).div(contentBefore.netValue);
+    _burn(msg.sender, amountBurn);
 
     // send the received ETH to the withdrawer
     uint amountEthToSend = ethBalanceAfter.sub(ethBalanceBefore);
-    (bool sent, ) = msg.sender.call{value: amountEthToSend}('');
+    (bool sent, ) = _to.call{value: amountEthToSend}('');
     require(sent, 'HousecatPool: sending ETH failed');
+    emit WithdrawFromPool(amountBurn, withdrawValue, msg.sender);
   }
 
   function manage(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
