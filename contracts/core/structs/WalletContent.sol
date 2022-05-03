@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLISENCED
 pragma solidity ^0.8.4;
 
-struct Portfolio {
+struct WalletContent {
   uint[] assetBalances;
   uint[] loanBalances;
   uint[] assetWeights;

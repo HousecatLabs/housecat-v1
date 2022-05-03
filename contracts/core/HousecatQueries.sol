@@ -9,7 +9,7 @@ import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
 import './Constants.sol';
 import './structs/TokenMeta.sol';
 import './structs/TokenData.sol';
-import './structs/Portfolio.sol';
+import './structs/WalletContent.sol';
 
 contract HousecatQueries is Constants {
   using SafeMath for uint;
@@ -63,12 +63,12 @@ contract HousecatQueries is Constants {
     return _getTokenData(_tokens, _tokensMeta);
   }
 
-  function getPortfolio(
+  function getContent(
     address _account,
     TokenData memory _assetData,
     TokenData memory _loanData
-  ) external view returns (Portfolio memory) {
-    return _getPortfolio(_account, _assetData, _loanData);
+  ) external view returns (WalletContent memory) {
+    return _getContent(_account, _assetData, _loanData);
   }
 
   function _getTokenPrices(address[] memory _priceFeeds) internal view returns (uint[] memory) {
@@ -168,11 +168,11 @@ contract HousecatQueries is Constants {
     return TokenData({tokens: _tokens, decimals: decimals, prices: prices});
   }
 
-  function _getPortfolio(
+  function _getContent(
     address _account,
     TokenData memory _assetData,
     TokenData memory _loanData
-  ) internal view returns (Portfolio memory) {
+  ) internal view returns (WalletContent memory) {
     uint[] memory assetBalances = _getTokenBalances(_account, _assetData.tokens);
     (uint[] memory assetWeights, uint assetValue) = _getTokenWeights(
       assetBalances,
@@ -182,7 +182,7 @@ contract HousecatQueries is Constants {
     uint[] memory loanBalances = _getTokenBalances(_account, _loanData.tokens);
     (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(loanBalances, _loanData.prices, _loanData.decimals);
     return
-      Portfolio({
+      WalletContent({
         assetBalances: assetBalances,
         loanBalances: loanBalances,
         assetWeights: assetWeights,
