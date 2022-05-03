@@ -56,14 +56,25 @@ describe('HousecatFactory', () => {
           },
         ],
       })
-      await factory.connect(mirrorer).createPool(mirrored.address, [], { value: parseEther('5') })
+      const tx = factory.connect(mirrorer).createPool(mirrored.address, [], { value: parseEther('5') })
+
+      await tx
+
       const [poolAddress] = await factory.getPools(0, 1)
+
+      const pool = await ethers.getContractAt('HousecatPool', poolAddress)
+
+      // tx should emit DepositToPool event with correct args
+      expect(tx).emit(pool, 'DepositToPool').withArgs(
+        parseEther('5'),
+        parseEther('5'),
+        mirrorer.address,
+      )
 
       // pool should hold 5 WETH
       expect(await weth.balanceOf(poolAddress)).equal(parseEther('5'))
 
       // sender should hold 5 pool tokens
-      const pool = await ethers.getContractAt('HousecatPool', poolAddress)
       expect(await pool.balanceOf(mirrorer.address)).equal(parseEther('5'))
     })
 
