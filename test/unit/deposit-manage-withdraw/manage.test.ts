@@ -18,7 +18,7 @@ describe('HousecatPool: manage', () => {
     const { pool, weth, adapters, amm } = await mockHousecatAndPool(signer, treasury, mirrored)
 
     // send initial deposit of 1 ETH
-    await pool.deposit([], { value: parseEther('10') })
+    await pool.deposit(signer.address, [], { value: parseEther('10') })
 
     // try to swap WETH to ETH (reducing the net value of the assets)
     const tx = pool.connect(signer).manage([

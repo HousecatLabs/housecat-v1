@@ -37,8 +37,7 @@ contract HousecatFactory {
     pools.push(poolAddress);
     mirroredPool[_mirrored] = poolAddress;
     if (msg.value > 0) {
-      pool.deposit{value: msg.value}(_transactions);
-      pool.transfer(msg.sender, pool.balanceOf(address(this)));
+      pool.deposit{value: msg.value}(msg.sender, _transactions);
     }
   }
 
