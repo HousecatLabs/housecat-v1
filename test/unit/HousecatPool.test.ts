@@ -2,14 +2,13 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { parseEther } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
-import { getPoolContent } from '../../utils/pool-utils'
 
 describe('HousecatPool', () => {
   describe('getAssetBalances', () => {
     it('returns 0 balances when the pool is empty', async () => {
       const [signer, treasury, mirrored] = await ethers.getSigners()
       const { pool } = await mockHousecatAndPool(signer, treasury, mirrored)
-      const balances = (await getPoolContent(pool)).assetBalances
+      const balances = (await pool.getPoolContent()).assetBalances
       balances.forEach((x) => expect(x).equal(0))
     })
 
@@ -20,7 +19,7 @@ describe('HousecatPool', () => {
       // send weth to the pool
       await weth.token.connect(signer).mint(pool.address, parseEther('1'))
 
-      const balances1 = (await getPoolContent(pool)).assetBalances
+      const balances1 = (await pool.getPoolContent()).assetBalances
 
       // check weth balance is 1
       expect(balances1[0]).equal(parseEther('1'))
@@ -31,7 +30,7 @@ describe('HousecatPool', () => {
       // send asset0 to the pool
       await assets[0].token.connect(signer).mint(pool.address, parseEther('0.5'))
 
-      const balances2 = (await getPoolContent(pool)).assetBalances
+      const balances2 = (await pool.getPoolContent()).assetBalances
 
       // check weth balance is still 1
       expect(balances2[0]).equal(parseEther('1'))

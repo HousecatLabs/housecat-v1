@@ -54,6 +54,18 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return tokenSymbol;
   }
 
+  function getPoolContent() external view returns (WalletContent memory) {
+    TokenData memory assets = _getAssetData();
+    TokenData memory loans = _getLoanData();
+    return _getContent(address(this), assets, loans);
+  }
+
+  function getMirroredContent() external view returns (WalletContent memory) {
+    TokenData memory assets = _getAssetData();
+    TokenData memory loans = _getLoanData();
+    return _getContent(mirrored, assets, loans);
+  }
+
   function deposit(PoolTransaction[] calldata _transactions) external payable whenNotPaused {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
@@ -173,7 +185,9 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
       combined[i] = _content.assetWeights[i].mul(_content.assetValue).div(_content.netValue);
     }
     for (uint i = 0; i < _content.loanWeights.length; i++) {
-      combined[i + _content.assetWeights.length] = _content.loanWeights[i].mul(_content.loanValue).div(_content.netValue);
+      combined[i + _content.assetWeights.length] = _content.loanWeights[i].mul(_content.loanValue).div(
+        _content.netValue
+      );
     }
     return combined;
   }
