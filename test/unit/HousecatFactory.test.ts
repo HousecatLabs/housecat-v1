@@ -65,11 +65,7 @@ describe('HousecatFactory', () => {
       const pool = await ethers.getContractAt('HousecatPool', poolAddress)
 
       // tx should emit DepositToPool event with correct args
-      expect(tx).emit(pool, 'DepositToPool').withArgs(
-        parseEther('5'),
-        parseEther('5'),
-        mirrorer.address,
-      )
+      expect(tx).emit(pool, 'DepositToPool').withArgs(parseEther('5'), parseEther('5'), mirrorer.address)
 
       // pool should hold 5 WETH
       expect(await weth.balanceOf(poolAddress)).equal(parseEther('5'))
