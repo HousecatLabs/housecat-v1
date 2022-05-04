@@ -4,12 +4,12 @@ import { parseEther } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
 
 describe('HousecatPool: deposit', () => {
-  it('should fail to change the asset weights of the pool to differ from the mirrored weights', async () => {
+  it('should fail to increase the weight difference between the pool and the mirrored account', async () => {
     const [signer, treasury, mirrored] = await ethers.getSigners()
     const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
 
     // deposit ETH and try to trade half of it to Asset0
-    const amountDeposit = parseEther('1')
+    const amountDeposit = parseEther('5')
     const tx = pool.deposit(
       signer.address,
       [
@@ -22,14 +22,15 @@ describe('HousecatPool: deposit', () => {
           data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
             amm.address,
             [weth.token.address, assets[0].token.address],
-            parseEther('0.5'),
+            parseEther('2'),
             1,
           ]),
         },
       ],
       { value: amountDeposit }
     )
-    await expect(tx).revertedWith('HousecatPool: weights mismatch')
+    await tx
+    expect(tx).revertedWith('HousecatPool: weight diff increased')
   })
 
   it('TODO: should fail to change the loan weights of the pool to differ from the mirrored weights', async () => {
@@ -59,7 +60,7 @@ describe('HousecatPool: deposit', () => {
       ],
       { value: amountDeposit }
     )
-    await expect(tx).revertedWith('HousecatPool: weights mismatch')
+    await expect(tx).revertedWith('HousecatPool: weight diff increased')
   })
 
   it('should fail to deposit when the mirrored account holds nothing', async () => {
@@ -76,7 +77,7 @@ describe('HousecatPool: deposit', () => {
       ],
       { value: amountDeposit }
     )
-    await expect(tx).revertedWith('HousecatPool: weights mismatch')
+    await expect(tx).revertedWith('HousecatPool: weight diff increased')
   })
 
   it('should fail to reduce the net value of the pool', async () => {

@@ -88,8 +88,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // require eth balance did not change
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
-    // require pool weights match the mirrored weights
-    require(poolStateAfter.weightDifference < PERCENT_100.div(50), 'HousecatPool: weights mismatch');
+    // require weight difference did not increase
+    require(poolStateAfter.weightDifference <= poolStateBefore.weightDifference, 'HousecatPool: weight diff increased');
 
     // require pool value did not decrease
     require(poolStateAfter.netValue >= poolStateBefore.netValue, 'HousecatPool: pool value reduced');
