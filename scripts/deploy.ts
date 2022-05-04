@@ -22,11 +22,12 @@ const main = async () => {
   console.log('HousecatManagement:', mgmt.address)
   console.log('HousecatFactory:', factory.address)
   console.log('HousecatPool:', poolTemplate.address)
-  console.log('uniswapV2Adapter:', adapters.uniswapV2Adapter.address)
-  console.log('aaveV2Adapter:', adapters.aaveV2Adapter.address)
-
   const queries = await deployQueries(owner, gasPrice)
   console.log('HousecatQueries:', queries.address)
+
+  console.log('WETHAdapter:', adapters.wethAdapter.address)
+  console.log('UniswapV2Adapter:', adapters.uniswapV2Adapter.address)
+  console.log('AaveV2Adapter:', adapters.aaveV2Adapter.address)
 }
 
 main().catch((error) => {
