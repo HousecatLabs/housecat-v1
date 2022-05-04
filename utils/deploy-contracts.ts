@@ -7,6 +7,7 @@ import {
   HousecatQueries,
   UniswapV2Adapter,
   AaveV2Adapter,
+  WETHAdapter,
 } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 import { BigNumber } from 'ethers'
@@ -48,6 +49,7 @@ export const deployFactory = async (
 export interface IAdapters {
   uniswapV2Adapter: UniswapV2Adapter
   aaveV2Adapter: AaveV2Adapter
+  wethAdapter: WETHAdapter
 }
 
 export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<IAdapters> => {
@@ -57,7 +59,9 @@ export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNu
   await uniswapV2Adapter.deployed()
   const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy({ gasPrice })
   await aaveV2Adapter.deployed()
-  return { uniswapV2Adapter, aaveV2Adapter }
+  const wethAdapter = await (await ethers.getContractFactory('WETHAdapter')).connect(signer).deploy({ gasPrice })
+  await wethAdapter.deployed()
+  return { uniswapV2Adapter, aaveV2Adapter, wethAdapter }
 }
 
 export interface IDeployHousecat {
