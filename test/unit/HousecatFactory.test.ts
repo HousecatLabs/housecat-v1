@@ -43,8 +43,9 @@ describe('HousecatFactory', () => {
     it('should succeed to make an initial deposit on pool creation', async () => {
       const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'WETH', 'WETH', 18, 0)
+      await weth.mint(mirrored.address, parseEther('10'))
       const wethPriceFeed = await mockPriceFeed(signer, parseUnits('1', 8), 8)
-      const { factory } = await deployHousecat({
+      const { factory, adapters } = await deployHousecat({
         signer,
         treasury: treasury.address,
         weth: weth.address,
@@ -56,7 +57,17 @@ describe('HousecatFactory', () => {
           },
         ],
       })
-      const tx = factory.connect(mirrorer).createPool(mirrored.address, [], { value: parseEther('5') })
+      const amountDeposit = parseEther('5')
+      const tx = factory.connect(mirrorer).createPool(
+        mirrored.address,
+        [
+          {
+            adapter: adapters.wethAdapter.address,
+            data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+          },
+        ],
+        { value: amountDeposit }
+      )
 
       await tx
 

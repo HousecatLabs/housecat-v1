@@ -15,19 +15,38 @@ describe('HousecatPool: manage', () => {
 
   it('should fail to reduce the pool net value more than the allowed slippage limit', async () => {
     const [signer, treasury, mirrored] = await ethers.getSigners()
-    const { pool, weth, adapters, amm } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const { pool, weth, adapters, amm, assets } = await mockHousecatAndPool(
+      signer,
+      treasury,
+      mirrored,
+      { price: '1', amountToMirrored: '10' },
+      [{ price: '1', reserveToken: '20', reserveWeth: '20' }]
+    )
 
-    // send initial deposit of 1 ETH
-    await pool.deposit(signer.address, [], { value: parseEther('10') })
+    // send initial deposit of 10 ETH
+    const amountDeposit = parseEther('10')
+    await pool.deposit(
+      signer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+        },
+      ],
+      { value: amountDeposit }
+    )
 
-    // try to swap WETH to ETH (reducing the net value of the assets)
+    // send a low liquidity Asset0 to the mirrored
+    assets[0].token.mint(mirrored.address, parseEther('10'))
+
+    // try to rebalance
     const tx = pool.connect(signer).manage([
       {
         adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
           amm.address,
-          [weth.token.address, weth.token.address],
-          parseEther('1'),
+          [weth.token.address, assets[0].token.address],
+          parseEther('5'),
           1,
         ]),
       },

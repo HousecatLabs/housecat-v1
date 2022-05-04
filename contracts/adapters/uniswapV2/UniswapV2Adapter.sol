@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
+import '../../interfaces/IWETH.sol';
 import '../BaseAdapter.sol';
 
 contract UniswapV2Adapter is BaseAdapter {

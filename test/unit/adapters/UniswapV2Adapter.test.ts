@@ -9,15 +9,27 @@ import { uniswapV2Routers } from '../../../utils/addresses/polygon'
 describe('UniswapV2Adapter', () => {
   describe('swapTokens', () => {
     let owner: SignerWithAddress
+    let mirrored: SignerWithAddress
     let mock: IMockHousecatAndPool
 
     before(async () => {
-      const [owner_, treasury, mirrored, mirrorer] = await ethers.getSigners()
+      const [owner_, treasury, mirrored_, mirrorer] = await ethers.getSigners()
       owner = owner_
-      mock = await mockHousecatAndPool(owner, treasury, mirrored)
+      mirrored = mirrored_
+      mock = await mockHousecatAndPool(owner, treasury, mirrored, { price: '1', amountToMirrored: '5' })
 
       // deposit ETH so that the pool has WETH
-      await mock.pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('5') })
+      const amountDeposit = parseEther('5')
+      await mock.pool.connect(mirrorer).deposit(
+        mirrorer.address,
+        [
+          {
+            adapter: mock.adapters.wethAdapter.address,
+            data: mock.adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+          },
+        ],
+        { value: amountDeposit }
+      )
     })
 
     it('should fail to use an unsupported AMM router', async () => {
@@ -59,7 +71,11 @@ describe('UniswapV2Adapter', () => {
     })
 
     it('should succeed to swap supported tokens on a supported AMM', async () => {
-      const tradeWethToToken0 = mock.adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+      // trade weth to Asset0 on mirrored wallet
+      await mock.weth.token.connect(mirrored).burn(parseEther('1'))
+      await mock.assets[0].token.mint(mirrored.address, parseEther('1'))
+
+      const tradeWethToAsset0 = mock.adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
         mock.amm.address,
         [mock.weth.token.address, mock.assets[0].token.address],
         parseEther('1'),
@@ -68,7 +84,7 @@ describe('UniswapV2Adapter', () => {
       await mock.pool.connect(owner).manage([
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
-          data: tradeWethToToken0,
+          data: tradeWethToAsset0,
         },
       ])
 
@@ -92,7 +108,17 @@ describe('UniswapV2Adapter', () => {
       mock = await mockHousecatAndPool(deployer, treasury, mirrored)
 
       // deposit ETH so that the pool has WETH
-      await mock.pool.connect(mirrorer).deposit(mirrorer.address, [], { value: parseEther('5') })
+      const amountDeposit = parseEther('5')
+      await mock.pool.connect(mirrorer).deposit(
+        mirrorer.address,
+        [
+          {
+            adapter: mock.adapters.wethAdapter.address,
+            data: mock.adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+          },
+        ],
+        { value: amountDeposit }
+      )
 
       // send token0 to the pool
       await mock.assets[0].token.mint(mock.pool.address, parseEther('5'))
