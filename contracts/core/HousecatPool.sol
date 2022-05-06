@@ -130,7 +130,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     uint withdrawValue = poolStateBefore.netValue.sub(poolStateAfter.netValue);
     uint maxWithdrawValue = poolStateBefore.netValue.mul(shareInPool).div(PERCENT_100);
     require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw balance exceeded');
-    
+
     uint amountBurn = totalSupply().mul(withdrawValue).div(poolStateBefore.netValue);
     if (maxWithdrawValue.sub(withdrawValue) < ONE_USD.div(20)) {
       // if the remaining value is less than 0.05 USD burn the rest
