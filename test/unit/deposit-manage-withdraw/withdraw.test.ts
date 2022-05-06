@@ -151,6 +151,39 @@ describe('HousecatPool: withdraw', () => {
     expect(await pool.balanceOf(mirrorer2.address)).equal(totalSupply.mul(2).div(10))
   })
 
+  it('shoild burn all tokens if the remaining value of pool tokens after withrawal is less than 0.05 USD', async () => {
+    const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
+    const { pool, adapters, amm, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
+
+    // deposit
+    const amountDeposit = parseEther('10')
+    await pool.connect(mirrorer).deposit(
+      mirrorer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+        },
+      ],
+      { value: amountDeposit }
+    )
+
+    // withdraw
+    await pool.connect(mirrorer).withdraw(mirrorer.address, [
+      {
+        adapter: adapters.uniswapV2Adapter.address,
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
+          amm.address,
+          [weth.token.address, weth.token.address],
+          parseEther('9.951'),
+          1,
+        ]),
+      },
+    ])
+
+    expect(await pool.balanceOf(mirrorer.address)).equal(0)
+  })
+
   it('should withdraw on behalf of another address', async () => {
     const [signer, treasury, mirrorer, mirrored, otherUser] = await ethers.getSigners()
     const { pool, adapters, amm, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
