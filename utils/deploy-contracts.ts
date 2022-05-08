@@ -66,7 +66,9 @@ export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNu
   const wethAdapter = await (await ethers.getContractFactory('WETHAdapter')).connect(signer).deploy({ gasPrice })
   await wethAdapter.deployed()
 
-  const paraswapV5Adapter = await (await ethers.getContractFactory('ParaswapV5Adapter')).connect(signer).deploy({ gasPrice })
+  const paraswapV5Adapter = await (await ethers.getContractFactory('ParaswapV5Adapter'))
+    .connect(signer)
+    .deploy({ gasPrice })
   await paraswapV5Adapter.deployed()
 
   return { uniswapV2Adapter, aaveV2Adapter, wethAdapter, paraswapV5Adapter }

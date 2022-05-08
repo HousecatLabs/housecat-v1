@@ -8,10 +8,7 @@ import './interfaces/IParaswap.sol';
 import '../BaseAdapter.sol';
 
 contract ParaswapV5Adapter is BaseAdapter {
-  function simpleSwap(
-    address _augustusSwapper,
-    bytes calldata _data
-  ) external payable {
+  function simpleSwap(address _augustusSwapper, bytes calldata _data) external payable {
     HousecatManagement mgmt = _getMgmt();
     require(mgmt.isIntegrationSupported(_augustusSwapper), 'ParaswapV5Adapter: unsupported router');
     Utils.SimpleData memory data = abi.decode(_data[4:], (Utils.SimpleData));
@@ -21,11 +18,8 @@ contract ParaswapV5Adapter is BaseAdapter {
     IERC20(data.fromToken).approve(tokenTransferProxy, data.fromAmount);
     IParaswap(_augustusSwapper).protectedSimpleSwap(data);
   }
-  
-  function multiSwap(
-    address _augustusSwapper,
-    bytes calldata _data
-  ) external payable {
+
+  function multiSwap(address _augustusSwapper, bytes calldata _data) external payable {
     HousecatManagement mgmt = _getMgmt();
     require(mgmt.isIntegrationSupported(_augustusSwapper), 'ParaswapV5Adapter: unsupported router');
     Utils.SellData memory data = abi.decode(_data[4:], (Utils.SellData));
