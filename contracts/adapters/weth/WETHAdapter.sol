@@ -9,4 +9,9 @@ contract WETHAdapter is BaseAdapter {
     HousecatManagement mgmt = _getMgmt();
     IWETH(mgmt.weth()).deposit{value: _amount}();
   }
+
+  function withdraw(uint _amount) external payable {
+    HousecatManagement mgmt = _getMgmt();
+    IWETH(mgmt.weth()).withdraw(_amount);
+  }
 }
