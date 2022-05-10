@@ -5,6 +5,7 @@ import '@openzeppelin/contracts/proxy/Clones.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import './HousecatManagement.sol';
 import './HousecatPool.sol';
+import './structs/UserSettings.sol';
 import './structs/PoolTransaction.sol';
 
 contract HousecatFactory {
@@ -14,12 +15,16 @@ contract HousecatFactory {
   address private poolTemplateContract;
   address[] private pools;
   mapping(address => address) private mirroredPool;
+  mapping(address => UserSettings) private userSettings;
+  mapping(address => bool) private userSettingsCreated;
 
   modifier whenNotPaused() {
     HousecatManagement housecatManagement = HousecatManagement(managementContract);
     require(!housecatManagement.paused(), 'HousecatFactory: paused');
     _;
   }
+
+  event UpdateUserSettings(UserSettings userSettings);
 
   constructor(address _managementContract, address _poolTemplateContract) {
     managementContract = _managementContract;
@@ -36,9 +41,24 @@ contract HousecatFactory {
     pool.initialize(mgmt.owner(), address(this), managementContract, _mirrored); // in the future make pools ownerless
     pools.push(poolAddress);
     mirroredPool[_mirrored] = poolAddress;
+    if (!userSettingsCreated[_mirrored]) {
+      userSettings[_mirrored] = _getDefaultUserSettings();
+    }
     if (msg.value > 0) {
       pool.deposit{value: msg.value}(msg.sender, _transactions);
     }
+  }
+
+  function updateUserSettings(UserSettings memory _userSettings) external whenNotPaused {
+    _validateUserSettings(_userSettings);
+    if (mirroredPool[msg.sender] != address(0)) {
+      HousecatPool pool = HousecatPool(payable(mirroredPool[msg.sender]));
+      pool.settleManagementFee();
+      pool.settlePerformanceFee();
+    }
+    userSettings[msg.sender] = _userSettings;
+    userSettingsCreated[msg.sender] = true;
+    emit UpdateUserSettings(_userSettings);
   }
 
   function getPoolByMirrored(address _mirrored) external view returns (address) {
@@ -55,5 +75,30 @@ contract HousecatFactory {
       pools_[i] = pools[i];
     }
     return pools_;
+  }
+
+  function getUserSettings(address _mirrored) external view returns (UserSettings memory) {
+    return userSettings[_mirrored];
+  }
+
+  function _getDefaultUserSettings() internal view returns (UserSettings memory) {
+    HousecatManagement management = HousecatManagement(managementContract);
+    return
+      UserSettings({
+        managementFee: management.getManagementFee().defaultFee,
+        performanceFee: management.getPerformanceFee().defaultFee
+      });
+  }
+
+  function _validateUserSettings(UserSettings memory _userSettings) private view {
+    HousecatManagement management = HousecatManagement(managementContract);
+    require(
+      _userSettings.managementFee <= management.getManagementFee().maxFee,
+      'HousecatFactory: managementFee too high'
+    );
+    require(
+      _userSettings.performanceFee <= management.getPerformanceFee().maxFee,
+      'HousecatFactory: performanceFee too high'
+    );
   }
 }

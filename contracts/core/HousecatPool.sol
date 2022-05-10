@@ -5,6 +5,7 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
+import './structs/UserSettings.sol';
 import './structs/PoolTransaction.sol';
 import './HousecatQueries.sol';
 import './HousecatFactory.sol';
@@ -19,12 +20,14 @@ struct PoolState {
 contract HousecatPool is HousecatQueries, ERC20, Ownable {
   using SafeMath for uint;
 
-  bool private initialized;
   HousecatFactory public factory;
   HousecatManagement public management;
   address public mirrored;
   string private tokenName;
   string private tokenSymbol;
+  bool private initialized;
+  uint private managementFeeCheckpoint;
+  uint private performanceFeeHighWatermark;
 
   modifier whenNotPaused() {
     require(!management.paused(), 'HousecatPool: paused');
@@ -33,6 +36,10 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   event DepositToPool(uint poolTokenAmount, uint value, address indexed account);
   event WithdrawFromPool(uint poolTokenAmount, uint value, address indexed account);
+  event ManagementFeeCheckpointUpdated(uint secondsPassed);
+  event ManagementFeeSettled(uint amountToMirrored, uint amountToTreasury);
+  event PerformanceFeeHighWatermarkUpdated(uint newValue);
+  event PerformanceFeeSettled(uint amountToMirrored, uint amountToTreasury);
 
   constructor() ERC20('Housecat Pool Base', 'HCAT-Base') {}
 
@@ -51,6 +58,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     mirrored = _mirrored;
     tokenName = 'Housecat Pool Position';
     tokenSymbol = 'HCAT-PP';
+    managementFeeCheckpoint = block.timestamp;
+    performanceFeeHighWatermark = 0;
     initialized = true;
   }
 
@@ -80,7 +89,33 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _getWeightDifference(_getContent(address(this), assets, loans), _getContent(mirrored, assets, loans));
   }
 
+  function getAccruedManagementFee() external view returns (uint) {
+    uint feePercentage = factory.getUserSettings(mirrored).managementFee;
+    return _getAccruedManagementFee(feePercentage);
+  }
+
+  function getAccruedPerformanceFee() external view returns (uint) {
+    uint poolValue = getPoolContent().netValue;
+    uint feePercentage = factory.getUserSettings(mirrored).performanceFee;
+    return _getAccruedPerformanceFee(poolValue, feePercentage);
+  }
+
+  function settleManagementFee() external whenNotPaused {
+    uint feePercentage = factory.getUserSettings(mirrored).managementFee;
+    address treasury = management.treasury();
+    _settleManagementFee(feePercentage, treasury);
+  }
+
+  function settlePerformanceFee() external whenNotPaused {
+    uint poolValue = getPoolContent().netValue;
+    uint feePercentage = factory.getUserSettings(mirrored).performanceFee;
+    address treasury = management.treasury();
+    _settlePerformanceFee(poolValue, feePercentage, treasury);
+  }
+
   function deposit(address _to, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
+    // TODO: settle fees
+
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
 
@@ -98,8 +133,15 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // require pool value did not decrease
     require(poolStateAfter.netValue >= poolStateBefore.netValue, 'HousecatPool: pool value reduced');
 
-    // mint pool tokens an amount based on the deposit value
     uint depositValue = poolStateAfter.netValue.sub(poolStateBefore.netValue);
+
+    // settle accrued fees
+    _settleFees(poolStateBefore.netValue);
+
+    // add deposit value to performance fee high watermark
+    _updatePerformanceFeeHighWatermark(performanceFeeHighWatermark.add(depositValue));
+
+    // mint pool tokens an amount based on the deposit value
     uint amountMint = depositValue;
     if (totalSupply() > 0) {
       amountMint = totalSupply().mul(depositValue).div(poolStateBefore.netValue);
@@ -109,6 +151,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function withdraw(address _to, PoolTransaction[] calldata _transactions) external whenNotPaused {
+    // TODO: settle fees
+
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
 
@@ -124,12 +168,20 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
       );
     }
 
-    // burn pool tokens an amount based on the withdrawn value
-    uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
     uint withdrawValue = poolStateBefore.netValue.sub(poolStateAfter.netValue);
+
+    // require withdraw value does not exceed what the withdtawer owns
+    uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
     uint maxWithdrawValue = poolStateBefore.netValue.mul(shareInPool).div(PERCENT_100);
     require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw balance exceeded');
 
+    // settle accrued fees
+    _settleFees(poolStateBefore.netValue);
+
+    // reduce withdraw value from performance fee high watermark
+    _updatePerformanceFeeHighWatermark(performanceFeeHighWatermark.sub(withdrawValue));
+
+    // burn pool tokens an amount based on the withdrawn value
     uint amountBurn = totalSupply().mul(withdrawValue).div(poolStateBefore.netValue);
     if (maxWithdrawValue.sub(withdrawValue) < ONE_USD.div(20)) {
       // if the remaining value is less than 0.05 USD burn the rest
@@ -173,7 +225,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function _executeTransactions(PoolTransaction[] calldata _transactions)
-    internal
+    private
     returns (PoolState memory, PoolState memory)
   {
     TokenData memory assets = _getAssetData();
@@ -210,7 +262,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return (poolStateBefore, poolStateAfter);
   }
 
-  function _combineWeights(WalletContent memory _content) internal pure returns (uint[] memory) {
+  function _combineWeights(WalletContent memory _content) private pure returns (uint[] memory) {
     uint[] memory combined = new uint[](_content.assetWeights.length + _content.loanWeights.length);
     if (_content.netValue > 0) {
       for (uint i = 0; i < _content.assetWeights.length; i++) {
@@ -226,7 +278,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function _getWeightDifference(WalletContent memory _poolContent, WalletContent memory _mirroredContent)
-    internal
+    private
     pure
     returns (uint)
   {
@@ -239,5 +291,82 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
         : mirroredWeights[i].sub(poolWeights[i]);
     }
     return totalDiff;
+  }
+
+  function _getAccruedManagementFee(uint _annualFeePercentage) private view returns (uint) {
+    uint secondsSinceLastSettlement = block.timestamp.sub(managementFeeCheckpoint);
+    if (secondsSinceLastSettlement > 0) {
+      return _annualFeePercentage.mul(totalSupply()).mul(secondsSinceLastSettlement).div(365 days).div(PERCENT_100);
+    }
+    return 0;
+  }
+
+  function _getAccruedPerformanceFee(uint _poolValue, uint _performanceFeePercentage) private view returns (uint) {
+    if (_poolValue > performanceFeeHighWatermark) {
+      uint profitPercentage = _poolValue.sub(performanceFeeHighWatermark).mul(PERCENT_100).div(
+        performanceFeeHighWatermark
+      );
+      uint accruedFeePercentage = profitPercentage.mul(_performanceFeePercentage).div(PERCENT_100);
+      return totalSupply().mul(accruedFeePercentage).div(PERCENT_100);
+    }
+    return 0;
+  }
+
+  function _updateManagementFeeCheckpoint() private {
+    uint secondsSinceLastSettlement = block.timestamp.sub(managementFeeCheckpoint);
+    managementFeeCheckpoint = block.timestamp;
+    emit ManagementFeeCheckpointUpdated(secondsSinceLastSettlement);
+  }
+
+  function _updatePerformanceFeeHighWatermark(uint _poolValue) private {
+    performanceFeeHighWatermark = _poolValue;
+    emit PerformanceFeeHighWatermarkUpdated(_poolValue);
+  }
+
+  function _mintFee(
+    uint _feeAmount,
+    uint _taxPercent,
+    address _treasury
+  ) private returns (uint, uint) {
+    uint amountToTreasury = _feeAmount.mul(_taxPercent).div(PERCENT_100);
+    uint amountToMirrored = _feeAmount.sub(amountToTreasury);
+    _mint(mirrored, amountToMirrored);
+    _mint(_treasury, amountToTreasury);
+    return (amountToMirrored, amountToTreasury);
+  }
+
+  function _settleManagementFee(uint _managementFeePercentage, address _treasury) private {
+    uint amountToMirrored;
+    uint amountToTreasury;
+    uint feeAmount = _getAccruedManagementFee(_managementFeePercentage);
+    if (feeAmount > 0) {
+      (amountToMirrored, amountToTreasury) = _mintFee(feeAmount, management.getManagementFee().protocolTax, _treasury);
+      emit ManagementFeeSettled(amountToMirrored, amountToTreasury);
+    }
+    _updateManagementFeeCheckpoint();
+  }
+
+  function _settlePerformanceFee(
+    uint _poolValue,
+    uint _performanceFeePercentage,
+    address _treasury
+  ) private {
+    uint feeAmount = _getAccruedPerformanceFee(_poolValue, _performanceFeePercentage);
+    if (feeAmount > 0) {
+      (uint amountToMirrored, uint amountToTreasury) = _mintFee(
+        feeAmount,
+        management.getPerformanceFee().protocolTax,
+        _treasury
+      );
+      emit PerformanceFeeSettled(amountToMirrored, amountToTreasury);
+      _updatePerformanceFeeHighWatermark(_poolValue);
+    }
+  }
+
+  function _settleFees(uint _poolValue) internal {
+    address treasury = management.treasury();
+    UserSettings memory userSettings = factory.getUserSettings(mirrored);
+    _settleManagementFee(userSettings.managementFee, treasury);
+    _settlePerformanceFee(_poolValue, userSettings.performanceFee, treasury);
   }
 }

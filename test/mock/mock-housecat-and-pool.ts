@@ -3,7 +3,8 @@ import { IMockHousecat, mockHousecat } from '../../utils/mock-housecat'
 import { HousecatPool } from '../../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { IToken, ITokenWithLiquidity } from '../../utils/mock-defi'
-import { parseEther } from 'ethers/lib/utils'
+import { parseEther, parseUnits } from 'ethers/lib/utils'
+import { FeeSettingsStruct } from '../../typechain-types/HousecatManagement'
 
 interface IWethWithAmountToMirrored extends IToken {
   amountToMirrored?: string
@@ -17,28 +18,43 @@ interface ILoanWithAmountToMirrored extends IToken {
   amountToMirrored?: string
 }
 
+interface IMockHousecatAndPoolProps {
+  signer: SignerWithAddress
+  treasury?: SignerWithAddress
+  mirrored: SignerWithAddress
+  weth?: IWethWithAmountToMirrored
+  assets?: IAssetWithAmountToMirrored[]
+  loans?: ILoanWithAmountToMirrored[]
+  managementFee?: FeeSettingsStruct
+  performanceFee?: FeeSettingsStruct
+}
+
 export interface IMockHousecatAndPool extends IMockHousecat {
   pool: HousecatPool
 }
 
-const mockHousecatAndPool = async (
-  signer: SignerWithAddress,
-  treasury: SignerWithAddress,
-  mirrored: SignerWithAddress,
-  weth: IWethWithAmountToMirrored = { price: '1', amountToMirrored: '10' },
-  assets: IAssetWithAmountToMirrored[] = [
+const mockHousecatAndPool = async ({
+  signer,
+  treasury,
+  mirrored,
+  weth = { price: '1', amountToMirrored: '10' },
+  assets = [
     { price: '1', reserveToken: '10000', reserveWeth: '10000' },
     { price: '2', reserveToken: '5000', reserveWeth: '10000' },
     { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
   ],
-  loans: ILoanWithAmountToMirrored[] = [{ price: '1' }]
-): Promise<IMockHousecatAndPool> => {
+  loans = [{ price: '1' }],
+  managementFee = { defaultFee: 0, maxFee: parseUnits('0.1', 8), protocolTax: 0 },
+  performanceFee = { defaultFee: 0, maxFee: parseUnits('0.25', 8), protocolTax: 0 },
+}: IMockHousecatAndPoolProps): Promise<IMockHousecatAndPool> => {
   const mock = await mockHousecat({
     signer,
-    treasury: treasury.address,
+    treasury: treasury?.address || signer.address,
     weth,
     assets,
     loans,
+    managementFee,
+    performanceFee,
   })
   await mock.factory.connect(signer).createPool(mirrored.address, [])
   const pool = await ethers.getContractAt('HousecatPool', (await mock.factory.getPools(0, 1))[0])

@@ -1,12 +1,14 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { parseEther } from 'ethers/lib/utils'
+import { parseEther, parseUnits } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
+import { DAYS, increaseTime } from '../../../utils/evm'
+import { mockPriceFeed } from '../../../utils/mock-defi'
 
 describe('HousecatPool: deposit', () => {
   it('should fail to increase the weight difference between the pool and the mirrored account', async () => {
-    const [signer, treasury, mirrored] = await ethers.getSigners()
-    const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool({ signer, mirrored })
 
     // deposit ETH and try to trade half of it to Asset0
     const amountDeposit = parseEther('5')
@@ -38,15 +40,14 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should fail to change the loan ratio of the pool to differ from the mirrored loan ratio', async () => {
-    const [signer, treasury, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool(
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({
       signer,
-      treasury,
       mirrored,
-      { price: '1', amountToMirrored: '10' },
-      [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
-      [{ price: '1', amountToMirrored: '10' }]
-    )
+      weth: { price: '1', amountToMirrored: '10' },
+      assets: [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
+      loans: [{ price: '1', amountToMirrored: '10' }],
+    })
 
     // deposit ETH without adjusting the loan position
     const amountDeposit = parseEther('1')
@@ -64,8 +65,8 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should fail to deposit when the mirrored account holds nothing', async () => {
-    const [signer, treasury, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool(signer, treasury, mirrored, { price: '1' })
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored, weth: { price: '1' } })
     const amountDeposit = parseEther('1')
     const tx = pool.deposit(
       signer.address,
@@ -81,8 +82,8 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should fail to reduce the net value of the pool', async () => {
-    const [signer, treasury, mirrored] = await ethers.getSigners()
-    const { pool, weth, adapters, amm, assets } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, weth, adapters, amm, assets } = await mockHousecatAndPool({ signer, mirrored })
 
     // send initial deposit of 10 ETH
     const amountDeposit = parseEther('10')
@@ -121,8 +122,8 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should fail to reduce the eth balance of the pool', async () => {
-    const [signer, treasury, mirrored] = await ethers.getSigners()
-    const { pool, weth, adapters, amm } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, weth, adapters, amm } = await mockHousecatAndPool({ signer, mirrored })
 
     // send initial deposit of 10 ETH
     const amountDeposit = parseEther('10')
@@ -153,8 +154,8 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should mint pool tokens an amount equal to the deposit value when the pool total supply is zero', async () => {
-    const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const [signer, mirrorer, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
     const amountDeposit = parseEther('10')
     await pool.deposit(
       mirrorer.address,
@@ -170,8 +171,8 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should mint pool tokens the correct amount when the pool has existing holders', async () => {
-    const [signer, treasury, mirrorer1, mirrorer2, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const [signer, mirrorer1, mirrorer2, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
 
     // initial deposit by mirrorer1
     const amountDeposit1 = parseEther('8')
@@ -209,8 +210,8 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should deposit on behalf of another address', async () => {
-    const [signer, treasury, depositor, otherUser, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const [signer, depositor, otherUser, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
     const amountDeposit = parseEther('8')
     await pool.connect(depositor).deposit(
       otherUser.address,
@@ -227,8 +228,8 @@ describe('HousecatPool: deposit', () => {
   })
 
   it('should emit DepositToPool event', async () => {
-    const [signer, treasury, depositor, otherUser, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const [signer, depositor, otherUser, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
     const amountDeposit = parseEther('8')
     const tx = pool.connect(depositor).deposit(
       otherUser.address,
@@ -241,5 +242,146 @@ describe('HousecatPool: deposit', () => {
       { value: amountDeposit }
     )
     await expect(tx).emit(pool, 'DepositToPool').withArgs(parseEther('8'), parseEther('8'), otherUser.address)
+  })
+
+  it('should settle accrued management fee', async () => {
+    const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({
+      signer,
+      treasury,
+      mirrored,
+      managementFee: {
+        defaultFee: parseUnits('0.01', 8),
+        maxFee: parseUnits('0.01', 8),
+        protocolTax: parseUnits('0.25', 8),
+      },
+    })
+
+    // first deposit
+    const amountDeposit1 = parseEther('8')
+    await pool.deposit(
+      mirrorer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit1]),
+        },
+      ],
+      { value: amountDeposit1 }
+    )
+
+    // increase time
+    await increaseTime(DAYS * 10)
+
+    // second deposit
+    const amountDeposit2 = parseEther('4')
+    const deposit2 = await pool.deposit(
+      mirrorer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit2]),
+        },
+      ],
+      { value: amountDeposit2 }
+    )
+
+    await expect(deposit2).emit(pool, 'ManagementFeeSettled')
+    expect(await pool.balanceOf(mirrored.address)).gt(0)
+    expect(await pool.balanceOf(treasury.address)).gt(0)
+  })
+
+  it('should settle accrued performance fee', async () => {
+    const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
+    const { pool, adapters, weth, mgmt } = await mockHousecatAndPool({
+      signer,
+      treasury,
+      mirrored,
+      performanceFee: {
+        defaultFee: parseUnits('0.1', 8),
+        maxFee: parseUnits('0.1', 8),
+        protocolTax: parseUnits('0.25', 8),
+      },
+    })
+
+    // first deposit
+    const amountDeposit1 = parseEther('8')
+    await pool.deposit(
+      mirrorer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit1]),
+        },
+      ],
+      { value: amountDeposit1 }
+    )
+
+    // increase value
+    const newPriceFeed = await mockPriceFeed(signer, parseEther('2'), 8)
+    await mgmt.setTokenMeta(weth.token.address, {
+      priceFeed: newPriceFeed.address,
+      decimals: 18,
+    })
+
+    // second deposit
+    const amountDeposit2 = parseEther('4')
+    const deposit2 = await pool.deposit(
+      mirrorer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit2]),
+        },
+      ],
+      { value: amountDeposit2 }
+    )
+
+    await expect(deposit2).emit(pool, 'PerformanceFeeSettled')
+    expect(await pool.balanceOf(mirrored.address)).gt(0)
+    expect(await pool.balanceOf(treasury.address)).gt(0)
+  })
+
+  it('should increase performance fee high watermark value by the deposit value', async () => {
+    const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({
+      signer,
+      treasury,
+      mirrored,
+      performanceFee: {
+        defaultFee: parseUnits('0.1', 8),
+        maxFee: parseUnits('0.1', 8),
+        protocolTax: parseUnits('0.25', 8),
+      },
+    })
+
+    // deposit 1
+    const amountDeposit1 = parseEther('8')
+    const deposit1 = await pool.deposit(
+      mirrorer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit1]),
+        },
+      ],
+      { value: amountDeposit1 }
+    )
+
+    // deposit 2
+    const amountDeposit2 = parseEther('4')
+    const deposit2 = await pool.deposit(
+      mirrorer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit2]),
+        },
+      ],
+      { value: amountDeposit2 }
+    )
+
+    await expect(deposit1).emit(pool, 'PerformanceFeeHighWatermarkUpdated').withArgs(amountDeposit1)
+    await expect(deposit2).emit(pool, 'PerformanceFeeHighWatermarkUpdated').withArgs(amountDeposit1.add(amountDeposit2))
   })
 })

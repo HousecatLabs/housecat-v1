@@ -5,8 +5,8 @@ import { parseEther } from 'ethers/lib/utils'
 
 describe('HousecatPool: manage', () => {
   it('only owner allowed to call', async () => {
-    const [signer, treasury, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool(signer, treasury, mirrored)
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
     const encoder = new ethers.utils.AbiCoder()
     const data = encoder.encode(['string'], ['foobar'])
     const manage = pool.connect(mirrored).manage([{ adapter: adapters.uniswapV2Adapter.address, data }])
@@ -14,14 +14,13 @@ describe('HousecatPool: manage', () => {
   })
 
   it('should fail to reduce the pool net value more than the allowed slippage limit', async () => {
-    const [signer, treasury, mirrored] = await ethers.getSigners()
-    const { pool, weth, adapters, amm, assets } = await mockHousecatAndPool(
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, weth, adapters, amm, assets } = await mockHousecatAndPool({
       signer,
-      treasury,
       mirrored,
-      { price: '1', amountToMirrored: '10' },
-      [{ price: '1', reserveToken: '20', reserveWeth: '20' }]
-    )
+      weth: { price: '1', amountToMirrored: '10' },
+      assets: [{ price: '1', reserveToken: '20', reserveWeth: '20' }],
+    })
 
     // send initial deposit of 10 ETH
     const amountDeposit = parseEther('10')
