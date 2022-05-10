@@ -56,6 +56,8 @@ struct SimpleData {
 
 interface IAugustusSwapper {
   function getTokenTransferProxy() external view returns (address);
+
   function protectedMultiSwap(SellData calldata data) external payable returns (uint256);
+
   function protectedSimpleSwap(SimpleData calldata data) external payable returns (uint256 receivedAmount);
 }
