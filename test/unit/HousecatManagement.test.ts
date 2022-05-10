@@ -264,24 +264,190 @@ describe('HousecatManagement', () => {
       const meta2 = await mgmt.getTokenMeta(otherToken.address)
       expect(meta2.decimals).equal(6)
     })
+  })
 
-    describe('setSupportedIntegration', () => {
-      it('only owner allowed to call', async () => {
-        const [signer, treasury, otherUser] = await ethers.getSigners()
-        const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
-        const mgmt = await deployManagement(signer, treasury.address, weth.address)
-        const setIntegration = mgmt.connect(otherUser).setSupportedIntegration(weth.address, true)
-        await expect(setIntegration).revertedWith('Ownable: caller is not the owner')
-      })
+  describe('setSupportedIntegration', () => {
+    it('only owner allowed to call', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const setIntegration = mgmt.connect(otherUser).setSupportedIntegration(weth.address, true)
+      await expect(setIntegration).revertedWith('Ownable: caller is not the owner')
+    })
 
-      it('sets value correctly if called by the owner', async () => {
-        const [signer, treasury] = await ethers.getSigners()
-        const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
-        const mgmt = await deployManagement(signer, treasury.address, weth.address)
-        expect(await mgmt.isIntegrationSupported(weth.address)).equal(false)
-        await mgmt.connect(signer).setSupportedIntegration(weth.address, true)
-        expect(await mgmt.isIntegrationSupported(weth.address)).equal(true)
+    it('sets value correctly if called by the owner', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      expect(await mgmt.isIntegrationSupported(weth.address)).equal(false)
+      await mgmt.connect(signer).setSupportedIntegration(weth.address, true)
+      expect(await mgmt.isIntegrationSupported(weth.address)).equal(true)
+    })
+  })
+
+  describe('updateManagementFee', () => {
+    it('should fail if caller is not the owner', async () => {
+      const [signer, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(otherUser).updateManagementFee({
+        maxFee: percent100.div(10),
+        defaultFee: percent100.div(100),
+        protocolTax: percent100.div(5),
       })
+      await expect(update).to.revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('should update managementFee successfully when called by the owner with a valid value', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      await mgmt.connect(signer).updateManagementFee({
+        maxFee: percent100.div(10),
+        defaultFee: percent100.div(100),
+        protocolTax: percent100.div(5),
+      })
+      const newValue = await mgmt.getManagementFee()
+      expect(newValue.maxFee).equal(percent100.div(10))
+      expect(newValue.defaultFee).equal(percent100.div(100))
+      expect(newValue.protocolTax).equal(percent100.div(5))
+    })
+
+    it('should emit UpdateManagementFee event', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(signer).updateManagementFee({
+        maxFee: percent100.div(10),
+        defaultFee: percent100.div(100),
+        protocolTax: percent100.div(5),
+      })
+      await expect(update).emit(mgmt, 'UpdateManagementFee')
+    })
+
+    it('should fail if maxFee value is greater than 100%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(signer).updateManagementFee({
+        maxFee: percent100.add(1),
+        defaultFee: percent100.div(100),
+        protocolTax: percent100.div(5),
+      })
+      await expect(update).to.revertedWith('maxFee too large')
+    })
+
+    it('should fail if defaultFee value is greater than maxFee value', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(signer).updateManagementFee({
+        maxFee: percent100.div(10),
+        defaultFee: percent100.div(10).add(1),
+        protocolTax: percent100.div(5),
+      })
+      await expect(update).to.revertedWith('defaultFee > maxFee')
+    })
+
+    it('should fail if protocolTax value is greater 50%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(signer).updateManagementFee({
+        maxFee: percent100.div(10),
+        defaultFee: percent100.div(100),
+        protocolTax: percent100.div(2).add(1),
+      })
+      await expect(update).to.revertedWith('protocolTax > 50%')
+    })
+  })
+
+  describe('updatePerformanceFee', () => {
+    it('should fail if caller is not the owner', async () => {
+      const [signer, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(otherUser).updatePerformanceFee({
+        maxFee: percent100.div(5),
+        defaultFee: percent100.div(10),
+        protocolTax: percent100.div(5),
+      })
+      await expect(update).to.revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('should update performanceFee successfully when called by the owner with a valid value', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      await mgmt.connect(signer).updatePerformanceFee({
+        maxFee: percent100.div(5),
+        defaultFee: percent100.div(10),
+        protocolTax: percent100.div(5),
+      })
+      const newValue = await mgmt.getPerformanceFee()
+      expect(newValue.maxFee).equal(percent100.div(5))
+      expect(newValue.defaultFee).equal(percent100.div(10))
+      expect(newValue.protocolTax).equal(percent100.div(5))
+    })
+
+    it('should emit UpdatePerformanceFee event', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(signer).updatePerformanceFee({
+        maxFee: percent100.div(5),
+        defaultFee: percent100.div(10),
+        protocolTax: percent100.div(5),
+      })
+      await expect(update).emit(mgmt, 'UpdatePerformanceFee')
+    })
+
+    it('should fail if maxFee value is greater than 100%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(signer).updatePerformanceFee({
+        maxFee: percent100.add(1),
+        defaultFee: percent100.div(10),
+        protocolTax: percent100.div(5),
+      })
+      await expect(update).to.revertedWith('maxFee too large')
+    })
+
+    it('should fail if defaultFee value is greater than maxFee value', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(signer).updatePerformanceFee({
+        maxFee: percent100.div(5),
+        defaultFee: percent100.div(5).add(1),
+        protocolTax: percent100.div(5),
+      })
+      await expect(update).to.revertedWith('defaultFee > maxFee')
+    })
+
+    it('should fail if protocolTax value is greater 50%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const percent100 = await mgmt.getPercent100()
+      const update = mgmt.connect(signer).updatePerformanceFee({
+        maxFee: percent100.div(5),
+        defaultFee: percent100.div(10),
+        protocolTax: percent100.div(2).add(1),
+      })
+      await expect(update).to.revertedWith('protocolTax > 50%')
     })
   })
 })
