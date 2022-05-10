@@ -8,6 +8,7 @@ import {
   UniswapV2Adapter,
   AaveV2Adapter,
   WETHAdapter,
+  ParaswapV5Adapter,
 } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 import { BigNumber } from 'ethers'
@@ -50,6 +51,7 @@ export interface IAdapters {
   uniswapV2Adapter: UniswapV2Adapter
   aaveV2Adapter: AaveV2Adapter
   wethAdapter: WETHAdapter
+  paraswapV5Adapter: ParaswapV5Adapter
 }
 
 export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<IAdapters> => {
@@ -57,11 +59,19 @@ export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNu
     .connect(signer)
     .deploy({ gasPrice })
   await uniswapV2Adapter.deployed()
+
   const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy({ gasPrice })
   await aaveV2Adapter.deployed()
+
   const wethAdapter = await (await ethers.getContractFactory('WETHAdapter')).connect(signer).deploy({ gasPrice })
   await wethAdapter.deployed()
-  return { uniswapV2Adapter, aaveV2Adapter, wethAdapter }
+
+  const paraswapV5Adapter = await (await ethers.getContractFactory('ParaswapV5Adapter'))
+    .connect(signer)
+    .deploy({ gasPrice })
+  await paraswapV5Adapter.deployed()
+
+  return { uniswapV2Adapter, aaveV2Adapter, wethAdapter, paraswapV5Adapter }
 }
 
 export interface IDeployHousecat {

@@ -15,7 +15,11 @@ const main = async () => {
       decimals: x.decimals,
       priceFeed: x.priceFeed,
     })),
-    integrations: [polygon.uniswapV2Routers.quickswap, polygon.uniswapV2Routers.sushiswap],
+    integrations: [
+      polygon.uniswapV2Routers.quickswap,
+      polygon.uniswapV2Routers.sushiswap,
+      polygon.paraswapV5.AugustusSwapper,
+    ],
     gasPrice,
   })
 
@@ -28,6 +32,7 @@ const main = async () => {
   console.log('WETHAdapter:', adapters.wethAdapter.address)
   console.log('UniswapV2Adapter:', adapters.uniswapV2Adapter.address)
   console.log('AaveV2Adapter:', adapters.aaveV2Adapter.address)
+  console.log('ParaswapV5Adapter:', adapters.paraswapV5Adapter.address)
 }
 
 main().catch((error) => {

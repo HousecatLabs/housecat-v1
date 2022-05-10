@@ -1,5 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { HousecatFactory, HousecatManagement, IUniswapV2Router02 } from '../typechain-types'
+import { paraswapV5 } from './addresses/polygon'
 import { deployHousecat, IAdapters } from './deploy-contracts'
 import { ITokenWithPriceFeed, mockAssets, IToken, ITokenWithLiquidity, mockLoans } from './mock-defi'
 
@@ -61,7 +62,7 @@ export const mockHousecat = async ({
     assetsMeta,
     loans: loanAddresses,
     loansMeta,
-    integrations: [amm.address],
+    integrations: [amm.address, paraswapV5.AugustusSwapper],
   })
   return {
     mgmt,

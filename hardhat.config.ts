@@ -13,16 +13,20 @@ const DUMMY_PRIVATE_KEY = '0xabc123abc123abc123abc123abc123abc123abc123abc123abc
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.4',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-        details: {
-          //yul: false
+    compilers: [
+      {
+        version: '0.8.4',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+            details: {
+              yul: false,
+            },
+          },
         },
       },
-    },
+    ],
   },
   networks: {
     hardhat: {
