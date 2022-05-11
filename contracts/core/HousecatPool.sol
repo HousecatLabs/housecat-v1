@@ -114,8 +114,6 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function deposit(address _to, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
-    // TODO: settle fees
-
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
 
@@ -151,8 +149,6 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function withdraw(address _to, PoolTransaction[] calldata _transactions) external whenNotPaused {
-    // TODO: settle fees
-
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
 
