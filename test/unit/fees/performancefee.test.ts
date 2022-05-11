@@ -1,9 +1,9 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
+import mockHousecatAndPool from '../../utils/mock-housecat-and-pool'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
 import { mockPriceFeed } from '../../../utils/mock-defi'
-import { deposit, withdraw } from '../../test-utils'
+import { deposit, withdraw } from '../../utils/deposit-withdraw'
 
 describe('HousecatPool: performance fee', () => {
   describe('getAccruedPerformanceFee', () => {

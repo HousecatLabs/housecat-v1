@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { formatEther, parseEther } from 'ethers/lib/utils'
-import mockHousecatAndPool, { IMockHousecatAndPool } from '../../mock/mock-housecat-and-pool'
+import mockHousecatAndPool, { IMockHousecatAndPool } from '../../utils/mock-housecat-and-pool'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { mockAssets } from '../../../utils/mock-defi'
 import { uniswapV2Routers } from '../../../utils/addresses/polygon'

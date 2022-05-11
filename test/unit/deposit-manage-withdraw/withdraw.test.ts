@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
-import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
+import mockHousecatAndPool from '../../utils/mock-housecat-and-pool'
 import { DAYS, increaseTime } from '../../../utils/evm'
 import { mockPriceFeed } from '../../../utils/mock-defi'
 

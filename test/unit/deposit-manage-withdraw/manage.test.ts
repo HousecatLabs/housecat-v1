@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
+import mockHousecatAndPool from '../../utils/mock-housecat-and-pool'
 import { parseEther } from 'ethers/lib/utils'
 
 describe('HousecatPool: manage', () => {

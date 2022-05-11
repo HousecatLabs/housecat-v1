@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, Transaction } from 'ethers'
-import { HousecatPool } from '../typechain-types'
-import { IAdapters } from '../utils/deploy-contracts'
+import { HousecatPool } from '../../typechain-types'
+import { IAdapters } from '../../utils/deploy-contracts'
 
 export const deposit = async (
   pool: HousecatPool,

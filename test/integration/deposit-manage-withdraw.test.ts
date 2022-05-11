@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { formatEther, formatUnits, parseEther } from 'ethers/lib/utils'
-import mockHousecatAndPool, { IMockHousecatAndPool } from '../../test/mock/mock-housecat-and-pool'
+import mockHousecatAndPool, { IMockHousecatAndPool } from '../utils/mock-housecat-and-pool'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, BigNumberish } from 'ethers'
 import { HousecatPool, IUniswapV2Router02, UniswapV2Adapter } from '../../typechain-types'

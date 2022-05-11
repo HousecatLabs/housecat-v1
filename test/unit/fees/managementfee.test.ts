@@ -2,9 +2,9 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { DAYS, increaseTime, MINUTES, SECONDS } from '../../../utils/evm'
 import { BigNumber } from 'ethers'
-import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
+import mockHousecatAndPool from '../../utils/mock-housecat-and-pool'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
-import { deposit, withdraw } from '../../test-utils'
+import { deposit, withdraw } from '../../utils/deposit-withdraw'
 
 const ethToFloat = (value: BigNumber): number => {
   return parseFloat(ethers.utils.formatEther(value))

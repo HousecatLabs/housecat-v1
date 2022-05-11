@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import { deployHousecat } from '../../utils/deploy-contracts'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
 import { mockPriceFeed, mockWETH } from '../../utils/mock-defi'
-import mockHousecatAndPool from '../mock/mock-housecat-and-pool'
+import mockHousecatAndPool from '../utils/mock-housecat-and-pool'
 import { DAYS, increaseTime } from '../../utils/evm'
 
 describe('HousecatFactory', () => {
