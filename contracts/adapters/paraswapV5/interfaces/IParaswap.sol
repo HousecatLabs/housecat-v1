@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.4;
+pragma solidity ^0.8.4;
 
 struct Route {
   uint256 index; //Adapter at which index needs to be used
