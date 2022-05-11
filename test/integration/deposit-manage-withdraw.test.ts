@@ -134,11 +134,17 @@ describe('integration: deposit-manage-withdraw', () => {
 
   before(async () => {
     ;[owner, treasury, mirrorer1, mirrorer2, mirrored] = await ethers.getSigners()
-    mock = await mockHousecatAndPool(owner, treasury, mirrored, { price: '1', amountToMirrored: '10' }, [
-      { price: '1', reserveToken: '10000', reserveWeth: '10000' },
-      { price: '2', reserveToken: '5000', reserveWeth: '10000' },
-      { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
-    ])
+    mock = await mockHousecatAndPool({
+      signer: owner,
+      treasury,
+      mirrored,
+      weth: { price: '1', amountToMirrored: '10' },
+      assets: [
+        { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+        { price: '2', reserveToken: '5000', reserveWeth: '10000' },
+        { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
+      ],
+    })
   })
 
   describe('initial deposit of 10 ETH by mirrorer1', () => {

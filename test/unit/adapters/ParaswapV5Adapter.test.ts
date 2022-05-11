@@ -12,10 +12,10 @@ describe('ParaswapV5Adapter', () => {
   let paraswapInterface: Interface
 
   before(async () => {
-    const [owner_, treasury, mirrored_] = await ethers.getSigners()
+    const [owner_, mirrored_] = await ethers.getSigners()
     owner = owner_
     mirrored = mirrored_
-    mock = await mockHousecatAndPool(owner, treasury, mirrored, { price: '1', amountToMirrored: '5' })
+    mock = await mockHousecatAndPool({ signer: owner, mirrored, weth: { price: '1', amountToMirrored: '5' } })
     paraswapInterface = (await ethers.getContractAt('IAugustusSwapper', ethers.constants.AddressZero)).interface
   })
 

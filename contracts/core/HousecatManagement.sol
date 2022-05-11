@@ -8,6 +8,7 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import './Constants.sol';
 import './structs/TokenMeta.sol';
+import './structs/FeeSettings.sol';
 
 contract HousecatManagement is Constants, Ownable, Pausable {
   using SafeMath for uint;
@@ -20,9 +21,25 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address[] private supportedLoans;
   mapping(address => TokenMeta) private tokenMeta;
 
+  FeeSettings private managementFee =
+    FeeSettings({
+      maxFee: SafeCast.toUint32(PERCENT_100.mul(25).div(100)),
+      defaultFee: SafeCast.toUint32(PERCENT_100.div(100)),
+      protocolTax: SafeCast.toUint32(PERCENT_100.mul(25).div(100))
+    });
+
+  FeeSettings private performanceFee =
+    FeeSettings({
+      maxFee: SafeCast.toUint32(PERCENT_100.mul(25).div(100)),
+      defaultFee: SafeCast.toUint32(PERCENT_100.div(10)),
+      protocolTax: SafeCast.toUint32(PERCENT_100.mul(25).div(100))
+    });
+
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
   event SetAdapter(address adapter, bool enabled);
+  event UpdateManagementFee(FeeSettings managementFee);
+  event UpdatePerformanceFee(FeeSettings performanceFee);
 
   constructor(address _treasury, address _weth) {
     treasury = _treasury;
@@ -106,6 +123,14 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return false;
   }
 
+  function getManagementFee() external view returns (FeeSettings memory) {
+    return managementFee;
+  }
+
+  function getPerformanceFee() external view returns (FeeSettings memory) {
+    return performanceFee;
+  }
+
   function setSupportedAssets(address[] memory _tokens) external onlyOwner {
     supportedAssets = _tokens;
   }
@@ -129,8 +154,26 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     supportedIntegrations[_integration] = _value;
   }
 
-  function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) internal {
+  function updateManagementFee(FeeSettings memory _managementFee) external onlyOwner {
+    _validateFeeSettings(_managementFee);
+    managementFee = _managementFee;
+    emit UpdateManagementFee(_managementFee);
+  }
+
+  function updatePerformanceFee(FeeSettings memory _performanceFee) external onlyOwner {
+    _validateFeeSettings(_performanceFee);
+    performanceFee = _performanceFee;
+    emit UpdatePerformanceFee(_performanceFee);
+  }
+
+  function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) private {
     require(_token != address(0));
     tokenMeta[_token] = _tokenMeta;
+  }
+
+  function _validateFeeSettings(FeeSettings memory _settings) private pure {
+    require(_settings.maxFee <= PERCENT_100, 'maxFee too large');
+    require(_settings.defaultFee <= _settings.maxFee, 'defaultFee > maxFee');
+    require(_settings.protocolTax <= PERCENT_100.div(2), 'protocolTax > 50%');
   }
 }
