@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import mockHousecatAndPool from '../../mock/mock-housecat-and-pool'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
 import { mockPriceFeed } from '../../../utils/mock-defi'
-import { depositWETH, withdrawETH } from '../../test-utils'
+import { deposit, withdraw } from '../../test-utils'
 
 describe('HousecatPool: performance fee', () => {
   describe('getAccruedPerformanceFee', () => {
@@ -15,12 +15,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // get fee  amount right after deposit
       const accruedFee = await pool.getAccruedPerformanceFee()
@@ -35,12 +35,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // change price feed so that the value is 10% higher
       const priceFeed2 = await mockPriceFeed(signer, ethers.utils.parseEther('1.1'), 18)
@@ -54,7 +54,7 @@ describe('HousecatPool: performance fee', () => {
       expect(await pool.getAccruedPerformanceFee()).not.equal(0)
 
       // deposit 1 ether => accrued amount resets
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // get fee  amount right after deposit
       expect(await pool.getAccruedPerformanceFee()).equal(0)
@@ -68,12 +68,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // change price feed so that the value is 10% higher
       const priceFeed2 = await mockPriceFeed(signer, ethers.utils.parseEther('1.1'), 18)
@@ -87,7 +87,7 @@ describe('HousecatPool: performance fee', () => {
       expect(await pool.getAccruedPerformanceFee()).not.equal(0)
 
       // withdraw 1 ether => accrued amount resets
-      await withdrawETH(pool, adapters, mirrorer, parseEther('1'))
+      await withdraw(pool, adapters, mirrorer, parseEther('1'))
 
       // get fee  amount right after withdrawal
       const accruedFee = await pool.getAccruedPerformanceFee()
@@ -102,12 +102,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // change price feed so that the value is 10% higher
       const priceFeed2 = await mockPriceFeed(signer, ethers.utils.parseEther('1.1'), 18)
@@ -138,12 +138,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // change price feed so that the value is 10% lower
       const priceFeed2 = await mockPriceFeed(signer, ethers.utils.parseEther('0.9'), 18)
@@ -167,12 +167,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // change price feed so that the value is 10% higher
       const priceFeed2 = await mockPriceFeed(signer, ethers.utils.parseEther('1.1'), 18)
@@ -209,7 +209,7 @@ describe('HousecatPool: performance fee', () => {
   describe('settlePerformanceFee', () => {
     it('should fail when paused', async () => {
       const [signer, mirrored, otherUser] = await ethers.getSigners()
-      const { pool, mgmt, } = await mockHousecatAndPool({ signer, mirrored })
+      const { pool, mgmt } = await mockHousecatAndPool({ signer, mirrored })
       await mgmt.connect(signer).emergencyPause()
       const settle = pool.connect(otherUser).settlePerformanceFee()
       await expect(settle).revertedWith('HousecatPool: paused')
@@ -224,12 +224,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // change price feed so that the value is 10% higher
       const priceFeed2 = await mockPriceFeed(signer, ethers.utils.parseEther('1.1'), 18)
@@ -265,12 +265,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // change price feed so that the value is 10% higher
       const priceFeed2 = await mockPriceFeed(signer, ethers.utils.parseEther('1.1'), 18)
@@ -297,12 +297,12 @@ describe('HousecatPool: performance fee', () => {
         performanceFee: {
           defaultFee: parseUnits('0.10', 8), // 10%
           maxFee: parseUnits('0.2', 8),
-          protocolTax: parseUnits('0.25', 8)
+          protocolTax: parseUnits('0.25', 8),
         },
       })
 
       // deposit 1 ether
-      await depositWETH(pool, adapters, mirrorer, parseEther('1'))
+      await deposit(pool, adapters, mirrorer, parseEther('1'))
 
       // change price feed so that the value is 10% higher
       const priceFeed2 = await mockPriceFeed(signer, ethers.utils.parseEther('1.1'), 18)
