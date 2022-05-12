@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.4;
+pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '../BaseAdapter.sol';
@@ -12,6 +12,7 @@ contract ParaswapV5Adapter is BaseAdapter {
     SimpleData memory data = abi.decode(_data[4:], (SimpleData));
     require(mgmt.isAssetSupported(data.toToken), 'ParaswapV5Adapter: unsupported token to');
     data.partner = payable(address(0));
+    data.deadline = block.timestamp;
     address tokenTransferProxy = IAugustusSwapper(_router).getTokenTransferProxy();
     IERC20(data.fromToken).approve(tokenTransferProxy, data.fromAmount);
     IAugustusSwapper(_router).protectedSimpleSwap(data);
