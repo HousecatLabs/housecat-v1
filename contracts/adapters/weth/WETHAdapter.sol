@@ -22,6 +22,7 @@ contract WETHAdapter is BaseAdapter {
     HousecatManagement mgmt = _getMgmt();
     IWETH weth = IWETH(mgmt.weth());
     uint currentBalance = weth.balanceOf(address(this));
+    require(_targetBalance <= currentBalance, 'WETHAdapter: no enough balance');
     uint amount = currentBalance.sub(_targetBalance);
     weth.withdraw(amount);
   }

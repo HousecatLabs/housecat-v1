@@ -7,6 +7,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { HousecatManagement, HousecatPool } from '../../typechain-types'
 import { BigNumber, Transaction } from 'ethers'
 import { expect } from 'chai'
+import { resolveBuyAmounts, resolveSellAmounts } from '../utils/resolve-trade-amounts'
 
 const buyWeth = async (signer: SignerWithAddress, weth: string, amount: BigNumber) => {
   const token = await ethers.getContractAt('IWETH', weth)
@@ -32,42 +33,6 @@ const swapToken = async (signer: SignerWithAddress, srcToken: string, destToken:
   })
 }
 
-const resolveBuyAllocations = (
-  depositValue: BigNumber,
-  poolValue: BigNumber,
-  poolWeights: BigNumber[],
-  mirroredWeights: BigNumber[],
-  percent100: BigNumber
-): BigNumber[] => {
-  let remainingDepositValue = depositValue
-  return mirroredWeights
-    .map((weight, idx) => weight.sub(poolWeights[idx]))
-    .map((shortage, idx) => ({
-      idx,
-      shortage,
-      shortageValue: poolValue.mul(shortage).div(percent100),
-    }))
-    .sort((a, b) => b.shortage.sub(a.shortage).toNumber())
-    .map((x) => {
-      if (x.shortageValue.gt(0) && x.shortageValue.lte(remainingDepositValue)) {
-        remainingDepositValue = remainingDepositValue.sub(x.shortageValue)
-        return { ...x, buyValue: x.shortageValue }
-      }
-      if (remainingDepositValue.lt(x.shortageValue)) {
-        const remaining = remainingDepositValue
-        remainingDepositValue = BigNumber.from(0)
-        return { ...x, buyValue: remaining }
-      }
-      return { ...x, buyValue: BigNumber.from(0) }
-    })
-    .map((x) => ({
-      ...x,
-      buyValue: x.buyValue.add(remainingDepositValue.mul(mirroredWeights[x.idx]).div(percent100)),
-    }))
-    .sort((a, b) => a.idx - b.idx)
-    .map((x) => x.buyValue.mul(percent100).div(depositValue))
-}
-
 const deposit = async (
   pool: HousecatPool,
   mgmt: HousecatManagement,
@@ -83,14 +48,14 @@ const deposit = async (
   const percent100 = await pool.getPercent100()
   const wehtPrice = (await pool.getTokenPrices([wethPriceFeed]))[0]
   const depositValue = await pool.getTokenValue(amount, wehtPrice, 18)
-  const buyAllocations = resolveBuyAllocations(
+  const buyAmounts = resolveBuyAmounts(
+    amount,
     depositValue,
     poolContent.netValue,
     poolContent.assetWeights,
     mirroredContent.assetWeights,
     percent100
   )
-  const buyAmounts = buyAllocations.map((weight) => amount.mul(weight).div(percent100))
   const buyParams = buyAmounts
     .map((amount, idx) => ({
       srcToken: weth,
@@ -99,7 +64,7 @@ const deposit = async (
       destAmount: '1',
       userAddress: pool.address,
     }))
-    .filter((x) => x.srcAmount !== '0')
+    .filter((x) => x.srcAmount !== '0' && x.destToken !== weth)
   const buyData = await Promise.all(buyParams.map(buildSwap))
   const buyTxs = buyData.map((x) => ({
     adapter: adapters.paraswapV5Adapter.address,
@@ -117,6 +82,54 @@ const deposit = async (
   })
 }
 
+const withdraw = async (
+  pool: HousecatPool,
+  mgmt: HousecatManagement,
+  adapters: IAdapters,
+  withdrawer: SignerWithAddress,
+  percentage: BigNumber
+) => {
+  const percent100 = await pool.getPercent100()
+  const withdrawerOwnership = (await pool.balanceOf(withdrawer.address)).mul(percent100).div(await pool.totalSupply())
+  const withdrawPercentage = withdrawerOwnership.mul(percentage).div(percent100)
+  const weth = await mgmt.weth()
+  const assets = await mgmt.getSupportedAssets()
+  const poolContent = await pool.getPoolContent()
+  const mirroredContent = await pool.getMirroredContent()
+  const sellAmounts = resolveSellAmounts(
+    withdrawPercentage,
+    poolContent.netValue,
+    poolContent.assetBalances,
+    poolContent.assetWeights,
+    mirroredContent.assetWeights,
+    percent100
+  )
+  const sellParams = sellAmounts
+    .map((amount, idx) => ({
+      srcToken: assets[idx],
+      destToken: weth,
+      srcAmount: amount.toString(),
+      destAmount: '1',
+      userAddress: pool.address,
+    }))
+    .filter((x) => x.srcAmount !== '0' && x.srcToken !== weth)
+  const sellData = await Promise.all(sellParams.map(buildSwap))
+  const sellTxs = sellData.map((x) => ({
+    adapter: adapters.paraswapV5Adapter.address,
+    data: adapters.paraswapV5Adapter.interface.encodeFunctionData(x.priceRoute.contractMethod as any, [
+      polygon.paraswapV5.AugustusSwapper,
+      x.txData.data,
+    ]),
+  }))
+  const wethBalanceBefore = await (await ethers.getContractAt('ERC20', weth)).balanceOf(pool.address)
+  const wethTargetBalance = wethBalanceBefore.mul(percent100.sub(withdrawPercentage)).div(percent100)
+  const sellWethTx = {
+    adapter: adapters.wethAdapter.address,
+    data: adapters.wethAdapter.interface.encodeFunctionData('withdrawUntil', [wethTargetBalance]),
+  }
+  return pool.connect(withdrawer).withdraw(withdrawer.address, [...sellTxs, sellWethTx], { gasLimit: 1e7 })
+}
+
 describe('integration: paraswap trades', () => {
   let housecat: IHousecat
   let signer: SignerWithAddress
@@ -131,7 +144,7 @@ describe('integration: paraswap trades', () => {
     mirrorer = mirrorer_
 
     // deploy housecat contracts
-    const whitelist = [polygon.assets.wmatic, polygon.assets.weth, polygon.assets.wbtc, polygon.assets.link]
+    const whitelist = [polygon.assets.wmatic, polygon.assets.weth, polygon.assets.usdc, polygon.assets.dai, polygon.assets.link]
     const assets = whitelist.map((x) => x.addr)
     const assetsMeta = whitelist.map((x) => ({
       priceFeed: x.priceFeed,
@@ -149,7 +162,7 @@ describe('integration: paraswap trades', () => {
     // create a mirrored portfolio with assets tokens
     await buyWeth(mirrored, polygon.assets.wmatic.addr, parseEther('4'))
     await swapToken(mirrored, polygon.assets.wmatic.addr, polygon.assets.weth.addr, parseEther('1'))
-    await swapToken(mirrored, polygon.assets.wmatic.addr, polygon.assets.wbtc.addr, parseEther('1'))
+    await swapToken(mirrored, polygon.assets.wmatic.addr, polygon.assets.usdc.addr, parseEther('1'))
     await swapToken(mirrored, polygon.assets.wmatic.addr, polygon.assets.link.addr, parseEther('1'))
 
     // create a pool
@@ -166,18 +179,25 @@ describe('integration: paraswap trades', () => {
 
   it('second deposit to pool', async () => {
     const { mgmt, adapters } = housecat
-    const tx = deposit(pool, mgmt, adapters, mirrorer, parseEther('20'))
+    const tx = deposit(pool, mgmt, adapters, mirrorer, parseEther('10'))
     await expect(tx).emit(pool, 'DepositToPool')
+  })
+
+  it('withdraw from pool', async () => {
+    const { mgmt, adapters } = housecat
+    const percent100 = await pool.getPercent100()
+    const tx = withdraw(pool, mgmt, adapters, mirrorer, percent100.div(2))
+    await expect(tx).emit(pool, 'WithdrawFromPool')
   })
 
   it('deposit to an unbalanced pool', async () => {
     const weth = await ethers.getContractAt('ERC20', polygon.assets.weth.addr)
-    const wbtc = await ethers.getContractAt('ERC20', polygon.assets.wbtc.addr)
+    const link = await ethers.getContractAt('ERC20', polygon.assets.link.addr)
     await swapToken(mirrored, weth.address, polygon.assets.wmatic.addr, await weth.balanceOf(mirrored.address))
-    await swapToken(mirrored, wbtc.address, polygon.assets.wmatic.addr, await wbtc.balanceOf(mirrored.address))
+    await swapToken(mirrored, link.address, polygon.assets.wmatic.addr, await link.balanceOf(mirrored.address))
 
     const { mgmt, adapters } = housecat
-    const tx = deposit(pool, mgmt, adapters, mirrorer, parseEther('30'))
+    const tx = deposit(pool, mgmt, adapters, mirrorer, parseEther('10'))
     await expect(tx).emit(pool, 'DepositToPool')
   })
 })
