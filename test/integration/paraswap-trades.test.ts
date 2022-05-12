@@ -144,7 +144,13 @@ describe('integration: paraswap trades', () => {
     mirrorer = mirrorer_
 
     // deploy housecat contracts
-    const whitelist = [polygon.assets.wmatic, polygon.assets.weth, polygon.assets.usdc, polygon.assets.dai, polygon.assets.link]
+    const whitelist = [
+      polygon.assets.wmatic,
+      polygon.assets.weth,
+      polygon.assets.usdc,
+      polygon.assets.dai,
+      polygon.assets.link,
+    ]
     const assets = whitelist.map((x) => x.addr)
     const assetsMeta = whitelist.map((x) => ({
       priceFeed: x.priceFeed,
