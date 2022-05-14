@@ -90,7 +90,7 @@ describe('HousecatPool: withdraw', () => {
         ]),
       },
     ])
-    await expect(tx).revertedWith('withdraw balance exceeded')
+    await expect(tx).revertedWith('balance exceeded')
   })
 
   it('should burn pool tokens an amount being equal to the reduction of pool net value', async () => {

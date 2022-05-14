@@ -170,7 +170,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // require withdraw value does not exceed what the withdtawer owns
     uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
     uint maxWithdrawValue = poolStateBefore.netValue.mul(shareInPool).div(PERCENT_100);
-    require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw balance exceeded');
+    require(maxWithdrawValue >= withdrawValue, 'HousecatPool: balance exceeded');
 
     // settle accrued fees
     _settleFees(poolStateBefore.netValue);
@@ -193,7 +193,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     emit WithdrawFromPool(amountBurn, withdrawValue, msg.sender);
   }
 
-  function manage(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
+  function rebalance(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
     // TODO: remove onlyOwner
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
@@ -205,8 +205,14 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     uint minNetValueAfter = poolStateBefore.netValue.mul(99).div(100); // TODO: define slippage limit in mgmt settings
     require(poolStateAfter.netValue >= minNetValueAfter, 'HousecatPool: pool value reduced');
 
-    // require pool weights match the mirrored weights
-    require(poolStateAfter.weightDifference < PERCENT_100.div(50), 'HousecatPool: weights mismatch');
+    // require weight difference did not increase
+    if (poolStateAfter.weightDifference > PERCENT_100.div(20) && poolStateAfter.netValue > ONE_USD) {
+      // TODO: set threshold value in mgmt
+      require(
+        poolStateAfter.weightDifference <= poolStateBefore.weightDifference,
+        'HousecatPool: weight diff increased'
+      );
+    }
 
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
   }
