@@ -9,6 +9,7 @@ import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import './Constants.sol';
 import './structs/TokenMeta.sol';
 import './structs/FeeSettings.sol';
+import './structs/RebalanceSettings.sol';
 
 contract HousecatManagement is Constants, Ownable, Pausable {
   using SafeMath for uint;
@@ -20,6 +21,15 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address[] private supportedAssets;
   address[] private supportedLoans;
   mapping(address => TokenMeta) private tokenMeta;
+
+  RebalanceSettings private rebalanceSettings =
+    RebalanceSettings({
+      minPoolValue: ONE_USD,
+      minMirroredValue: ONE_USD,
+      maxWeightDifference: SafeCast.toUint32(PERCENT_100.div(20)),
+      tradeTax: SafeCast.toUint32(PERCENT_100.div(4)),
+      minSecondsBetweenRebalances: 30
+    });
 
   FeeSettings private managementFee =
     FeeSettings({
@@ -38,6 +48,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
   event SetAdapter(address adapter, bool enabled);
+  event UpdateRebalanceSettings(RebalanceSettings rebalanceSettings);
   event UpdateManagementFee(FeeSettings managementFee);
   event UpdatePerformanceFee(FeeSettings performanceFee);
 
@@ -123,6 +134,10 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return false;
   }
 
+  function getRebalanceSettings() external view returns (RebalanceSettings memory) {
+    return rebalanceSettings;
+  }
+
   function getManagementFee() external view returns (FeeSettings memory) {
     return managementFee;
   }
@@ -154,6 +169,12 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     supportedIntegrations[_integration] = _value;
   }
 
+  function updateRebalanceSettings(RebalanceSettings memory _rebalanceSettings) external onlyOwner {
+    _validateRebalanceSettings(_rebalanceSettings);
+    rebalanceSettings = _rebalanceSettings;
+    emit UpdateRebalanceSettings(_rebalanceSettings);
+  }
+
   function updateManagementFee(FeeSettings memory _managementFee) external onlyOwner {
     _validateFeeSettings(_managementFee);
     managementFee = _managementFee;
@@ -169,6 +190,11 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) private {
     require(_token != address(0));
     tokenMeta[_token] = _tokenMeta;
+  }
+
+  function _validateRebalanceSettings(RebalanceSettings memory _settings) internal pure {
+    require(_settings.maxWeightDifference <= PERCENT_100, 'maxWeightDifference > 100%');
+    require(_settings.tradeTax <= PERCENT_100.mul(50).div(10000), 'tradeTax > 0.50%');
   }
 
   function _validateFeeSettings(FeeSettings memory _settings) private pure {
