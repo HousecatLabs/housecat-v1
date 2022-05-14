@@ -7,6 +7,7 @@ import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import './structs/UserSettings.sol';
 import './structs/PoolTransaction.sol';
+import './structs/RebalanceSettings.sol';
 import './HousecatQueries.sol';
 import './HousecatFactory.sol';
 import './HousecatManagement.sol';
@@ -121,13 +122,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require weight difference did not increase
-    if (poolStateAfter.weightDifference > PERCENT_100.div(20)) {
-      // TODO: set threshold value in mgmt
-      require(
-        poolStateAfter.weightDifference <= poolStateBefore.weightDifference,
-        'HousecatPool: weight diff increased'
-      );
-    }
+    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
 
     // require pool value did not decrease
     require(poolStateAfter.netValue >= poolStateBefore.netValue, 'HousecatPool: pool value reduced');
@@ -157,13 +152,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance >= poolStateBefore.ethBalance, 'HousecatPool: ETH balance decreased');
 
     // require weight difference did not increase
-    if (poolStateAfter.weightDifference > PERCENT_100.div(20) && poolStateAfter.netValue > ONE_USD) {
-      // TODO: set threshold value in mgmt
-      require(
-        poolStateAfter.weightDifference <= poolStateBefore.weightDifference,
-        'HousecatPool: weight diff increased'
-      );
-    }
+    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
 
     uint withdrawValue = poolStateBefore.netValue.sub(poolStateAfter.netValue);
 
@@ -206,13 +195,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.netValue >= minNetValueAfter, 'HousecatPool: pool value reduced');
 
     // require weight difference did not increase
-    if (poolStateAfter.weightDifference > PERCENT_100.div(20) && poolStateAfter.netValue > ONE_USD) {
-      // TODO: set threshold value in mgmt
-      require(
-        poolStateAfter.weightDifference <= poolStateBefore.weightDifference,
-        'HousecatPool: weight diff increased'
-      );
-    }
+    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
 
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
   }
@@ -294,6 +277,16 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
         : mirroredWeights[i].sub(poolWeights[i]);
     }
     return totalDiff;
+  }
+
+  function _validateWeightDiffNotIncreased(PoolState memory _before, PoolState memory _after) private view {
+    RebalanceSettings memory rebalanceSettings = management.getRebalanceSettings();
+    if (
+      _after.weightDifference > rebalanceSettings.maxWeightDifference &&
+      _after.netValue > rebalanceSettings.minPoolValue
+    ) {
+      require(_after.weightDifference <= _before.weightDifference, 'HousecatPool: weight diff increased');
+    }
   }
 
   function _getAccruedManagementFee(uint _annualFeePercentage) private view returns (uint) {
