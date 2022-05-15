@@ -22,7 +22,6 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   MirrorSettings private mirrorSettings =
     MirrorSettings({
       minPoolValue: ONE_USD,
-      minMirroredValue: ONE_USD,
       maxWeightDifference: SafeCast.toUint32(PERCENT_100.div(20))
     });
 

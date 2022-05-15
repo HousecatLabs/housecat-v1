@@ -291,7 +291,6 @@ describe('HousecatManagement', () => {
     const percent100 = BigNumber.from((1e8).toString())
     const validMirrorSettings = {
       minPoolValue: oneUSD.mul(10),
-      minMirroredValue: oneUSD.mul(100),
       maxWeightDifference: percent100.mul(2).div(100),
     }
 
@@ -302,7 +301,6 @@ describe('HousecatManagement', () => {
       await mgmt.connect(signer).updateMirrorSettings(validMirrorSettings)
       const newSettings = await mgmt.getMirrorSettings()
       expect(newSettings.minPoolValue).equal(validMirrorSettings.minPoolValue)
-      expect(newSettings.minMirroredValue).equal(validMirrorSettings.minMirroredValue)
       expect(newSettings.maxWeightDifference).equal(validMirrorSettings.maxWeightDifference)
     })
 
