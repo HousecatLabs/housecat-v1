@@ -25,8 +25,8 @@ describe('HousecatPool: rebalance', () => {
       rebalanceSettings: {
         tradeTax: 0,
         minSecondsBetweenRebalances: 0,
-        maxSlippage: 1e6
-      }
+        maxSlippage: 1e6,
+      },
     })
 
     // send initial deposit of 10 ETH
