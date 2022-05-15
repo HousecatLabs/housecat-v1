@@ -4,6 +4,7 @@ import { parseEther, parseUnits } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../../utils/mock-housecat-and-pool'
 import { DAYS, increaseTime } from '../../../utils/evm'
 import { mockPriceFeed } from '../../../utils/mock-defi'
+import { deposit } from '../../utils/deposit-withdraw'
 
 describe('HousecatPool: deposit', () => {
   it('should fail to increase the weight difference between the pool and the mirrored account', async () => {
@@ -50,34 +51,14 @@ describe('HousecatPool: deposit', () => {
     })
 
     // deposit ETH without adjusting the loan position
-    const amountDeposit = parseEther('1')
-    const tx = pool.deposit(
-      signer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
-        },
-      ],
-      { value: amountDeposit }
-    )
+    const tx = deposit(pool, adapters, signer, parseEther('2'))
     await expect(tx).revertedWith('HousecatPool: weight diff increased')
   })
 
   it('should fail to deposit when the mirrored account holds nothing', async () => {
     const [signer, mirrored] = await ethers.getSigners()
     const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored, weth: { price: '1' } })
-    const amountDeposit = parseEther('1')
-    const tx = pool.deposit(
-      signer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
-        },
-      ],
-      { value: amountDeposit }
-    )
+    const tx = deposit(pool, adapters, signer, parseEther('2'))
     await expect(tx).revertedWith('HousecatPool: weight diff increased')
   })
 
@@ -126,17 +107,7 @@ describe('HousecatPool: deposit', () => {
     const { pool, weth, adapters, amm } = await mockHousecatAndPool({ signer, mirrored })
 
     // send initial deposit of 10 ETH
-    const amountDeposit = parseEther('10')
-    await pool.deposit(
-      signer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
-        },
-      ],
-      { value: amountDeposit }
-    )
+    await deposit(pool, adapters, signer, parseEther('10'))
 
     // try to swap WETH to ETH (reducing the net value of the assets)
     const tx = pool.deposit(signer.address, [
@@ -156,17 +127,7 @@ describe('HousecatPool: deposit', () => {
   it('should mint pool tokens an amount equal to the deposit value when the pool total supply is zero', async () => {
     const [signer, mirrorer, mirrored] = await ethers.getSigners()
     const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
-    const amountDeposit = parseEther('10')
-    await pool.deposit(
-      mirrorer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
-        },
-      ],
-      { value: amountDeposit }
-    )
+    await deposit(pool, adapters, mirrorer, parseEther('10'))
     expect(await pool.balanceOf(mirrorer.address)).equal(parseEther('10'))
   })
 
@@ -175,30 +136,10 @@ describe('HousecatPool: deposit', () => {
     const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
 
     // initial deposit by mirrorer1
-    const amountDeposit1 = parseEther('8')
-    await pool.deposit(
-      mirrorer1.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit1]),
-        },
-      ],
-      { value: amountDeposit1 }
-    )
+    await deposit(pool, adapters, mirrorer1, parseEther('8'))
 
     // deposit by another user
-    const amountDeposit2 = parseEther('4')
-    await pool.deposit(
-      mirrorer2.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit2]),
-        },
-      ],
-      { value: amountDeposit2 }
-    )
+    await deposit(pool, adapters, mirrorer2, parseEther('4'))
 
     const totalSupply = await pool.totalSupply()
 
@@ -258,33 +199,13 @@ describe('HousecatPool: deposit', () => {
     })
 
     // first deposit
-    const amountDeposit1 = parseEther('8')
-    await pool.deposit(
-      mirrorer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit1]),
-        },
-      ],
-      { value: amountDeposit1 }
-    )
+    await deposit(pool, adapters, mirrorer, parseEther('8'))
 
     // increase time
     await increaseTime(DAYS * 10)
 
     // second deposit
-    const amountDeposit2 = parseEther('4')
-    const deposit2 = await pool.deposit(
-      mirrorer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit2]),
-        },
-      ],
-      { value: amountDeposit2 }
-    )
+    const deposit2 = deposit(pool, adapters, mirrorer, parseEther('4'))
 
     await expect(deposit2).emit(pool, 'ManagementFeeSettled')
     expect(await pool.balanceOf(mirrored.address)).gt(0)
@@ -356,32 +277,14 @@ describe('HousecatPool: deposit', () => {
     })
 
     // deposit 1
-    const amountDeposit1 = parseEther('8')
-    const deposit1 = await pool.deposit(
-      mirrorer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit1]),
-        },
-      ],
-      { value: amountDeposit1 }
-    )
+    const amount1 = parseEther('8')
+    const deposit1 = deposit(pool, adapters, mirrorer, amount1)
 
     // deposit 2
-    const amountDeposit2 = parseEther('4')
-    const deposit2 = await pool.deposit(
-      mirrorer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit2]),
-        },
-      ],
-      { value: amountDeposit2 }
-    )
+    const amount2 = parseEther('4')
+    const deposit2 = deposit(pool, adapters, mirrorer, amount2)
 
-    await expect(deposit1).emit(pool, 'PerformanceFeeHighWatermarkUpdated').withArgs(amountDeposit1)
-    await expect(deposit2).emit(pool, 'PerformanceFeeHighWatermarkUpdated').withArgs(amountDeposit1.add(amountDeposit2))
+    await expect(deposit1).emit(pool, 'PerformanceFeeHighWatermarkUpdated').withArgs(amount1)
+    await expect(deposit2).emit(pool, 'PerformanceFeeHighWatermarkUpdated').withArgs(amount1.add(amount2))
   })
 })
