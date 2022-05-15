@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
-import {UserSettings, PoolTransaction, RebalanceSettings, WalletContent, TokenData} from './structs.sol';
+import {UserSettings, PoolTransaction, RebalanceSettings, WalletContent, TokenData, TokenMeta} from './structs.sol';
 import {HousecatQueries} from './HousecatQueries.sol';
 import {HousecatFactory} from './HousecatFactory.sol';
 import {HousecatManagement} from './HousecatManagement.sol';
