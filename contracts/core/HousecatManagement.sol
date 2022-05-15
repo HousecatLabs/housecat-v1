@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import '@openzeppelin/contracts/utils/math/SafeCast.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/Pausable.sol';
-import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
-import './Constants.sol';
-import './structs/TokenMeta.sol';
-import './structs/FeeSettings.sol';
-import './structs/RebalanceSettings.sol';
+import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import {SafeCast} from '@openzeppelin/contracts/utils/math/SafeCast.sol';
+import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
+import {Pausable} from '@openzeppelin/contracts/security/Pausable.sol';
+import {Constants} from './Constants.sol';
+import {TokenMeta, FeeSettings, RebalanceSettings} from './structs.sol';
 
 contract HousecatManagement is Constants, Ownable, Pausable {
   using SafeMath for uint;

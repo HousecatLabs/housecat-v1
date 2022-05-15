@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import './structs/UserSettings.sol';
-import './structs/PoolTransaction.sol';
-import './structs/RebalanceSettings.sol';
-import './HousecatQueries.sol';
-import './HousecatFactory.sol';
-import './HousecatManagement.sol';
+import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
+import {UserSettings, PoolTransaction, RebalanceSettings} from './structs.sol';
+import {HousecatQueries} from './HousecatQueries.sol';
+import {HousecatFactory} from './HousecatFactory.sol';
+import {HousecatManagement} from './HousecatManagement.sol';
 
 struct PoolState {
   uint ethBalance;
