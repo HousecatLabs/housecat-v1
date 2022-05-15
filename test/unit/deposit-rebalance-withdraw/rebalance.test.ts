@@ -22,20 +22,15 @@ describe('HousecatPool: rebalance', () => {
       mirrored,
       weth: { price: '1', amountToMirrored: '10' },
       assets: [{ price: '1', reserveToken: '20', reserveWeth: '20' }],
+      rebalanceSettings: {
+        tradeTax: 0,
+        minSecondsBetweenRebalances: 0,
+        maxSlippage: 1e6
+      }
     })
 
     // send initial deposit of 10 ETH
-    const amountDeposit = parseEther('10')
-    await pool.deposit(
-      signer.address,
-      [
-        {
-          adapter: adapters.wethAdapter.address,
-          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
-        },
-      ],
-      { value: amountDeposit }
-    )
+    await deposit(pool, adapters, signer, parseEther('10'))
 
     // send a low liquidity Asset0 to the mirrored
     assets[0].token.mint(mirrored.address, parseEther('10'))
@@ -64,6 +59,7 @@ describe('HousecatPool: rebalance', () => {
       assets: [{ price: '1', reserveToken: '20', reserveWeth: '20' }],
       rebalanceSettings: {
         minSecondsBetweenRebalances: 60,
+        maxSlippage: 1e6,
         tradeTax: 0,
       },
     })
@@ -97,6 +93,7 @@ describe('HousecatPool: rebalance', () => {
       assets: [{ price: '1', reserveToken: '20', reserveWeth: '20' }],
       rebalanceSettings: {
         minSecondsBetweenRebalances: 60,
+        maxSlippage: 1e6,
         tradeTax: 0,
       },
     })

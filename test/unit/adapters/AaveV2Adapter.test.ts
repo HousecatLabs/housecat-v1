@@ -1,4 +1,5 @@
 describe('AaveV2Adapter', () => {
+  /*
   describe('deposit', () => {
     // TODO
   })
@@ -14,4 +15,5 @@ describe('AaveV2Adapter', () => {
   describe('repay', () => {
     // TODO
   })
+  */
 })

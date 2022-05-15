@@ -336,6 +336,7 @@ describe('HousecatManagement', () => {
     const percent100 = BigNumber.from((1e8).toString())
     const validRebalanceSettings = {
       tradeTax: percent100.mul(50).div(10000),
+      maxSlippage: percent100.div(100),
       minSecondsBetweenRebalances: 0,
     }
 
@@ -362,6 +363,17 @@ describe('HousecatManagement', () => {
       const mgmt = await deployManagement(signer, signer.address, weth.address)
       const update = mgmt.connect(otherUser).updateRebalanceSettings(validRebalanceSettings)
       await expect(update).to.revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('should fail if maxSlippage is greater than 50%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(signer).updateRebalanceSettings({
+        ...validRebalanceSettings,
+        maxSlippage: percent100.div(2).add(1),
+      })
+      await expect(update).to.revertedWith('maxSlippage > 50%')
     })
 
     it('should fail if tradeTax is greater than 0.50%', async () => {

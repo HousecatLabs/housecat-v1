@@ -192,7 +192,9 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require pool value did not decrease more than slippage limit
-    uint minNetValueAfter = poolStateBefore.netValue.mul(99).div(100); // TODO: define slippage limit in mgmt settings
+    uint minNetValueAfter = poolStateBefore.netValue.mul(PERCENT_100.sub(rebalanceSettings.maxSlippage)).div(
+      PERCENT_100
+    );
     require(poolStateAfter.netValue >= minNetValueAfter, 'HousecatPool: pool value reduced');
 
     // require weight difference did not increase
