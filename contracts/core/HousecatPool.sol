@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
-import {UserSettings, PoolTransaction, MirrorSettings, WalletContent, TokenData, TokenMeta} from './structs.sol';
+import {UserSettings, PoolTransaction, MirrorSettings, RebalanceSettings, WalletContent, TokenData, TokenMeta} from './structs.sol';
 import {HousecatQueries} from './HousecatQueries.sol';
 import {HousecatFactory} from './HousecatFactory.sol';
 import {HousecatManagement} from './HousecatManagement.sol';
@@ -24,6 +24,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   string private tokenName;
   string private tokenSymbol;
   bool private initialized;
+  uint private rebalanceCheckpoint;
   uint private managementFeeCheckpoint;
   uint private performanceFeeHighWatermark;
 
@@ -34,6 +35,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   event DepositToPool(uint poolTokenAmount, uint value, address indexed account);
   event WithdrawFromPool(uint poolTokenAmount, uint value, address indexed account);
+  event RebalancePool();
   event ManagementFeeCheckpointUpdated(uint secondsPassed);
   event ManagementFeeSettled(uint amountToMirrored, uint amountToTreasury);
   event PerformanceFeeHighWatermarkUpdated(uint newValue);
@@ -180,7 +182,9 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function rebalance(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
-    // TODO: remove onlyOwner
+    RebalanceSettings memory rebalanceSettings = management.getRebalanceSettings();
+    require(!_isRebalanceLocked(rebalanceSettings), 'HousecatPool: rebalance locked');
+
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
 
@@ -193,8 +197,9 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     // require weight difference did not increase
     _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
-
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
+    rebalanceCheckpoint = block.timestamp;
+    emit RebalancePool();
   }
 
   function _getAssetData() private view returns (TokenData memory) {
@@ -274,6 +279,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
         : mirroredWeights[i].sub(poolWeights[i]);
     }
     return totalDiff;
+  }
+
+  function _isRebalanceLocked(RebalanceSettings memory _rebalanceSettings) internal view returns (bool) {
+    uint secondsSincePreviousRebalance = block.timestamp.sub(rebalanceCheckpoint);
+    return secondsSincePreviousRebalance < _rebalanceSettings.minSecondsBetweenRebalances;
   }
 
   function _validateWeightDiffNotIncreased(PoolState memory _before, PoolState memory _after) private view {

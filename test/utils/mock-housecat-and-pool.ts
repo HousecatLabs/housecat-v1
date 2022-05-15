@@ -4,7 +4,7 @@ import { HousecatPool } from '../../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { IToken, ITokenWithLiquidity } from '../../utils/mock-defi'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
-import { FeeSettingsStruct } from '../../typechain-types/HousecatManagement'
+import { FeeSettingsStruct, RebalanceSettingsStruct } from '../../typechain-types/HousecatManagement'
 
 interface IWethWithAmountToMirrored extends IToken {
   amountToMirrored?: string
@@ -25,6 +25,7 @@ interface IMockHousecatAndPoolProps {
   weth?: IWethWithAmountToMirrored
   assets?: IAssetWithAmountToMirrored[]
   loans?: ILoanWithAmountToMirrored[]
+  rebalanceSettings?: RebalanceSettingsStruct
   managementFee?: FeeSettingsStruct
   performanceFee?: FeeSettingsStruct
 }
@@ -44,6 +45,7 @@ const mockHousecatAndPool = async ({
     { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
   ],
   loans = [{ price: '1' }],
+  rebalanceSettings = { minSecondsBetweenRebalances: 0, tradeTax: 0 },
   managementFee = { defaultFee: 0, maxFee: parseUnits('0.1', 8), protocolTax: 0 },
   performanceFee = { defaultFee: 0, maxFee: parseUnits('0.25', 8), protocolTax: 0 },
 }: IMockHousecatAndPoolProps): Promise<IMockHousecatAndPool> => {
@@ -53,6 +55,7 @@ const mockHousecatAndPool = async ({
     weth,
     assets,
     loans,
+    rebalanceSettings,
     managementFee,
     performanceFee,
   })
