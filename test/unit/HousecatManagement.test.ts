@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import { deployManagement } from '../../utils/deploy-contracts'
 import { mockPriceFeed, mockToken, mockWETH } from '../../utils/mock-defi'
@@ -282,6 +283,108 @@ describe('HousecatManagement', () => {
       expect(await mgmt.isIntegrationSupported(weth.address)).equal(false)
       await mgmt.connect(signer).setSupportedIntegration(weth.address, true)
       expect(await mgmt.isIntegrationSupported(weth.address)).equal(true)
+    })
+  })
+
+  describe('updateMirrorSettings', () => {
+    const oneUSD = BigNumber.from((1e18).toString())
+    const percent100 = BigNumber.from((1e8).toString())
+    const validMirrorSettings = {
+      minPoolValue: oneUSD.mul(10),
+      maxWeightDifference: percent100.mul(2).div(100),
+    }
+
+    it('should update rebalanceSettings successfully when called by the owner with valid values', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      await mgmt.connect(signer).updateMirrorSettings(validMirrorSettings)
+      const newSettings = await mgmt.getMirrorSettings()
+      expect(newSettings.minPoolValue).equal(validMirrorSettings.minPoolValue)
+      expect(newSettings.maxWeightDifference).equal(validMirrorSettings.maxWeightDifference)
+    })
+
+    it('should emit UpdateMirrorSettings event', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = await mgmt.connect(signer).updateMirrorSettings(validMirrorSettings)
+      await expect(update).emit(mgmt, 'UpdateMirrorSettings')
+    })
+
+    it('should fail if caller is not the owner', async () => {
+      const [signer, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(otherUser).updateMirrorSettings(validMirrorSettings)
+      await expect(update).to.revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('should fail if maxWeightDifference is greater than 100%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(signer).updateMirrorSettings({
+        ...validMirrorSettings,
+        maxWeightDifference: percent100.add(1),
+      })
+      await expect(update).to.revertedWith('maxWeightDifference > 100%')
+    })
+  })
+
+  describe('updateRebalanceSettings', () => {
+    const percent100 = BigNumber.from((1e8).toString())
+    const validRebalanceSettings = {
+      tradeTax: percent100.mul(50).div(10000),
+      maxSlippage: percent100.div(100),
+      minSecondsBetweenRebalances: 0,
+    }
+
+    it('should update rebalanceSettings successfully when called by the owner with valid values', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      await mgmt.connect(signer).updateRebalanceSettings(validRebalanceSettings)
+      const newSettings = await mgmt.getRebalanceSettings()
+      expect(newSettings.tradeTax).equal(validRebalanceSettings.tradeTax)
+    })
+
+    it('should emit UpdateRebalanceSettings event', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = await mgmt.connect(signer).updateRebalanceSettings(validRebalanceSettings)
+      await expect(update).emit(mgmt, 'UpdateRebalanceSettings')
+    })
+
+    it('should fail if caller is not the owner', async () => {
+      const [signer, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(otherUser).updateRebalanceSettings(validRebalanceSettings)
+      await expect(update).to.revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('should fail if maxSlippage is greater than 50%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(signer).updateRebalanceSettings({
+        ...validRebalanceSettings,
+        maxSlippage: percent100.div(2).add(1),
+      })
+      await expect(update).to.revertedWith('maxSlippage > 50%')
+    })
+
+    it('should fail if tradeTax is greater than 0.50%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(signer).updateRebalanceSettings({
+        ...validRebalanceSettings,
+        tradeTax: percent100.mul(50).div(10000).add(1),
+      })
+      await expect(update).to.revertedWith('tradeTax > 0.50%')
     })
   })
 

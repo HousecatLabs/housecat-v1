@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/proxy/Clones.sol';
-import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import './HousecatManagement.sol';
-import './HousecatPool.sol';
-import './structs/UserSettings.sol';
-import './structs/PoolTransaction.sol';
+import {Clones} from '@openzeppelin/contracts/proxy/Clones.sol';
+import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import {HousecatManagement} from './HousecatManagement.sol';
+import {HousecatPool} from './HousecatPool.sol';
+import {UserSettings, PoolTransaction} from './structs.sol';
 
 contract HousecatFactory {
   using SafeMath for uint;

@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: UNLISENCED
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import '@openzeppelin/contracts/utils/math/SafeCast.sol';
-import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
-import '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
-import './Constants.sol';
-import './structs/TokenMeta.sol';
-import './structs/TokenData.sol';
-import './structs/WalletContent.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import {SafeCast} from '@openzeppelin/contracts/utils/math/SafeCast.sol';
+import {AggregatorV3Interface} from '@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol';
+import {Constants} from './Constants.sol';
+import {TokenMeta} from './structs.sol';
+import {TokenData} from './structs.sol';
+import {WalletContent} from './structs.sol';
 
 contract HousecatQueries is Constants {
   using SafeMath for uint;

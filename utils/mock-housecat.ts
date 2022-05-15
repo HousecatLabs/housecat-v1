@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { HousecatFactory, HousecatManagement, IUniswapV2Router02 } from '../typechain-types'
-import { FeeSettingsStruct } from '../typechain-types/HousecatManagement'
+import { FeeSettingsStruct, RebalanceSettingsStruct } from '../typechain-types/HousecatManagement'
 import { paraswapV5 } from './addresses/polygon'
 import { deployHousecat, IAdapters } from './deploy-contracts'
 import { ITokenWithPriceFeed, mockAssets, IToken, ITokenWithLiquidity, mockLoans } from './mock-defi'
@@ -11,6 +11,7 @@ interface IMockHousecatProps {
   assets: ITokenWithLiquidity[]
   loans: IToken[]
   treasury?: string
+  rebalanceSettings?: RebalanceSettingsStruct
   managementFee?: FeeSettingsStruct
   performanceFee?: FeeSettingsStruct
 }
@@ -31,6 +32,7 @@ export const mockHousecat = async ({
   weth,
   assets,
   loans,
+  rebalanceSettings,
   managementFee,
   performanceFee,
 }: IMockHousecatProps): Promise<IMockHousecat> => {
@@ -69,6 +71,10 @@ export const mockHousecat = async ({
     loansMeta,
     integrations: [amm.address, paraswapV5.AugustusSwapper],
   })
+
+  if (rebalanceSettings) {
+    await mgmt.connect(signer).updateRebalanceSettings(rebalanceSettings)
+  }
 
   if (managementFee) {
     await mgmt.connect(signer).updateManagementFee(managementFee)

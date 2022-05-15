@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.4;
 
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import './structs/UserSettings.sol';
-import './structs/PoolTransaction.sol';
-import './HousecatQueries.sol';
-import './HousecatFactory.sol';
-import './HousecatManagement.sol';
+import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
+import {UserSettings, PoolTransaction, MirrorSettings, RebalanceSettings, WalletContent, TokenData, TokenMeta} from './structs.sol';
+import {HousecatQueries} from './HousecatQueries.sol';
+import {HousecatFactory} from './HousecatFactory.sol';
+import {HousecatManagement} from './HousecatManagement.sol';
 
 struct PoolState {
   uint ethBalance;
@@ -26,6 +24,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   string private tokenName;
   string private tokenSymbol;
   bool private initialized;
+  uint private rebalanceCheckpoint;
   uint private managementFeeCheckpoint;
   uint private performanceFeeHighWatermark;
 
@@ -36,6 +35,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   event DepositToPool(uint poolTokenAmount, uint value, address indexed account);
   event WithdrawFromPool(uint poolTokenAmount, uint value, address indexed account);
+  event RebalancePool();
   event ManagementFeeCheckpointUpdated(uint secondsPassed);
   event ManagementFeeSettled(uint amountToMirrored, uint amountToTreasury);
   event PerformanceFeeHighWatermarkUpdated(uint newValue);
@@ -121,13 +121,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require weight difference did not increase
-    if (poolStateAfter.weightDifference > PERCENT_100.div(20)) {
-      // TODO: set threshold value in mgmt
-      require(
-        poolStateAfter.weightDifference <= poolStateBefore.weightDifference,
-        'HousecatPool: weight diff increased'
-      );
-    }
+    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
 
     // require pool value did not decrease
     require(poolStateAfter.netValue >= poolStateBefore.netValue, 'HousecatPool: pool value reduced');
@@ -157,20 +151,14 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance >= poolStateBefore.ethBalance, 'HousecatPool: ETH balance decreased');
 
     // require weight difference did not increase
-    if (poolStateAfter.weightDifference > PERCENT_100.div(20) && poolStateAfter.netValue > ONE_USD) {
-      // TODO: set threshold value in mgmt
-      require(
-        poolStateAfter.weightDifference <= poolStateBefore.weightDifference,
-        'HousecatPool: weight diff increased'
-      );
-    }
+    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
 
     uint withdrawValue = poolStateBefore.netValue.sub(poolStateAfter.netValue);
 
     // require withdraw value does not exceed what the withdtawer owns
     uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
     uint maxWithdrawValue = poolStateBefore.netValue.mul(shareInPool).div(PERCENT_100);
-    require(maxWithdrawValue >= withdrawValue, 'HousecatPool: withdraw balance exceeded');
+    require(maxWithdrawValue >= withdrawValue, 'HousecatPool: balance exceeded');
 
     // settle accrued fees
     _settleFees(poolStateBefore.netValue);
@@ -193,8 +181,10 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     emit WithdrawFromPool(amountBurn, withdrawValue, msg.sender);
   }
 
-  function manage(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
-    // TODO: remove onlyOwner
+  function rebalance(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
+    RebalanceSettings memory rebalanceSettings = management.getRebalanceSettings();
+    require(!_isRebalanceLocked(rebalanceSettings), 'HousecatPool: rebalance locked');
+
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
 
@@ -202,13 +192,16 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require pool value did not decrease more than slippage limit
-    uint minNetValueAfter = poolStateBefore.netValue.mul(99).div(100); // TODO: define slippage limit in mgmt settings
+    uint minNetValueAfter = poolStateBefore.netValue.mul(PERCENT_100.sub(rebalanceSettings.maxSlippage)).div(
+      PERCENT_100
+    );
     require(poolStateAfter.netValue >= minNetValueAfter, 'HousecatPool: pool value reduced');
 
-    // require pool weights match the mirrored weights
-    require(poolStateAfter.weightDifference < PERCENT_100.div(50), 'HousecatPool: weights mismatch');
-
+    // require weight difference did not increase
+    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
     // TODO: validate cumulative value drop over N days period is less than a specified % limit
+    rebalanceCheckpoint = block.timestamp;
+    emit RebalancePool();
   }
 
   function _getAssetData() private view returns (TokenData memory) {
@@ -288,6 +281,18 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
         : mirroredWeights[i].sub(poolWeights[i]);
     }
     return totalDiff;
+  }
+
+  function _isRebalanceLocked(RebalanceSettings memory _rebalanceSettings) internal view returns (bool) {
+    uint secondsSincePreviousRebalance = block.timestamp.sub(rebalanceCheckpoint);
+    return secondsSincePreviousRebalance < _rebalanceSettings.minSecondsBetweenRebalances;
+  }
+
+  function _validateWeightDiffNotIncreased(PoolState memory _before, PoolState memory _after) private view {
+    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
+    if (_after.weightDifference > mirrorSettings.maxWeightDifference && _after.netValue > mirrorSettings.minPoolValue) {
+      require(_after.weightDifference <= _before.weightDifference, 'HousecatPool: weight diff increased');
+    }
   }
 
   function _getAccruedManagementFee(uint _annualFeePercentage) private view returns (uint) {

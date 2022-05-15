@@ -97,7 +97,7 @@ export const rebalance = async (
   assets: ITokenWithPriceFeed[]
 ) => {
   const transactions = await getRebalanceTxs(pool, amm, weth, assets, adapters.uniswapV2Adapter, 0)
-  return pool.connect(manager).manage(transactions)
+  return pool.connect(manager).rebalance(transactions)
 }
 
 export const withdraw = async (
@@ -124,7 +124,7 @@ export const withdraw = async (
   return pool.connect(withdrawer).withdraw(withdrawer.address, sellTokenTxs)
 }
 
-describe('integration: deposit-manage-withdraw', () => {
+describe('integration: deposit-rebalance-withdraw', () => {
   let owner: SignerWithAddress
   let treasury: SignerWithAddress
   let mirrored: SignerWithAddress
