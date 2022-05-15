@@ -20,10 +20,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   mapping(address => TokenMeta) private tokenMeta;
 
   MirrorSettings private mirrorSettings =
-    MirrorSettings({
-      minPoolValue: ONE_USD,
-      maxWeightDifference: SafeCast.toUint32(PERCENT_100.div(20))
-    });
+    MirrorSettings({minPoolValue: ONE_USD, maxWeightDifference: SafeCast.toUint32(PERCENT_100.div(20))});
 
   RebalanceSettings private rebalanceSettings =
     RebalanceSettings({tradeTax: SafeCast.toUint32(PERCENT_100.div(4)), minSecondsBetweenRebalances: 30});
