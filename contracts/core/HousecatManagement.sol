@@ -6,7 +6,7 @@ import {SafeCast} from '@openzeppelin/contracts/utils/math/SafeCast.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {Pausable} from '@openzeppelin/contracts/security/Pausable.sol';
 import {Constants} from './Constants.sol';
-import {TokenMeta, FeeSettings, RebalanceSettings} from './structs.sol';
+import {TokenMeta, FeeSettings, MirrorSettings, RebalanceSettings} from './structs.sol';
 
 contract HousecatManagement is Constants, Ownable, Pausable {
   using SafeMath for uint;
@@ -19,14 +19,15 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   address[] private supportedLoans;
   mapping(address => TokenMeta) private tokenMeta;
 
-  RebalanceSettings private rebalanceSettings =
-    RebalanceSettings({
+  MirrorSettings private mirrorSettings =
+    MirrorSettings({
       minPoolValue: ONE_USD,
       minMirroredValue: ONE_USD,
-      maxWeightDifference: SafeCast.toUint32(PERCENT_100.div(20)),
-      tradeTax: SafeCast.toUint32(PERCENT_100.div(4)),
-      minSecondsBetweenRebalances: 30
+      maxWeightDifference: SafeCast.toUint32(PERCENT_100.div(20))
     });
+
+  RebalanceSettings private rebalanceSettings =
+    RebalanceSettings({tradeTax: SafeCast.toUint32(PERCENT_100.div(4)), minSecondsBetweenRebalances: 30});
 
   FeeSettings private managementFee =
     FeeSettings({
@@ -45,6 +46,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
   event SetAdapter(address adapter, bool enabled);
+  event UpdateMirrorSettings(MirrorSettings mirrorSettings);
   event UpdateRebalanceSettings(RebalanceSettings rebalanceSettings);
   event UpdateManagementFee(FeeSettings managementFee);
   event UpdatePerformanceFee(FeeSettings performanceFee);
@@ -131,6 +133,10 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return false;
   }
 
+  function getMirrorSettings() external view returns (MirrorSettings memory) {
+    return mirrorSettings;
+  }
+
   function getRebalanceSettings() external view returns (RebalanceSettings memory) {
     return rebalanceSettings;
   }
@@ -166,6 +172,12 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     supportedIntegrations[_integration] = _value;
   }
 
+  function updateMirrorSettings(MirrorSettings memory _mirrorSettings) external onlyOwner {
+    _validateMirrorSettings(_mirrorSettings);
+    mirrorSettings = _mirrorSettings;
+    emit UpdateMirrorSettings(_mirrorSettings);
+  }
+
   function updateRebalanceSettings(RebalanceSettings memory _rebalanceSettings) external onlyOwner {
     _validateRebalanceSettings(_rebalanceSettings);
     rebalanceSettings = _rebalanceSettings;
@@ -189,8 +201,11 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     tokenMeta[_token] = _tokenMeta;
   }
 
-  function _validateRebalanceSettings(RebalanceSettings memory _settings) internal pure {
+  function _validateMirrorSettings(MirrorSettings memory _settings) internal pure {
     require(_settings.maxWeightDifference <= PERCENT_100, 'maxWeightDifference > 100%');
+  }
+
+  function _validateRebalanceSettings(RebalanceSettings memory _settings) internal pure {
     require(_settings.tradeTax <= PERCENT_100.mul(50).div(10000), 'tradeTax > 0.50%');
   }
 

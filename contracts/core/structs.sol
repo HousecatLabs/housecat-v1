@@ -12,10 +12,13 @@ struct PoolTransaction {
   bytes data;
 }
 
-struct RebalanceSettings {
+struct MirrorSettings {
   uint minPoolValue;
   uint minMirroredValue;
   uint32 maxWeightDifference;
+}
+
+struct RebalanceSettings {
   uint32 tradeTax;
   uint16 minSecondsBetweenRebalances;
 }

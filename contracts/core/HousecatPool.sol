@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
-import {UserSettings, PoolTransaction, RebalanceSettings, WalletContent, TokenData, TokenMeta} from './structs.sol';
+import {UserSettings, PoolTransaction, MirrorSettings, WalletContent, TokenData, TokenMeta} from './structs.sol';
 import {HousecatQueries} from './HousecatQueries.sol';
 import {HousecatFactory} from './HousecatFactory.sol';
 import {HousecatManagement} from './HousecatManagement.sol';
@@ -277,11 +277,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function _validateWeightDiffNotIncreased(PoolState memory _before, PoolState memory _after) private view {
-    RebalanceSettings memory rebalanceSettings = management.getRebalanceSettings();
-    if (
-      _after.weightDifference > rebalanceSettings.maxWeightDifference &&
-      _after.netValue > rebalanceSettings.minPoolValue
-    ) {
+    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
+    if (_after.weightDifference > mirrorSettings.maxWeightDifference && _after.netValue > mirrorSettings.minPoolValue) {
       require(_after.weightDifference <= _before.weightDifference, 'HousecatPool: weight diff increased');
     }
   }
