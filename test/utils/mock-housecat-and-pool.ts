@@ -45,7 +45,13 @@ const mockHousecatAndPool = async ({
     { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
   ],
   loans = [{ price: '1' }],
-  rebalanceSettings = { minSecondsBetweenRebalances: 0, maxSlippage: 1e6, tradeTax: 0 },
+  rebalanceSettings = {
+    minSecondsBetweenRebalances: 0,
+    maxSlippage: 1e6,
+    maxCumulativeSlippage: 3e6,
+    cumulativeSlippagePeriodSeconds: 0,
+    tradeTax: 0,
+  },
   managementFee = { defaultFee: 0, maxFee: parseUnits('0.1', 8), protocolTax: 0 },
   performanceFee = { defaultFee: 0, maxFee: parseUnits('0.25', 8), protocolTax: 0 },
 }: IMockHousecatAndPoolProps): Promise<IMockHousecatAndPool> => {

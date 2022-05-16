@@ -337,6 +337,8 @@ describe('HousecatManagement', () => {
     const validRebalanceSettings = {
       tradeTax: percent100.mul(50).div(10000),
       maxSlippage: percent100.div(100),
+      maxCumulativeSlippage: 3e6,
+      cumulativeSlippagePeriodSeconds: 0,
       minSecondsBetweenRebalances: 0,
     }
 
