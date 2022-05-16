@@ -340,6 +340,7 @@ describe('HousecatManagement', () => {
       maxCumulativeSlippage: 3e6,
       cumulativeSlippagePeriodSeconds: 0,
       minSecondsBetweenRebalances: 0,
+      onlyOwner: true,
     }
 
     it('should update rebalanceSettings successfully when called by the owner with valid values', async () => {
