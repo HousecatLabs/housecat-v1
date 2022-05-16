@@ -20,7 +20,9 @@ struct MirrorSettings {
 struct RebalanceSettings {
   uint32 tradeTax;
   uint32 maxSlippage;
-  uint16 minSecondsBetweenRebalances;
+  uint32 maxCumulativeSlippage;
+  uint32 cumulativeSlippagePeriodSeconds;
+  uint32 minSecondsBetweenRebalances;
 }
 
 struct TokenData {

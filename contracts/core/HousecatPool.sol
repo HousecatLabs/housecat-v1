@@ -25,6 +25,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   string private tokenSymbol;
   bool private initialized;
   uint private rebalanceCheckpoint;
+  uint private cumulativeSlippage;
   uint private managementFeeCheckpoint;
   uint private performanceFeeHighWatermark;
 
@@ -58,6 +59,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     mirrored = _mirrored;
     tokenName = 'Housecat Pool Position';
     tokenSymbol = 'HCAT-PP';
+    rebalanceCheckpoint = 0;
+    cumulativeSlippage = 0;
     managementFeeCheckpoint = block.timestamp;
     performanceFeeHighWatermark = 0;
     initialized = true;
@@ -87,6 +90,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
     return _getWeightDifference(_getContent(address(this), assets, loans), _getContent(mirrored, assets, loans));
+  }
+
+  function getCumulativeSlippage() external view returns (uint, uint) {
+    uint secondsSincePreviousRebalance = block.timestamp.sub(rebalanceCheckpoint);
+    return (cumulativeSlippage, secondsSincePreviousRebalance);
   }
 
   function getAccruedManagementFee() external view returns (uint) {
@@ -192,14 +200,16 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require pool value did not decrease more than slippage limit
-    uint minNetValueAfter = poolStateBefore.netValue.mul(PERCENT_100.sub(rebalanceSettings.maxSlippage)).div(
-      PERCENT_100
-    );
-    require(poolStateAfter.netValue >= minNetValueAfter, 'HousecatPool: pool value reduced');
+    uint slippage = poolStateAfter.netValue > poolStateBefore.netValue
+      ? 0
+      : poolStateBefore.netValue.sub(poolStateAfter.netValue).mul(PERCENT_100).div(poolStateBefore.netValue);
+    _updateCumulativeSlippage(rebalanceSettings, slippage);
+
+    _validateSlippage(rebalanceSettings, slippage);
 
     // require weight difference did not increase
     _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
-    // TODO: validate cumulative value drop over N days period is less than a specified % limit
+
     rebalanceCheckpoint = block.timestamp;
     emit RebalancePool();
   }
@@ -295,6 +305,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
   }
 
+  function _validateSlippage(RebalanceSettings memory _rebalanceSettings, uint _slippage) private view {
+    require(_slippage <= _rebalanceSettings.maxSlippage, 'HousecatPool: slippage exceeded');
+    require(cumulativeSlippage <= _rebalanceSettings.maxCumulativeSlippage, 'HousecatPool: cum. slippage exceeded');
+  }
+
   function _getAccruedManagementFee(uint _annualFeePercentage) private view returns (uint) {
     uint secondsSinceLastSettlement = block.timestamp.sub(managementFeeCheckpoint);
     if (secondsSinceLastSettlement > 0) {
@@ -312,6 +327,23 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
       return totalSupply().mul(accruedFeePercentage).div(PERCENT_100);
     }
     return 0;
+  }
+
+  function _updateCumulativeSlippage(RebalanceSettings memory _rebalanceSettings, uint _slippage) private {
+    if (_rebalanceSettings.cumulativeSlippagePeriodSeconds == 0) {
+      cumulativeSlippage = 0;
+    } else {
+      uint secondsSincePreviousRebalance = block.timestamp.sub(rebalanceCheckpoint);
+      uint reduction = secondsSincePreviousRebalance.mul(_rebalanceSettings.maxCumulativeSlippage).div(
+        _rebalanceSettings.cumulativeSlippagePeriodSeconds
+      );
+      if (reduction > cumulativeSlippage) {
+        cumulativeSlippage = 0;
+      } else {
+        cumulativeSlippage = cumulativeSlippage.sub(reduction);
+      }
+    }
+    cumulativeSlippage = cumulativeSlippage.add(_slippage);
   }
 
   function _updateManagementFeeCheckpoint() private {
