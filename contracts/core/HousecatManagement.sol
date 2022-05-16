@@ -24,7 +24,8 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   RebalanceSettings private rebalanceSettings =
     RebalanceSettings({
-      tradeTax: SafeCast.toUint32(PERCENT_100.mul(25).div(10000)),
+      reward: SafeCast.toUint32(PERCENT_100.mul(25).div(10000)),
+      protocolTax: SafeCast.toUint32(PERCENT_100.mul(25).div(100)),
       maxSlippage: SafeCast.toUint32(PERCENT_100.div(100)),
       maxCumulativeSlippage: SafeCast.toUint32(PERCENT_100.mul(3).div(100)),
       cumulativeSlippagePeriodSeconds: 60 * 60 * 24 * 7,
@@ -210,7 +211,8 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   function _validateRebalanceSettings(RebalanceSettings memory _settings) internal pure {
     require(_settings.maxSlippage <= PERCENT_100.div(2), 'maxSlippage > 50%');
-    require(_settings.tradeTax <= PERCENT_100.mul(50).div(10000), 'tradeTax > 0.50%');
+    require(_settings.reward <= PERCENT_100.mul(50).div(10000), 'reward > 0.50%');
+    require(_settings.protocolTax <= PERCENT_100, 'protocolTax > 100%');
   }
 
   function _validateFeeSettings(FeeSettings memory _settings) private pure {

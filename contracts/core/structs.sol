@@ -18,7 +18,8 @@ struct MirrorSettings {
 }
 
 struct RebalanceSettings {
-  uint32 tradeTax;
+  uint32 reward;
+  uint32 protocolTax;
   uint32 maxSlippage;
   uint32 maxCumulativeSlippage;
   uint32 cumulativeSlippagePeriodSeconds;

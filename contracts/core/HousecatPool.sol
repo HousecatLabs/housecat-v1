@@ -41,7 +41,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   event ManagementFeeSettled(uint amountToMirrored, uint amountToTreasury);
   event PerformanceFeeHighWatermarkUpdated(uint newValue);
   event PerformanceFeeSettled(uint amountToMirrored, uint amountToTreasury);
-  event TradeTaxCollected(uint taxAmount);
+  event RebalanceRewardCollected(uint amountToBeneficiary, uint amountToTreasury);
 
   constructor() ERC20('Housecat Pool Base', 'HCAT-Base') {}
 
@@ -215,7 +215,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     _validateWeightDifference(poolStateBefore, poolStateAfter);
 
     // mint trade tax based on how much the weight difference reduced
-    _collectTradeTax(settings, poolStateBefore, poolStateAfter);
+    _collectRebalanceReward(settings, poolStateBefore, poolStateAfter, msg.sender);
 
     rebalanceCheckpoint = block.timestamp;
     emit RebalancePool();
@@ -411,16 +411,20 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     _settlePerformanceFee(_poolValue, userSettings.performanceFee, treasury);
   }
 
-  function _collectTradeTax(
+  function _collectRebalanceReward(
     RebalanceSettings memory _settings,
     PoolState memory _before,
-    PoolState memory _after
+    PoolState memory _after,
+    address _beneficiary
   ) private {
     if (_after.weightDifference < _before.weightDifference) {
       uint change = _before.weightDifference.sub(_after.weightDifference);
-      uint taxAmount = totalSupply().mul(change).mul(_settings.tradeTax).div(PERCENT_100**2);
-      _mint(management.treasury(), taxAmount);
-      emit TradeTaxCollected(taxAmount);
+      uint rewardAmount = totalSupply().mul(change).mul(_settings.reward).div(PERCENT_100**2);
+      uint amountToTreasury = rewardAmount.mul(_settings.protocolTax).div(PERCENT_100);
+      uint amountToBeneficiary = rewardAmount.sub(amountToTreasury);
+      _mint(management.treasury(), amountToTreasury);
+      _mint(_beneficiary, amountToBeneficiary);
+      emit RebalanceRewardCollected(amountToBeneficiary, amountToTreasury);
     }
   }
 }
