@@ -190,9 +190,12 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     emit WithdrawFromPool(amountBurn, withdrawValue, msg.sender);
   }
 
-  function rebalance(PoolTransaction[] calldata _transactions) external onlyOwner whenNotPaused {
-    RebalanceSettings memory rebalanceSettings = management.getRebalanceSettings();
-    require(!_isRebalanceLocked(rebalanceSettings), 'HousecatPool: rebalance locked');
+  function rebalance(PoolTransaction[] calldata _transactions) external whenNotPaused {
+    RebalanceSettings memory settings = management.getRebalanceSettings();
+    require(!_isRebalanceLocked(settings), 'HousecatPool: rebalance locked');
+    if (settings.onlyOwner) {
+      require(msg.sender == owner(), 'HousecatPool: only owner');
+    }
 
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
@@ -201,18 +204,18 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require pool value did not decrease more than slippage limit
-    uint slippage = poolStateAfter.netValue > poolStateBefore.netValue
+    uint slippage = poolStateAfter.netValue >= poolStateBefore.netValue
       ? 0
       : poolStateBefore.netValue.sub(poolStateAfter.netValue).mul(PERCENT_100).div(poolStateBefore.netValue);
-    _updateCumulativeSlippage(rebalanceSettings, slippage);
+    _updateCumulativeSlippage(settings, slippage);
 
-    _validateSlippage(rebalanceSettings, slippage);
+    _validateSlippage(settings, slippage);
 
     // require weight difference did not increase
     _validateWeightDifference(poolStateBefore, poolStateAfter);
 
     // mint trade tax based on how much the weight difference reduced
-    _collectTradeTax(rebalanceSettings, poolStateBefore, poolStateAfter);
+    _collectTradeTax(settings, poolStateBefore, poolStateAfter);
 
     rebalanceCheckpoint = block.timestamp;
     emit RebalancePool();

@@ -23,6 +23,7 @@ struct RebalanceSettings {
   uint32 maxCumulativeSlippage;
   uint32 cumulativeSlippagePeriodSeconds;
   uint32 minSecondsBetweenRebalances;
+  bool onlyOwner;
 }
 
 struct TokenData {

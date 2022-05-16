@@ -6,13 +6,47 @@ import { deposit } from '../../utils/deposit-withdraw'
 import { DAYS, increaseTime, SECONDS } from '../../../utils/evm'
 
 describe('HousecatPool: rebalance', () => {
-  it('only owner allowed to call', async () => {
+  it('only owner allowed to call if onlyOwner setting enabled', async () => {
     const [signer, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
+    const { pool, adapters } = await mockHousecatAndPool({
+      signer,
+      mirrored,
+      weth: { price: '1', amountToMirrored: '10' },
+      assets: [{ price: '1', reserveToken: '20', reserveWeth: '20' }],
+      rebalanceSettings: {
+        minSecondsBetweenRebalances: 60,
+        maxSlippage: 1e6,
+        maxCumulativeSlippage: 3e6,
+        cumulativeSlippagePeriodSeconds: 0,
+        tradeTax: 0,
+        onlyOwner: true,
+      },
+    })
     const encoder = new ethers.utils.AbiCoder()
     const data = encoder.encode(['string'], ['foobar'])
     const rebalance = pool.connect(mirrored).rebalance([{ adapter: adapters.uniswapV2Adapter.address, data }])
-    await expect(rebalance).revertedWith('Ownable: caller is not the owner')
+    await expect(rebalance).revertedWith('HousecatPool: only owner')
+  })
+
+  it('anyone allowed to call if onlyOwner setting disabled', async () => {
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({
+      signer,
+      mirrored,
+      weth: { price: '1', amountToMirrored: '10' },
+      assets: [],
+      rebalanceSettings: {
+        minSecondsBetweenRebalances: 60,
+        maxSlippage: 1e6,
+        maxCumulativeSlippage: 3e6,
+        cumulativeSlippagePeriodSeconds: 0,
+        tradeTax: 0,
+        onlyOwner: false,
+      },
+    })
+    await deposit(pool, adapters, signer, parseEther('10'))
+    const rebalance = pool.connect(mirrored).rebalance([])
+    await expect(rebalance).not.reverted
   })
 
   it('should emit RebalancePool event', async () => {
@@ -28,6 +62,7 @@ describe('HousecatPool: rebalance', () => {
         maxCumulativeSlippage: 3e6,
         cumulativeSlippagePeriodSeconds: 0,
         tradeTax: 0,
+        onlyOwner: true,
       },
     })
 
@@ -57,6 +92,7 @@ describe('HousecatPool: rebalance', () => {
           maxCumulativeSlippage: 3e6,
           cumulativeSlippagePeriodSeconds: 0,
           tradeTax: 0,
+          onlyOwner: true,
         },
       })
 
@@ -94,6 +130,7 @@ describe('HousecatPool: rebalance', () => {
           maxCumulativeSlippage: 1e6,
           cumulativeSlippagePeriodSeconds: 60,
           tradeTax: 0,
+          onlyOwner: true,
         },
       })
 
@@ -132,6 +169,7 @@ describe('HousecatPool: rebalance', () => {
           maxCumulativeSlippage: 12e6,
           cumulativeSlippagePeriodSeconds: 60 * 60 * 24 * 60, // 60 days
           tradeTax: 0,
+          onlyOwner: true,
         },
       })
 
@@ -219,6 +257,7 @@ describe('HousecatPool: rebalance', () => {
           maxCumulativeSlippage: 3e6,
           cumulativeSlippagePeriodSeconds: 0,
           tradeTax: 0,
+          onlyOwner: true,
         },
       })
 
@@ -258,6 +297,7 @@ describe('HousecatPool: rebalance', () => {
           maxCumulativeSlippage: 3e6,
           cumulativeSlippagePeriodSeconds: 0,
           tradeTax: 0.25e6, // 0.25%
+          onlyOwner: true,
         },
       })
 
@@ -302,6 +342,7 @@ describe('HousecatPool: rebalance', () => {
           maxCumulativeSlippage: 3e6,
           cumulativeSlippagePeriodSeconds: 0,
           tradeTax: 0.25e6, // 0.25%
+          onlyOwner: true,
         },
       })
 

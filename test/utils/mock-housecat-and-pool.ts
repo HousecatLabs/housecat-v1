@@ -51,6 +51,7 @@ const mockHousecatAndPool = async ({
     maxCumulativeSlippage: 3e6,
     cumulativeSlippagePeriodSeconds: 0,
     tradeTax: 0,
+    onlyOwner: true,
   },
   managementFee = { defaultFee: 0, maxFee: parseUnits('0.1', 8), protocolTax: 0 },
   performanceFee = { defaultFee: 0, maxFee: parseUnits('0.25', 8), protocolTax: 0 },
