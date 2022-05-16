@@ -41,6 +41,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   event ManagementFeeSettled(uint amountToMirrored, uint amountToTreasury);
   event PerformanceFeeHighWatermarkUpdated(uint newValue);
   event PerformanceFeeSettled(uint amountToMirrored, uint amountToTreasury);
+  event TradeTaxCollected(uint taxAmount);
 
   constructor() ERC20('Housecat Pool Base', 'HCAT-Base') {}
 
@@ -129,7 +130,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require weight difference did not increase
-    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
+    _validateWeightDifference(poolStateBefore, poolStateAfter);
 
     // require pool value did not decrease
     require(poolStateAfter.netValue >= poolStateBefore.netValue, 'HousecatPool: pool value reduced');
@@ -159,7 +160,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(poolStateAfter.ethBalance >= poolStateBefore.ethBalance, 'HousecatPool: ETH balance decreased');
 
     // require weight difference did not increase
-    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
+    _validateWeightDifference(poolStateBefore, poolStateAfter);
 
     uint withdrawValue = poolStateBefore.netValue.sub(poolStateAfter.netValue);
 
@@ -208,7 +209,10 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     _validateSlippage(rebalanceSettings, slippage);
 
     // require weight difference did not increase
-    _validateWeightDiffNotIncreased(poolStateBefore, poolStateAfter);
+    _validateWeightDifference(poolStateBefore, poolStateAfter);
+
+    // mint trade tax based on how much the weight difference reduced
+    _collectTradeTax(rebalanceSettings, poolStateBefore, poolStateAfter);
 
     rebalanceCheckpoint = block.timestamp;
     emit RebalancePool();
@@ -298,7 +302,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return secondsSincePreviousRebalance < _rebalanceSettings.minSecondsBetweenRebalances;
   }
 
-  function _validateWeightDiffNotIncreased(PoolState memory _before, PoolState memory _after) private view {
+  function _validateWeightDifference(PoolState memory _before, PoolState memory _after) private view {
     MirrorSettings memory mirrorSettings = management.getMirrorSettings();
     if (_after.weightDifference > mirrorSettings.maxWeightDifference && _after.netValue > mirrorSettings.minPoolValue) {
       require(_after.weightDifference <= _before.weightDifference, 'HousecatPool: weight diff increased');
@@ -402,5 +406,18 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     UserSettings memory userSettings = factory.getUserSettings(mirrored);
     _settleManagementFee(userSettings.managementFee, treasury);
     _settlePerformanceFee(_poolValue, userSettings.performanceFee, treasury);
+  }
+
+  function _collectTradeTax(
+    RebalanceSettings memory _settings,
+    PoolState memory _before,
+    PoolState memory _after
+  ) private {
+    if (_after.weightDifference < _before.weightDifference) {
+      uint change = _before.weightDifference.sub(_after.weightDifference);
+      uint taxAmount = totalSupply().mul(change).mul(_settings.tradeTax).div(PERCENT_100**2);
+      _mint(management.treasury(), taxAmount);
+      emit TradeTaxCollected(taxAmount);
+    }
   }
 }

@@ -24,10 +24,10 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   RebalanceSettings private rebalanceSettings =
     RebalanceSettings({
-      tradeTax: SafeCast.toUint32(PERCENT_100.div(4)),
+      tradeTax: SafeCast.toUint32(PERCENT_100.mul(25).div(10000)),
       maxSlippage: SafeCast.toUint32(PERCENT_100.div(100)),
       maxCumulativeSlippage: SafeCast.toUint32(PERCENT_100.mul(3).div(100)),
-      cumulativeSlippagePeriodSeconds: 60 * 60 * 24 * 7, // 7 days
+      cumulativeSlippagePeriodSeconds: 60 * 60 * 24 * 7,
       minSecondsBetweenRebalances: 30
     });
 
