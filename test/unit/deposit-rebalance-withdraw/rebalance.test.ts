@@ -242,4 +242,87 @@ describe('HousecatPool: rebalance', () => {
       await expect(rebalance3).not.reverted
     })
   })
+
+  describe('trade tax', () => {
+    it('should collect trade tax to treasury based on how much the weight difference decreased on rebalance', async () => {
+      const [signer, mirrored, treasury] = await ethers.getSigners()
+      const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        treasury,
+        weth: { price: '1', amountToMirrored: '0' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        rebalanceSettings: {
+          minSecondsBetweenRebalances: 60,
+          maxSlippage: 1e6,
+          maxCumulativeSlippage: 3e6,
+          cumulativeSlippagePeriodSeconds: 0,
+          tradeTax: 0.25e6, // 0.25%
+        },
+      })
+
+      // initial deposit
+      await deposit(pool, adapters, signer, parseEther('1'))
+
+      // rebalance
+      const before = await pool.getWeightDifference()
+      await pool.connect(signer).rebalance([
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('1'),
+            1,
+          ]),
+        },
+      ])
+      const after = await pool.getWeightDifference()
+      const change = before.sub(after)
+      const taxAmount = parseEther('1')
+        .mul(change)
+        .mul(25)
+        .div(10000)
+        .div(await pool.getPercent100())
+      expect(taxAmount).gt(0)
+      expect(await pool.balanceOf(treasury.address)).eq(taxAmount)
+    })
+
+    it('should emit TradeTaxCollected event', async () => {
+      const [signer, mirrored, treasury] = (await ethers.getSigners()).slice(10)
+      const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        treasury,
+        weth: { price: '1', amountToMirrored: '0' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        rebalanceSettings: {
+          minSecondsBetweenRebalances: 60,
+          maxSlippage: 1e6,
+          maxCumulativeSlippage: 3e6,
+          cumulativeSlippagePeriodSeconds: 0,
+          tradeTax: 0.25e6, // 0.25%
+        },
+      })
+
+      // initial deposit
+      await deposit(pool, adapters, signer, parseEther('1'))
+
+      // rebalance
+      const tx = await pool.connect(signer).rebalance([
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('1'),
+            1,
+          ]),
+        },
+      ])
+      await expect(tx)
+        .emit(pool, 'TradeTaxCollected')
+        .withArgs(await pool.balanceOf(treasury.address))
+    })
+  })
 })
