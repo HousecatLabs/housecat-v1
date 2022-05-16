@@ -18,7 +18,8 @@ describe('HousecatPool: rebalance', () => {
         maxSlippage: 1e6,
         maxCumulativeSlippage: 3e6,
         cumulativeSlippagePeriodSeconds: 0,
-        tradeTax: 0,
+        reward: 0,
+        protocolTax: 0,
         onlyOwner: true,
       },
     })
@@ -40,7 +41,8 @@ describe('HousecatPool: rebalance', () => {
         maxSlippage: 1e6,
         maxCumulativeSlippage: 3e6,
         cumulativeSlippagePeriodSeconds: 0,
-        tradeTax: 0,
+        reward: 0,
+        protocolTax: 0,
         onlyOwner: false,
       },
     })
@@ -61,7 +63,8 @@ describe('HousecatPool: rebalance', () => {
         maxSlippage: 1e6,
         maxCumulativeSlippage: 3e6,
         cumulativeSlippagePeriodSeconds: 0,
-        tradeTax: 0,
+        reward: 0,
+        protocolTax: 0,
         onlyOwner: true,
       },
     })
@@ -91,7 +94,8 @@ describe('HousecatPool: rebalance', () => {
           maxSlippage: 1e6,
           maxCumulativeSlippage: 3e6,
           cumulativeSlippagePeriodSeconds: 0,
-          tradeTax: 0,
+          reward: 0,
+          protocolTax: 0,
           onlyOwner: true,
         },
       })
@@ -129,7 +133,8 @@ describe('HousecatPool: rebalance', () => {
           maxSlippage: 0.5e8,
           maxCumulativeSlippage: 1e6,
           cumulativeSlippagePeriodSeconds: 60,
-          tradeTax: 0,
+          reward: 0,
+          protocolTax: 0,
           onlyOwner: true,
         },
       })
@@ -168,7 +173,8 @@ describe('HousecatPool: rebalance', () => {
           maxSlippage: 0.5e8,
           maxCumulativeSlippage: 12e6,
           cumulativeSlippagePeriodSeconds: 60 * 60 * 24 * 60, // 60 days
-          tradeTax: 0,
+          reward: 0,
+          protocolTax: 0,
           onlyOwner: true,
         },
       })
@@ -256,7 +262,8 @@ describe('HousecatPool: rebalance', () => {
           maxSlippage: 1e6,
           maxCumulativeSlippage: 3e6,
           cumulativeSlippagePeriodSeconds: 0,
-          tradeTax: 0,
+          reward: 0,
+          protocolTax: 0,
           onlyOwner: true,
         },
       })
@@ -282,9 +289,9 @@ describe('HousecatPool: rebalance', () => {
     })
   })
 
-  describe('trade tax', () => {
-    it('should collect trade tax to treasury based on how much the weight difference decreased on rebalance', async () => {
-      const [signer, mirrored, treasury] = await ethers.getSigners()
+  describe('rebalance reward', () => {
+    it('should collect reward based on how much the weight difference decreased on rebalance', async () => {
+      const [signer, mirrored, treasury, rebalancer] = await ethers.getSigners()
       const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
         signer,
         mirrored,
@@ -296,8 +303,9 @@ describe('HousecatPool: rebalance', () => {
           maxSlippage: 1e6,
           maxCumulativeSlippage: 3e6,
           cumulativeSlippagePeriodSeconds: 0,
-          tradeTax: 0.25e6, // 0.25%
-          onlyOwner: true,
+          reward: 0.25e6, // 0.25%
+          protocolTax: 25e6, // 25%
+          onlyOwner: false,
         },
       })
 
@@ -306,7 +314,7 @@ describe('HousecatPool: rebalance', () => {
 
       // rebalance
       const before = await pool.getWeightDifference()
-      await pool.connect(signer).rebalance([
+      await pool.connect(rebalancer).rebalance([
         {
           adapter: adapters.uniswapV2Adapter.address,
           data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
@@ -319,17 +327,20 @@ describe('HousecatPool: rebalance', () => {
       ])
       const after = await pool.getWeightDifference()
       const change = before.sub(after)
-      const taxAmount = parseEther('1')
+      const rewardAmount = parseEther('1')
         .mul(change)
         .mul(25)
         .div(10000)
         .div(await pool.getPercent100())
-      expect(taxAmount).gt(0)
-      expect(await pool.balanceOf(treasury.address)).eq(taxAmount)
+      const amountTax = rewardAmount.mul(25).div(100)
+      const amountBeneficiary = rewardAmount.mul(75).div(100)
+
+      expect(await pool.balanceOf(treasury.address)).eq(amountTax)
+      expect(await pool.balanceOf(rebalancer.address)).eq(amountBeneficiary)
     })
 
-    it('should emit TradeTaxCollected event', async () => {
-      const [signer, mirrored, treasury] = (await ethers.getSigners()).slice(10)
+    it('should emit RebalanceRewardCollected event', async () => {
+      const [signer, mirrored, treasury, rebalancer] = (await ethers.getSigners()).slice(10)
       const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
         signer,
         mirrored,
@@ -341,8 +352,9 @@ describe('HousecatPool: rebalance', () => {
           maxSlippage: 1e6,
           maxCumulativeSlippage: 3e6,
           cumulativeSlippagePeriodSeconds: 0,
-          tradeTax: 0.25e6, // 0.25%
-          onlyOwner: true,
+          reward: 0.25e6, // 0.25%
+          protocolTax: 25e6, // 25%
+          onlyOwner: false,
         },
       })
 
@@ -350,7 +362,7 @@ describe('HousecatPool: rebalance', () => {
       await deposit(pool, adapters, signer, parseEther('1'))
 
       // rebalance
-      const tx = await pool.connect(signer).rebalance([
+      const tx = await pool.connect(rebalancer).rebalance([
         {
           adapter: adapters.uniswapV2Adapter.address,
           data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
@@ -361,9 +373,103 @@ describe('HousecatPool: rebalance', () => {
           ]),
         },
       ])
-      await expect(tx)
-        .emit(pool, 'TradeTaxCollected')
-        .withArgs(await pool.balanceOf(treasury.address))
+      const amountTax = await pool.balanceOf(treasury.address)
+      const amountBeneficiary = await pool.balanceOf(rebalancer.address)
+      await expect(tx).emit(pool, 'RebalanceRewardCollected').withArgs(amountBeneficiary, amountTax)
+    })
+
+    it('should forward all rewards to treasury if protocolTax is 100%', async () => {
+      const [signer, mirrored, treasury, rebalancer] = await ethers.getSigners()
+      const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        treasury,
+        weth: { price: '1', amountToMirrored: '0' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        rebalanceSettings: {
+          minSecondsBetweenRebalances: 60,
+          maxSlippage: 1e6,
+          maxCumulativeSlippage: 3e6,
+          cumulativeSlippagePeriodSeconds: 0,
+          reward: 0.25e6, // 0.25%
+          protocolTax: 100e6, // 100%
+          onlyOwner: false,
+        },
+      })
+
+      // initial deposit
+      await deposit(pool, adapters, signer, parseEther('1'))
+
+      // rebalance
+      const before = await pool.getWeightDifference()
+      await pool.connect(rebalancer).rebalance([
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('1'),
+            1,
+          ]),
+        },
+      ])
+      const after = await pool.getWeightDifference()
+      const change = before.sub(after)
+      const rewardAmount = parseEther('1')
+        .mul(change)
+        .mul(25)
+        .div(10000)
+        .div(await pool.getPercent100())
+
+      expect(await pool.balanceOf(treasury.address)).eq(rewardAmount)
+      expect(await pool.balanceOf(rebalancer.address)).eq(0)
+    })
+
+    it('should forward all rewards to beneficiary if protocolTax is 0%', async () => {
+      const [signer, mirrored, treasury, rebalancer] = await ethers.getSigners()
+      const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        treasury,
+        weth: { price: '1', amountToMirrored: '0' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        rebalanceSettings: {
+          minSecondsBetweenRebalances: 60,
+          maxSlippage: 1e6,
+          maxCumulativeSlippage: 3e6,
+          cumulativeSlippagePeriodSeconds: 0,
+          reward: 0.25e6, // 0.25%
+          protocolTax: 0,
+          onlyOwner: false,
+        },
+      })
+
+      // initial deposit
+      await deposit(pool, adapters, signer, parseEther('1'))
+
+      // rebalance
+      const before = await pool.getWeightDifference()
+      await pool.connect(rebalancer).rebalance([
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('1'),
+            1,
+          ]),
+        },
+      ])
+      const after = await pool.getWeightDifference()
+      const change = before.sub(after)
+      const rewardAmount = parseEther('1')
+        .mul(change)
+        .mul(25)
+        .div(10000)
+        .div(await pool.getPercent100())
+
+      expect(await pool.balanceOf(treasury.address)).eq(0)
+      expect(await pool.balanceOf(rebalancer.address)).eq(rewardAmount)
     })
   })
 })

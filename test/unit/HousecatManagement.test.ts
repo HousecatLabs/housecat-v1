@@ -335,7 +335,8 @@ describe('HousecatManagement', () => {
   describe('updateRebalanceSettings', () => {
     const percent100 = BigNumber.from((1e8).toString())
     const validRebalanceSettings = {
-      tradeTax: percent100.mul(50).div(10000),
+      reward: percent100.mul(50).div(10000),
+      protocolTax: percent100.div(4),
       maxSlippage: percent100.div(100),
       maxCumulativeSlippage: 3e6,
       cumulativeSlippagePeriodSeconds: 0,
@@ -349,7 +350,8 @@ describe('HousecatManagement', () => {
       const mgmt = await deployManagement(signer, signer.address, weth.address)
       await mgmt.connect(signer).updateRebalanceSettings(validRebalanceSettings)
       const newSettings = await mgmt.getRebalanceSettings()
-      expect(newSettings.tradeTax).equal(validRebalanceSettings.tradeTax)
+      expect(newSettings.reward).equal(validRebalanceSettings.reward)
+      expect(newSettings.protocolTax).equal(validRebalanceSettings.protocolTax)
     })
 
     it('should emit UpdateRebalanceSettings event', async () => {
@@ -379,15 +381,26 @@ describe('HousecatManagement', () => {
       await expect(update).to.revertedWith('maxSlippage > 50%')
     })
 
-    it('should fail if tradeTax is greater than 0.50%', async () => {
+    it('should fail if reward is greater than 0.50%', async () => {
       const [signer] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, signer.address, weth.address)
       const update = mgmt.connect(signer).updateRebalanceSettings({
         ...validRebalanceSettings,
-        tradeTax: percent100.mul(50).div(10000).add(1),
+        reward: percent100.mul(50).div(10000).add(1),
       })
-      await expect(update).to.revertedWith('tradeTax > 0.50%')
+      await expect(update).to.revertedWith('reward > 0.50%')
+    })
+
+    it('should fail if protocolTax is greater than 100%', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(signer).updateRebalanceSettings({
+        ...validRebalanceSettings,
+        protocolTax: percent100.add(1),
+      })
+      await expect(update).to.revertedWith('protocolTax > 100%')
     })
   })
 
