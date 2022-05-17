@@ -287,4 +287,12 @@ describe('HousecatPool: deposit', () => {
     await expect(deposit1).emit(pool, 'PerformanceFeeHighWatermarkUpdated').withArgs(amount1)
     await expect(deposit2).emit(pool, 'PerformanceFeeHighWatermarkUpdated').withArgs(amount1.add(amount2))
   })
+
+  it('should fail if pool is suspended', async () => {
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool } = await mockHousecatAndPool({ signer, mirrored })
+    await pool.connect(signer).setSuspended(true)
+    const tx = pool.deposit(signer.address, [])
+    await expect(tx).revertedWith('HousecatPool: suspended')
+  })
 })
