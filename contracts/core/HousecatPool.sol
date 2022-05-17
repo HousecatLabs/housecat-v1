@@ -21,6 +21,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   HousecatFactory public factory;
   HousecatManagement public management;
   address public mirrored;
+  bool public suspended;
   string private tokenName;
   string private tokenSymbol;
   bool private initialized;
@@ -58,6 +59,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     factory = HousecatFactory(payable(_factory));
     management = HousecatManagement(_management);
     mirrored = _mirrored;
+    suspended = false;
     tokenName = 'Housecat Pool Position';
     tokenSymbol = 'HCAT-PP';
     rebalanceCheckpoint = 0;
@@ -123,6 +125,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function deposit(address _to, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
+    require(!suspended, 'HousecatPool: suspended');
+
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
 
@@ -191,6 +195,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   }
 
   function rebalance(address _rewardsTo, PoolTransaction[] calldata _transactions) external whenNotPaused {
+    require(!suspended, 'HousecatPool: suspended');
+
     RebalanceSettings memory settings = management.getRebalanceSettings();
     require(!_isRebalanceLocked(settings), 'HousecatPool: rebalance locked');
     if (settings.onlyOwner) {
@@ -219,6 +225,10 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     rebalanceCheckpoint = block.timestamp;
     emit RebalancePool();
+  }
+
+  function setSuspended(bool _value) external onlyOwner {
+    suspended = _value;
   }
 
   function _getAssetData() private view returns (TokenData memory) {

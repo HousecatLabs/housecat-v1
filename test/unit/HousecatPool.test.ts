@@ -42,4 +42,20 @@ describe('HousecatPool', () => {
       balances1.slice(2).forEach((x) => expect(x).equal(0))
     })
   })
+
+  describe('setSuspended', () => {
+    it('only owner allowed to call', async () => {
+      const [signer, mirrored, otherUser] = await ethers.getSigners()
+      const { pool } = await mockHousecatAndPool({ signer, mirrored })
+      const tx = pool.connect(otherUser).setSuspended(true)
+      await expect(tx).revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('sets the suspended value', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const { pool } = await mockHousecatAndPool({ signer, mirrored })
+      await pool.connect(signer).setSuspended(true)
+      expect(await pool.suspended()).eq(true)
+    })
+  })
 })

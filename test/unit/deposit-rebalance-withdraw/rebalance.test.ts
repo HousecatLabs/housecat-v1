@@ -101,6 +101,14 @@ describe('HousecatPool: rebalance', () => {
     await expect(rebalance).revertedWith('HousecatPool: weight diff increased')
   })
 
+  it('should fail if pool is suspended', async () => {
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool } = await mockHousecatAndPool({ signer, mirrored })
+    await pool.connect(signer).setSuspended(true)
+    const tx = pool.rebalance(signer.address, [])
+    await expect(tx).revertedWith('HousecatPool: suspended')
+  })
+
   describe('slippage limits', () => {
     it('should fail to exceed slippage limit', async () => {
       const [signer, mirrored] = await ethers.getSigners()
