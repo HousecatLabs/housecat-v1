@@ -90,14 +90,14 @@ export const deposit = async (
 
 export const rebalance = async (
   pool: HousecatPool,
-  manager: SignerWithAddress,
+  owner: SignerWithAddress,
   adapters: IAdapters,
   amm: IUniswapV2Router02,
   weth: ITokenWithPriceFeed,
   assets: ITokenWithPriceFeed[]
 ) => {
   const transactions = await getRebalanceTxs(pool, amm, weth, assets, adapters.uniswapV2Adapter, 0)
-  return pool.connect(manager).rebalance(transactions)
+  return pool.connect(owner).rebalance(owner.address, transactions)
 }
 
 export const withdraw = async (

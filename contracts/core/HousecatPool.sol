@@ -190,7 +190,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     emit WithdrawFromPool(amountBurn, withdrawValue, msg.sender);
   }
 
-  function rebalance(PoolTransaction[] calldata _transactions) external whenNotPaused {
+  function rebalance(address _rewardsTo, PoolTransaction[] calldata _transactions) external whenNotPaused {
     RebalanceSettings memory settings = management.getRebalanceSettings();
     require(!_isRebalanceLocked(settings), 'HousecatPool: rebalance locked');
     if (settings.onlyOwner) {
@@ -215,7 +215,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     _validateWeightDifference(poolStateBefore, poolStateAfter);
 
     // mint trade tax based on how much the weight difference reduced
-    _collectRebalanceReward(settings, poolStateBefore, poolStateAfter, msg.sender);
+    _collectRebalanceReward(settings, poolStateBefore, poolStateAfter, _rewardsTo);
 
     rebalanceCheckpoint = block.timestamp;
     emit RebalancePool();
@@ -420,11 +420,13 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     if (_after.weightDifference < _before.weightDifference) {
       uint change = _before.weightDifference.sub(_after.weightDifference);
       uint rewardAmount = totalSupply().mul(change).mul(_settings.reward).div(PERCENT_100**2);
-      uint amountToTreasury = rewardAmount.mul(_settings.protocolTax).div(PERCENT_100);
-      uint amountToBeneficiary = rewardAmount.sub(amountToTreasury);
-      _mint(management.treasury(), amountToTreasury);
-      _mint(_beneficiary, amountToBeneficiary);
-      emit RebalanceRewardCollected(amountToBeneficiary, amountToTreasury);
+      if (rewardAmount > 0) {
+        uint amountToTreasury = rewardAmount.mul(_settings.protocolTax).div(PERCENT_100);
+        uint amountToBeneficiary = rewardAmount.sub(amountToTreasury);
+        _mint(management.treasury(), amountToTreasury);
+        _mint(_beneficiary, amountToBeneficiary);
+        emit RebalanceRewardCollected(amountToBeneficiary, amountToTreasury);
+      }
     }
   }
 }

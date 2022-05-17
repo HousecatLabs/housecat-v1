@@ -29,7 +29,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
       maxSlippage: SafeCast.toUint32(PERCENT_100.div(100)),
       maxCumulativeSlippage: SafeCast.toUint32(PERCENT_100.mul(3).div(100)),
       cumulativeSlippagePeriodSeconds: 60 * 60 * 24 * 7,
-      minSecondsBetweenRebalances: 30,
+      minSecondsBetweenRebalances: 60 * 15,
       onlyOwner: true
     });
 
