@@ -79,8 +79,26 @@ describe('HousecatPool: rebalance', () => {
     await expect(rebalance).emit(pool, 'RebalancePool')
   })
 
-  it('TODO: should fail to increase the weight difference', () => {
-    // TODO
+  it('TODO: should fail to increase the weight difference', async () => {
+    const [signer, mirrored, mirrorer] = await ethers.getSigners()
+    const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool({ signer, mirrored })
+
+    // initial deposit
+    await deposit(pool, adapters, mirrorer, parseEther('5'))
+
+    // try to trade weth -> asset0
+    const rebalance = pool.connect(signer).rebalance(signer.address, [
+      {
+        adapter: adapters.uniswapV2Adapter.address,
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+          amm.address,
+          [weth.token.address, assets[0].token.address],
+          parseEther('2'),
+          1,
+        ]),
+      },
+    ])
+    await expect(rebalance).revertedWith('HousecatPool: weight diff increased')
   })
 
   describe('slippage limits', () => {
