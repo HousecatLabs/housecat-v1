@@ -50,10 +50,14 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
   event SetAdapter(address adapter, bool enabled);
+  event SetIntegration(address integration, bool enabled);
+  event SetSupportedAssets(address[] _tokens);
+  event SetSupportedLoans(address[] _tokens);
   event UpdateMirrorSettings(MirrorSettings mirrorSettings);
   event UpdateRebalanceSettings(RebalanceSettings rebalanceSettings);
   event UpdateManagementFee(FeeSettings managementFee);
   event UpdatePerformanceFee(FeeSettings performanceFee);
+  event SetTokenMeta(address token, TokenMeta _tokenMeta);
 
   constructor(address _treasury, address _weth) {
     treasury = _treasury;
@@ -155,10 +159,12 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   function setSupportedAssets(address[] memory _tokens) external onlyOwner {
     supportedAssets = _tokens;
+    emit SetSupportedAssets(_tokens);
   }
 
   function setSupportedLoans(address[] memory _tokens) external onlyOwner {
     supportedLoans = _tokens;
+    emit SetSupportedLoans(_tokens);
   }
 
   function setTokenMeta(address _token, TokenMeta memory _tokenMeta) external onlyOwner {
@@ -174,6 +180,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   function setSupportedIntegration(address _integration, bool _value) external onlyOwner {
     supportedIntegrations[_integration] = _value;
+    emit SetIntegration(_integration, _value);
   }
 
   function updateMirrorSettings(MirrorSettings memory _mirrorSettings) external onlyOwner {
@@ -201,8 +208,9 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   }
 
   function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) private {
-    require(_token != address(0));
+    require(_token != address(0), 'HousecatManagement: zero address');
     tokenMeta[_token] = _tokenMeta;
+    emit SetTokenMeta(_token, _tokenMeta);
   }
 
   function _validateMirrorSettings(MirrorSettings memory _settings) internal pure {

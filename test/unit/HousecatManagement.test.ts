@@ -144,6 +144,46 @@ describe('HousecatManagement', () => {
       await mgmt.connect(signer).setSupportedAssets([weth.address])
       expect(await mgmt.getSupportedAssets()).have.members([weth.address])
     })
+
+    it('emits SetSupportedAssets event', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
+      const tx = mgmt.connect(signer).setSupportedAssets([weth.address, otherToken.address])
+      await expect(tx).emit(mgmt, 'SetSupportedAssets').withArgs([weth.address, otherToken.address])
+    })
+  })
+
+  describe('setSupportedLoans', () => {
+    it('only owner allowed to call', async () => {
+      const [signer, treasury, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const tx = mgmt.connect(otherUser).setSupportedLoans([weth.address])
+      await expect(tx).revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('should set the list of supported loans if called by the owner', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
+      await mgmt.connect(signer).setSupportedLoans([weth.address, otherToken.address])
+      expect(await mgmt.getSupportedLoans()).have.members([weth.address, otherToken.address])
+
+      await mgmt.connect(signer).setSupportedLoans([weth.address])
+      expect(await mgmt.getSupportedLoans()).have.members([weth.address])
+    })
+
+    it('emits SetSupportedLoans event', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
+      const tx = mgmt.connect(signer).setSupportedLoans([weth.address, otherToken.address])
+      await expect(tx).emit(mgmt, 'SetSupportedLoans').withArgs([weth.address, otherToken.address])
+    })
   })
 
   describe('isAssetSupported', () => {
@@ -192,6 +232,17 @@ describe('HousecatManagement', () => {
       })
       const tokenMeta = await mgmt.getTokenMeta(weth.address)
       expect(tokenMeta.priceFeed).equal(otherAccount.address)
+    })
+
+    it('emits SetTokenMeta event', async () => {
+      const [signer, treasury, otherAccount] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const tx = mgmt.connect(signer).setTokenMeta(weth.address, {
+        priceFeed: otherAccount.address,
+        decimals: 18,
+      })
+      await expect(tx).emit(mgmt, 'SetTokenMeta')
     })
   })
 
@@ -283,6 +334,15 @@ describe('HousecatManagement', () => {
       expect(await mgmt.isIntegrationSupported(weth.address)).equal(false)
       await mgmt.connect(signer).setSupportedIntegration(weth.address, true)
       expect(await mgmt.isIntegrationSupported(weth.address)).equal(true)
+    })
+
+    it('emits SetIntegration event', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      expect(await mgmt.isIntegrationSupported(weth.address)).equal(false)
+      const tx = mgmt.connect(signer).setSupportedIntegration(weth.address, true)
+      await expect(tx).emit(mgmt, 'SetIntegration').withArgs(weth.address, true)
     })
   })
 
