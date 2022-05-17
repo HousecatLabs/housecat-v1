@@ -39,7 +39,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(owner).rebalance([
+      const tx = mock.pool.connect(owner).rebalance(owner.address, [
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeWethToToken0,
@@ -61,7 +61,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      const tx = mock.pool.connect(owner).rebalance([
+      const tx = mock.pool.connect(owner).rebalance(owner.address, [
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeWethToUnsupportedToken,
@@ -81,7 +81,7 @@ describe('UniswapV2Adapter', () => {
         parseEther('1'),
         1,
       ])
-      await mock.pool.connect(owner).rebalance([
+      await mock.pool.connect(owner).rebalance(owner.address, [
         {
           adapter: mock.adapters.uniswapV2Adapter.address,
           data: tradeWethToAsset0,
