@@ -79,7 +79,7 @@ describe('HousecatPool: rebalance', () => {
     await expect(rebalance).emit(pool, 'RebalancePool')
   })
 
-  it('TODO: should fail to increase the weight difference', async () => {
+  it('should fail to increase the weight difference', async () => {
     const [signer, mirrored, mirrorer] = await ethers.getSigners()
     const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool({ signer, mirrored })
 
