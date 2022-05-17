@@ -112,6 +112,19 @@ describe('HousecatFactory', () => {
       const createSecond = factory.connect(mirrorer).createPool(mirrored.address, [])
       await expect(createSecond).revertedWith('HousecatFactory: already mirrored')
     })
+
+    it('should fail to create a pool that mirrors another pool', async () => {
+      const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
+      const { factory } = await deployHousecat({
+        signer,
+        treasury: treasury.address,
+        weth: ethers.constants.AddressZero,
+      })
+      await factory.connect(mirrorer).createPool(mirrored.address, [])
+      const poolAddress = await factory.getPoolByMirrored(mirrored.address)
+      const createSecond = factory.connect(mirrorer).createPool(poolAddress, [])
+      await expect(createSecond).revertedWith('HousecatFactory: mirrored is pool')
+    })
   })
 
   describe('updateUserSettings', () => {
