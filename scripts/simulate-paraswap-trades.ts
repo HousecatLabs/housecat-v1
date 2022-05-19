@@ -1,13 +1,14 @@
 import { ethers } from 'hardhat'
 import { deployHousecat, IAdapters, IHousecat } from '../utils/deploy-contracts'
 import polygon from '../utils/addresses/polygon'
-import buildSwap from '../test/utils/paraswap'
+import buildSwap from '../utils/paraswap'
 import { parseEther } from 'ethers/lib/utils'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { HousecatManagement, HousecatPool } from '../typechain-types'
 import { BigNumber, Transaction } from 'ethers'
 import { expect } from 'chai'
-import { resolveBuyAmounts, resolveSellAmounts } from '../test/utils/resolve-trade-amounts'
+import resolveBuyAmounts from '../utils/pool-transaction-utils/resolve-buy-amounts'
+import resolveSellAmounts from '../utils/pool-transaction-utils/resolve-sell-amounts'
 
 const buyWeth = async (signer: SignerWithAddress, weth: string, amount: BigNumber) => {
   const token = await ethers.getContractAt('IWETH', weth)

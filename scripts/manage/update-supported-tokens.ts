@@ -1,20 +1,19 @@
 import { ethers } from 'hardhat'
-import polygon from '../utils/addresses/polygon'
+import polygon from '../../utils/addresses/polygon'
+import getDeployment from '../../utils/get-deployment'
 
 const gasPrice = ethers.utils.parseUnits('50', 'gwei')
 
-const mgmtAddress = '0xca8284CD96C93B317C9ABFB6f91d627CCb8B8118'
-
 const main = async () => {
+  const deployment = getDeployment()
   const [owner] = await ethers.getSigners()
-
   const assets = Object.values(polygon.assets).map((x) => x.addr)
   const assetsMeta = Object.values(polygon.assets).map((x) => ({
     decimals: x.decimals,
     priceFeed: x.priceFeed,
   }))
 
-  const mgmt = await ethers.getContractAt('HousecatManagement', mgmtAddress)
+  const mgmt = await ethers.getContractAt('HousecatManagement', deployment.addresses.HousecatManagement)
   await (await mgmt.connect(owner).setSupportedAssets(assets, { gasPrice })).wait()
   console.log('supported assets updated')
 
