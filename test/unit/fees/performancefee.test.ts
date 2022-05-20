@@ -86,8 +86,8 @@ describe('HousecatPool: performance fee', () => {
 
       expect(await pool.getAccruedPerformanceFee()).not.equal(0)
 
-      // withdraw 1 ether => accrued amount resets
-      await withdraw(pool, adapters, mirrorer, parseEther('1'))
+      // withdraw 0.9 ether => accrued amount resets
+      await withdraw(pool, adapters, mirrorer, parseEther('0.9'))
 
       // get fee  amount right after withdrawal
       const accruedFee = await pool.getAccruedPerformanceFee()

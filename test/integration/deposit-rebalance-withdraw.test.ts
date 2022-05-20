@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { formatEther, formatUnits, parseEther } from 'ethers/lib/utils'
+import { formatEther, formatUnits, parseEther, parseUnits } from 'ethers/lib/utils'
 import mockHousecatAndPool, { IMockHousecatAndPool } from '../utils/mock-housecat-and-pool'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber, BigNumberish } from 'ethers'
@@ -8,6 +8,7 @@ import { ITokenWithPriceFeed } from '../../utils/mock-defi'
 import { IAdapters } from '../../utils/deploy-contracts'
 import { expect } from 'chai'
 import { PoolTransactionStruct } from '../../typechain-types/HousecatFactory'
+import { HOURS, increaseTime } from '../../utils/evm'
 
 const getTrade = async (
   tokenIn: string,
@@ -107,17 +108,19 @@ export const withdraw = async (
   amm: IUniswapV2Router02,
   weth: ITokenWithPriceFeed,
   tokens: ITokenWithPriceFeed[],
-  amountWithdraw: BigNumber
+  withdrawPercentage: BigNumber
 ) => {
-  const figures = await pool.getPoolContent()
+  const content = await pool.getPoolContent()
   const percent100 = await pool.getPercent100()
-  const withdrawPercentage = amountWithdraw.mul(percent100).div(figures.assetValue)
+  const balance = await pool.balanceOf(withdrawer.address)
+  const totalSupply = await pool.totalSupply()
+  const accruedFees = (await pool.getAccruedManagementFee()).add(await pool.getAccruedPerformanceFee())
   const sellTokenTxs = [weth, ...tokens].map((token, idx) => ({
     adapter: adapters.uniswapV2Adapter.address,
     data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
       amm.address,
       [token.token.address, weth.token.address],
-      figures.assetBalances[idx].mul(withdrawPercentage).div(percent100),
+      content.assetBalances[idx].mul(withdrawPercentage).mul(balance).div(totalSupply.add(accruedFees)).div(percent100),
       1,
     ]),
   }))
@@ -144,6 +147,16 @@ describe('integration: deposit-rebalance-withdraw', () => {
         { price: '2', reserveToken: '5000', reserveWeth: '10000' },
         { price: '0.5', reserveToken: '20000', reserveWeth: '10000' },
       ],
+      managementFee: {
+        defaultFee: parseUnits('1', 8).div(100),
+        maxFee: parseUnits('1', 8),
+        protocolTax: parseUnits('1', 8).div(4),
+      },
+      performanceFee: {
+        defaultFee: parseUnits('1', 8).div(10),
+        maxFee: parseUnits('1', 8),
+        protocolTax: parseUnits('1', 8).div(4),
+      },
     })
   })
 
@@ -187,7 +200,7 @@ describe('integration: deposit-rebalance-withdraw', () => {
       )
     })
 
-    it('manager should be able to rebalance', async () => {
+    it('owner should be able to rebalance', async () => {
       const { pool, adapters, amm, weth, assets } = mock
       await rebalance(pool, owner, adapters, amm, weth, assets)
     })
@@ -245,7 +258,7 @@ describe('integration: deposit-rebalance-withdraw', () => {
     })
   })
 
-  describe('mirrorer2 withdraws 5 ETH', () => {
+  describe('mirrorer2 withdraws 50 % (~5 ETH)', () => {
     let mirrorerBalanceBefore: BigNumber
     let poolValueBefore: BigNumber
 
@@ -253,19 +266,20 @@ describe('integration: deposit-rebalance-withdraw', () => {
       const { pool, adapters, amm, weth, assets } = mock
       mirrorerBalanceBefore = await mirrorer2.getBalance()
       poolValueBefore = (await mock.pool.getPoolContent()).assetValue
-      await withdraw(pool, mirrorer2, adapters, amm, weth, assets, parseEther('5'))
+      const percent100 = await pool.getPercent100()
+      await withdraw(pool, mirrorer2, adapters, amm, weth, assets, percent100.div(2))
     })
 
     it('mirrorer2 should receive ~5 ETH', async () => {
       const balance = await mirrorer2.getBalance()
       const balanceAdded = parseFloat(formatEther(balance.sub(mirrorerBalanceBefore)))
-      expect(balanceAdded).approximately(5.0, 0.01)
+      expect(balanceAdded).approximately(5.0, 0.05)
     })
 
     it('pool value should decrease by the withdrawn value plus trade fees', async () => {
       const poolValue = (await mock.pool.getPoolContent()).assetValue
       const change = parseFloat(formatEther(poolValueBefore.sub(poolValue)))
-      expect(change).approximately(5, 0.01)
+      expect(change).approximately(5, 0.05)
     })
 
     it('pool weights should not change (should still be balanced with the mirrored)', async () => {
@@ -282,6 +296,33 @@ describe('integration: deposit-rebalance-withdraw', () => {
       const mirrorerBalance = parseFloat(formatEther(await mock.pool.balanceOf(mirrorer2.address)))
       const share = mirrorerBalance / totalSupply
       expect(share).approximately(1 / 3, 0.01)
+    })
+  })
+
+  describe('accrue fees, withdraw all and deposit again', () => {
+    it('management fee should accrue', async () => {
+      await increaseTime(HOURS * 24)
+      const { pool } = mock
+      expect(await pool.getAccruedManagementFee()).gt(0)
+    })
+
+    it('mirrorer1 should be able to withdraw all', async () => {
+      const { pool, adapters, amm, weth, assets } = mock
+      const percent100 = await pool.getPercent100()
+      await withdraw(pool, mirrorer1, adapters, amm, weth, assets, percent100.mul(9999).div(10000))
+      expect(await pool.balanceOf(mirrorer1.address)).equal(0)
+    })
+
+    it('mirrorer2 should be able to withdraw all', async () => {
+      const { pool, adapters, amm, weth, assets } = mock
+      const percent100 = await pool.getPercent100()
+      await withdraw(pool, mirrorer2, adapters, amm, weth, assets, percent100.mul(9999).div(10000))
+      expect(await pool.balanceOf(mirrorer2.address)).equal(0)
+    })
+
+    it('mirrorer1 should be able to deposit to the emptied pool', async () => {
+      const { pool, adapters, amm, weth, assets } = mock
+      await deposit(pool, mirrorer2, adapters, amm, weth, assets, parseEther('10'))
     })
   })
 })
