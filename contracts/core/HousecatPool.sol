@@ -166,15 +166,15 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // require weight difference did not increase
     _validateWeightDifference(poolStateBefore, poolStateAfter);
 
-    uint withdrawValue = poolStateBefore.netValue.sub(poolStateAfter.netValue);
+    // settle accrued fees
+    _settleFees(poolStateBefore.netValue);
 
+    uint withdrawValue = poolStateBefore.netValue.sub(poolStateAfter.netValue);
+    
     // require withdraw value does not exceed what the withdtawer owns
     uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
     uint maxWithdrawValue = poolStateBefore.netValue.mul(shareInPool).div(PERCENT_100);
     require(maxWithdrawValue >= withdrawValue, 'HousecatPool: balance exceeded');
-
-    // settle accrued fees
-    _settleFees(poolStateBefore.netValue);
 
     // reduce withdraw value from performance fee high watermark
     _updatePerformanceFeeHighWatermark(performanceFeeHighWatermark.sub(withdrawValue));
