@@ -170,7 +170,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     _settleFees(poolStateBefore.netValue);
 
     uint withdrawValue = poolStateBefore.netValue.sub(poolStateAfter.netValue);
-    
+
     // require withdraw value does not exceed what the withdtawer owns
     uint shareInPool = this.balanceOf(msg.sender).mul(PERCENT_100).div(totalSupply());
     uint maxWithdrawValue = poolStateBefore.netValue.mul(shareInPool).div(PERCENT_100);

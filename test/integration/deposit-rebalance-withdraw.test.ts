@@ -156,7 +156,7 @@ describe('integration: deposit-rebalance-withdraw', () => {
         defaultFee: parseUnits('1', 8).div(10),
         maxFee: parseUnits('1', 8),
         protocolTax: parseUnits('1', 8).div(4),
-      }
+      },
     })
   })
 
