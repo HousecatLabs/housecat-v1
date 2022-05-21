@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
+import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 import {UserSettings, PoolTransaction, MirrorSettings, RebalanceSettings, WalletContent, TokenData, TokenMeta} from './structs.sol';
 import {HousecatQueries} from './HousecatQueries.sol';
 import {HousecatFactory} from './HousecatFactory.sol';
@@ -52,7 +53,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     address _owner,
     address _factory,
     address _management,
-    address _mirrored
+    address _mirrored,
+    uint _poolIdx
   ) external {
     require(!initialized, 'HousecatPool: already initialized');
     _transferOwnership(_owner);
@@ -60,7 +62,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     management = HousecatManagement(_management);
     mirrored = _mirrored;
     suspended = false;
-    tokenName = 'Housecat Pool Position';
+    tokenName = string(abi.encodePacked('Housecat Pool ', Strings.toString(_poolIdx)));
     tokenSymbol = 'HCAT-PP';
     rebalanceCheckpoint = 0;
     cumulativeSlippage = 0;

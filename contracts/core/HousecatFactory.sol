@@ -39,7 +39,7 @@ contract HousecatFactory {
     address poolAddress = Clones.clone(poolTemplateContract);
     HousecatPool pool = HousecatPool(payable(poolAddress));
     HousecatManagement mgmt = HousecatManagement(managementContract);
-    pool.initialize(mgmt.owner(), address(this), managementContract, _mirrored); // in the future make pools ownerless
+    pool.initialize(mgmt.owner(), address(this), managementContract, _mirrored, pools.length + 1);
     pools.push(poolAddress);
     mirroredPool[_mirrored] = poolAddress;
     isPool[poolAddress] = true;

@@ -38,7 +38,7 @@ describe('HousecatFactory', () => {
       expect(await instance.mirrored()).equal(mirrored.address)
 
       // name and symbol
-      expect(await instance.name()).equal('Housecat Pool Position')
+      expect(await instance.name()).equal('Housecat Pool 1')
       expect(await instance.symbol()).equal('HCAT-PP')
     })
 
@@ -97,7 +97,7 @@ describe('HousecatFactory', () => {
       await factory.connect(mirrorer).createPool(mirrored.address, [])
       const [poolAddress] = await factory.getPools(0, 1)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
-      const init = instance.initialize(otherUser.address, factory.address, mgmt.address, mirrored.address)
+      const init = instance.initialize(otherUser.address, factory.address, mgmt.address, mirrored.address, 0)
       await expect(init).revertedWith('HousecatPool: already initialized')
     })
 
@@ -307,7 +307,7 @@ describe('HousecatFactory', () => {
     await factory.connect(mirrorer).createPool(mirrored.address, [])
     const [poolAddress] = await factory.getPools(0, 1)
     const instance = await ethers.getContractAt('HousecatPool', poolAddress)
-    const init = instance.initialize(otherUser.address, factory.address, mgmt.address, mirrored.address)
+    const init = instance.initialize(otherUser.address, factory.address, mgmt.address, mirrored.address, 0)
     await expect(init).revertedWith('HousecatPool: already initialized')
   })
 })
