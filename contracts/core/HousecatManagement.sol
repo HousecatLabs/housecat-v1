@@ -126,6 +126,9 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   function isAssetSupported(address _token) external view returns (bool) {
     for (uint i = 0; i < supportedAssets.length; i++) {
       if (supportedAssets[i] == _token) {
+        if (tokenMeta[_token].delisted) {
+          return false;
+        }
         return true;
       }
     }
@@ -135,6 +138,9 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   function isLoanSupported(address _token) external view returns (bool) {
     for (uint i = 0; i < supportedLoans.length; i++) {
       if (supportedLoans[i] == _token) {
+        if (tokenMeta[_token].delisted) {
+          return false;
+        }
         return true;
       }
     }

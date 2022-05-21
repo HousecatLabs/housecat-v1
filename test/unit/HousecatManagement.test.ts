@@ -153,6 +153,14 @@ describe('HousecatManagement', () => {
       const tx = mgmt.connect(signer).setSupportedAssets([weth.address, otherToken.address])
       await expect(tx).emit(mgmt, 'SetSupportedAssets').withArgs([weth.address, otherToken.address])
     })
+
+    it('should reject removing a token if it is held by at least one pool', async () => {
+      // TODO
+    })
+
+    it('should succeed to remove a token from the list if it is not held by any pool', async () => {
+      // TODO
+    })
   })
 
   describe('setSupportedLoans', () => {
@@ -183,6 +191,14 @@ describe('HousecatManagement', () => {
       const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
       const tx = mgmt.connect(signer).setSupportedLoans([weth.address, otherToken.address])
       await expect(tx).emit(mgmt, 'SetSupportedLoans').withArgs([weth.address, otherToken.address])
+    })
+
+    it('should reject removing a token if it is held by at least one pool', async () => {
+      // TODO
+    })
+
+    it('should succeed to remove a token from the list if it is not held by any pool', async () => {
+      // TODO
     })
   })
 
@@ -218,6 +234,7 @@ describe('HousecatManagement', () => {
       const setTokenMeta = mgmt.connect(otherUser).setTokenMeta(weth.address, {
         priceFeed: ethers.constants.AddressZero,
         decimals: 18,
+        delisted: false,
       })
       await expect(setTokenMeta).revertedWith('Ownable: caller is not the owner')
     })
@@ -229,6 +246,7 @@ describe('HousecatManagement', () => {
       await mgmt.connect(signer).setTokenMeta(weth.address, {
         priceFeed: otherAccount.address,
         decimals: 18,
+        delisted: false,
       })
       const tokenMeta = await mgmt.getTokenMeta(weth.address)
       expect(tokenMeta.priceFeed).equal(otherAccount.address)
@@ -241,8 +259,13 @@ describe('HousecatManagement', () => {
       const tx = mgmt.connect(signer).setTokenMeta(weth.address, {
         priceFeed: otherAccount.address,
         decimals: 18,
+        delisted: false,
       })
       await expect(tx).emit(mgmt, 'SetTokenMeta')
+    })
+
+    it('should change mirrored weights but not pool weights if a token held by both is delisted', async () => {
+      // TODO
     })
   })
 
@@ -258,10 +281,12 @@ describe('HousecatManagement', () => {
           {
             priceFeed: ethers.constants.AddressZero,
             decimals: 18,
+            delisted: false,
           },
           {
             priceFeed: ethers.constants.AddressZero,
             decimals: 18,
+            delisted: false,
           },
         ]
       )
@@ -278,10 +303,12 @@ describe('HousecatManagement', () => {
           {
             priceFeed: ethers.constants.AddressZero,
             decimals: 18,
+            delisted: false,
           },
           {
             priceFeed: ethers.constants.AddressZero,
             decimals: 18,
+            delisted: false,
           },
         ]
       )
@@ -301,10 +328,12 @@ describe('HousecatManagement', () => {
           {
             priceFeed: feed1.address,
             decimals: 18,
+            delisted: false,
           },
           {
             priceFeed: feed2.address,
             decimals: 6,
+            delisted: false,
           },
         ]
       )

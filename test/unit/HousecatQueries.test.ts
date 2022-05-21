@@ -118,4 +118,8 @@ describe('HousecatQueries', () => {
       expect(amounts[1]).equal(balances[1])
     })
   })
+
+  describe('getContent', () => {
+    // TODO
+  })
 })

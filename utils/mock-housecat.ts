@@ -43,11 +43,12 @@ export const mockHousecat = async ({
   })
   const assetAddresses = [_weth.token.address, ..._assets.map((x) => x.token.address)]
   const assetsMeta = [
-    { priceFeed: _weth.priceFeed.address, decimals: await _weth.token.decimals() },
+    { priceFeed: _weth.priceFeed.address, decimals: await _weth.token.decimals(), delisted: false },
     ...(await Promise.all(
       _assets.map(async (a) => ({
         priceFeed: a.priceFeed.address,
         decimals: await a.token.decimals(),
+        delisted: false,
       }))
     )),
   ]
@@ -58,6 +59,7 @@ export const mockHousecat = async ({
     _loans.map(async (l) => ({
       priceFeed: l.priceFeed.address,
       decimals: await l.token.decimals(),
+      delisted: false,
     }))
   )
 

@@ -549,4 +549,8 @@ describe('HousecatPool: rebalance', () => {
       expect(await pool.balanceOf(beneficiary.address)).eq(rewardAmount)
     })
   })
+
+  describe('rebalance when a token is delisted', () => {
+    // TODO
+  })
 })

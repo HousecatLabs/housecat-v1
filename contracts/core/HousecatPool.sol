@@ -82,19 +82,23 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   function getPoolContent() public view returns (WalletContent memory) {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
-    return _getContent(address(this), assets, loans);
+    return _getContent(address(this), assets, loans, false);
   }
 
   function getMirroredContent() external view returns (WalletContent memory) {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
-    return _getContent(mirrored, assets, loans);
+    return _getContent(mirrored, assets, loans, true);
   }
 
   function getWeightDifference() external view returns (uint) {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
-    return _getWeightDifference(_getContent(address(this), assets, loans), _getContent(mirrored, assets, loans));
+    return
+      _getWeightDifference(
+        _getContent(address(this), assets, loans, false),
+        _getContent(mirrored, assets, loans, true)
+      );
   }
 
   function getCumulativeSlippage() external view returns (uint, uint) {
@@ -251,8 +255,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     TokenData memory loans = _getLoanData();
 
     // get pool state before
-    WalletContent memory mirroredContent = _getContent(mirrored, assets, loans);
-    WalletContent memory poolContentBefore = _getContent(address(this), assets, loans);
+    WalletContent memory mirroredContent = _getContent(mirrored, assets, loans, true);
+    WalletContent memory poolContentBefore = _getContent(address(this), assets, loans, false);
     uint weightDifferenceBefore = _getWeightDifference(poolContentBefore, mirroredContent);
 
     PoolState memory poolStateBefore = PoolState({
@@ -269,7 +273,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     }
 
     // get pool state after
-    WalletContent memory poolContentAfter = _getContent(address(this), assets, loans);
+    WalletContent memory poolContentAfter = _getContent(address(this), assets, loans, false);
     uint weightDifferenceAfter = _getWeightDifference(poolContentAfter, mirroredContent);
 
     PoolState memory poolStateAfter = PoolState({

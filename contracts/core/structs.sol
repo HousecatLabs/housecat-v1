@@ -31,11 +31,13 @@ struct TokenData {
   address[] tokens;
   uint[] decimals;
   uint[] prices;
+  bool[] delisted;
 }
 
 struct TokenMeta {
   address priceFeed;
   uint8 decimals;
+  bool delisted;
 }
 
 struct UserSettings {

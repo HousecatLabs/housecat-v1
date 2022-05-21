@@ -243,6 +243,7 @@ describe('HousecatPool: deposit', () => {
     await mgmt.setTokenMeta(weth.token.address, {
       priceFeed: newPriceFeed.address,
       decimals: 18,
+      delisted: false,
     })
 
     // second deposit

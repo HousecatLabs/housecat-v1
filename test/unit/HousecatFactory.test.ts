@@ -56,6 +56,7 @@ describe('HousecatFactory', () => {
           {
             decimals: await weth.decimals(),
             priceFeed: wethPriceFeed.address,
+            delisted: false,
           },
         ],
       })
