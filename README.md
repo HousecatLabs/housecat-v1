@@ -35,24 +35,24 @@ npx hardhat run scripts/deploy.ts --network polygon
 Record the contract addresses printed by the deployment script and add the to this `README.md` and change them in the `housecat-ui`
 repository. Deploy new frontend with the new contract addresses.
 
-## Deployed addresses (Polygon mainnet):
+## Deployed addresses:
 
-Date: 17/05/2022
+Version: 8b5a7a1
 
-Version: a4174dd
+```js
+{
+  timestamp: '2022-05-21T07:17:12.778Z',
+  network: 'polygon',
+  addresses: {
+    HousecatManagement: '0xa4d4A77026Cb946B7af2cA23636705B4cb0629Ea',
+    HousecatFactory: '0x53C61bdb9E09A1E3f381b930715eBa3Ac4132c1c',
+    HousecatPool: '0x26E2D629e3B1c267832F87459C4C15F27C3f62e6',
+    HousecatQueries: '0x5A48a447e999F790bb936e65fdc655EFE2FB1B9d',
+    WETHAdapter: '0x654D66Ed7Ec3165213eb6496746033E75216BE22',
+    UniswapV2Adapter: '0x292f5A49B98dE0b85DE8065AB697754F82446ea4',
+    AaveV2Adapter: '0x200903840f30470e89B5a7B428300E4Fe40F6560',
+    ParaswapV5Adapter: '0xd25f0B3b64A61585BBC3151a4f226dbA457f77FF'
+  }
+}
+```
 
-HousecatManagement: `0xD33F03dccE8eCBA7d404225F5d8afa0DF5F4497f`
-
-HousecatFactory: `0x5b2b2d98E6CF04106b018FB90e5cA51ac45d265A`
-
-HousecatPool: `0xDf2820f0Ce3E68Bb01b91Ab542B1931C7a47a5BC`
-
-HousecatQueries: `0x79DbE5caccdDCf45144EA9807f91873E2c146C46`
-
-WETHAdapter: `0x6b0adBd28632D9B0032C32EB00Ba05BE6db15858`
-
-UniswapV2Adapter: `0x4EB21B6592Ba12719E1A418B437dc75183A5C9F4`
-
-AaveV2Adapter: `0x64f8cF2583C415C010955539F3f9A44bb9cd0c2B`
-
-ParaswapV5Adapter: `0x825A57bB7b7e0F6156cFb8099B9a1AAcC0c16eB7`
