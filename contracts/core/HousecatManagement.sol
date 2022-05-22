@@ -124,27 +124,11 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   }
 
   function isAssetSupported(address _token) external view returns (bool) {
-    for (uint i = 0; i < supportedAssets.length; i++) {
-      if (supportedAssets[i] == _token) {
-        if (tokenMeta[_token].delisted) {
-          return false;
-        }
-        return true;
-      }
-    }
-    return false;
+    return _isTokenSupported(_token, supportedAssets);
   }
 
   function isLoanSupported(address _token) external view returns (bool) {
-    for (uint i = 0; i < supportedLoans.length; i++) {
-      if (supportedLoans[i] == _token) {
-        if (tokenMeta[_token].delisted) {
-          return false;
-        }
-        return true;
-      }
-    }
-    return false;
+    return _isTokenSupported(_token, supportedLoans);
   }
 
   function getMirrorSettings() external view returns (MirrorSettings memory) {
@@ -213,17 +197,29 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     emit UpdatePerformanceFee(_performanceFee);
   }
 
+  function _isTokenSupported(address _token, address[] memory _supportedTokens) private view returns (bool) {
+    for (uint i = 0; i < _supportedTokens.length; i++) {
+      if (_supportedTokens[i] == _token) {
+        if (tokenMeta[_token].delisted) {
+          return false;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
   function _setTokenMeta(address _token, TokenMeta memory _tokenMeta) private {
     require(_token != address(0), 'HousecatManagement: zero address');
     tokenMeta[_token] = _tokenMeta;
     emit SetTokenMeta(_token, _tokenMeta);
   }
 
-  function _validateMirrorSettings(MirrorSettings memory _settings) internal pure {
+  function _validateMirrorSettings(MirrorSettings memory _settings) private pure {
     require(_settings.maxWeightDifference <= PERCENT_100, 'maxWeightDifference > 100%');
   }
 
-  function _validateRebalanceSettings(RebalanceSettings memory _settings) internal pure {
+  function _validateRebalanceSettings(RebalanceSettings memory _settings) private pure {
     require(_settings.maxSlippage <= PERCENT_100.div(2), 'maxSlippage > 50%');
     require(_settings.reward <= PERCENT_100.mul(50).div(10000), 'reward > 0.50%');
     require(_settings.protocolTax <= PERCENT_100, 'protocolTax > 100%');
