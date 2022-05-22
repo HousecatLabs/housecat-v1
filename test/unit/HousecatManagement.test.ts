@@ -1,10 +1,8 @@
 import { expect } from 'chai'
 import { BigNumber } from 'ethers'
-import { parseEther } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 import { deployManagement } from '../../utils/deploy-contracts'
 import { mockPriceFeed, mockToken, mockWETH } from '../../utils/mock-defi'
-import mockHousecatAndPool from '../utils/mock-housecat-and-pool'
 
 describe('HousecatManagement', () => {
   describe('public state variables', () => {
