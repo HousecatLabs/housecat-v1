@@ -2,7 +2,8 @@ import { ethers } from 'hardhat'
 import { expect } from 'chai'
 import { BigNumber } from 'ethers'
 import { deployQueries } from '../../utils/deploy-contracts'
-import { mockPriceFeed, mockToken } from '../../utils/mock-defi'
+import { mockAssets, mockLoans, mockPriceFeed, mockToken } from '../../utils/mock-defi'
+import { parseEther } from 'ethers/lib/utils'
 
 describe('HousecatQueries', () => {
   describe('deploy', () => {
@@ -116,6 +117,82 @@ describe('HousecatQueries', () => {
       const amounts = await queries.getTokenAmounts(weights, totalValue, prices, decimals)
       expect(amounts[0]).equal(balances[0])
       expect(amounts[1]).equal(balances[1])
+    })
+  })
+
+  describe('getContent', () => {
+    it('should exclude delisted correctly', async () => {
+      const [signer, account] = await ethers.getSigners()
+      const queries = await deployQueries(signer)
+
+      const [, weth, assets] = await mockAssets({
+        signer,
+        weth: { price: '1' },
+        tokens: [
+          { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+          { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+        ],
+      })
+
+      await weth.token.mint(account.address, parseEther('1'))
+      await assets[0].token.mint(account.address, parseEther('1'))
+      await assets[1].token.mint(account.address, parseEther('1'))
+
+      const loans = await mockLoans({
+        signer,
+        tokens: [{ price: '1' }, { price: '1' }],
+      })
+
+      await loans[0].token.mint(account.address, parseEther('1'))
+      await loans[1].token.mint(account.address, parseEther('1'))
+
+      const assetData = {
+        tokens: [weth.token.address, assets[0].token.address, assets[1].token.address],
+        decimals: [18, 18, 18],
+        prices: [parseEther('1'), parseEther('1'), parseEther('1')],
+        delisted: [false, false, true],
+      }
+
+      const loanData = {
+        tokens: [loans[0].token.address, loans[1].token.address],
+        decimals: [18, 18],
+        prices: [parseEther('1'), parseEther('1')],
+        delisted: [false, true],
+      }
+
+      const percent100 = await queries.getPercent100()
+
+      // content when delisted are not excluded
+      const contentAll = await queries.getContent(account.address, assetData, loanData, false)
+
+      expect(contentAll.assetBalances[0]).eq(parseEther('1'))
+      expect(contentAll.assetBalances[1]).eq(parseEther('1'))
+      expect(contentAll.assetBalances[2]).eq(parseEther('1'))
+      expect(contentAll.loanBalances[0]).eq(parseEther('1'))
+      expect(contentAll.loanBalances[1]).eq(parseEther('1'))
+
+      expect(contentAll.assetWeights[0]).eq(percent100.div(3))
+      expect(contentAll.loanWeights[0]).eq(percent100.div(2))
+
+      expect(contentAll.assetValue).eq(parseEther('3'))
+      expect(contentAll.loanValue).eq(parseEther('2'))
+      expect(contentAll.netValue).eq(parseEther('1'))
+
+      // content when delisted tokens are excluded
+      const contentIgnoreDelisted = await queries.getContent(account.address, assetData, loanData, true)
+
+      expect(contentIgnoreDelisted.assetBalances[0]).eq(parseEther('1'))
+      expect(contentIgnoreDelisted.assetBalances[1]).eq(parseEther('1'))
+      expect(contentIgnoreDelisted.assetBalances[2]).eq(0)
+      expect(contentIgnoreDelisted.loanBalances[0]).eq(parseEther('1'))
+      expect(contentIgnoreDelisted.loanBalances[1]).eq(0)
+
+      expect(contentIgnoreDelisted.assetWeights[0]).eq(percent100.div(2))
+      expect(contentIgnoreDelisted.loanWeights[0]).eq(percent100)
+
+      expect(contentIgnoreDelisted.assetValue).eq(parseEther('2'))
+      expect(contentIgnoreDelisted.loanValue).eq(parseEther('1'))
+      expect(contentIgnoreDelisted.netValue).eq(parseEther('1'))
     })
   })
 })

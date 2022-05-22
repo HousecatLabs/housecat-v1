@@ -65,9 +65,10 @@ contract HousecatQueries is Constants {
   function getContent(
     address _account,
     TokenData memory _assetData,
-    TokenData memory _loanData
+    TokenData memory _loanData,
+    bool _excludeDelisted
   ) external view returns (WalletContent memory) {
-    return _getContent(_account, _assetData, _loanData);
+    return _getContent(_account, _assetData, _loanData, _excludeDelisted);
   }
 
   function _getTokenPrices(address[] memory _priceFeeds) internal view returns (uint[] memory) {
@@ -147,14 +148,24 @@ contract HousecatQueries is Constants {
     return amounts;
   }
 
-  function _mapTokensMeta(TokenMeta[] memory _tokensMeta) internal pure returns (address[] memory, uint[] memory) {
+  function _mapTokensMeta(TokenMeta[] memory _tokensMeta)
+    internal
+    pure
+    returns (
+      address[] memory,
+      uint[] memory,
+      bool[] memory
+    )
+  {
     address[] memory priceFeeds = new address[](_tokensMeta.length);
     uint[] memory decimals = new uint[](_tokensMeta.length);
+    bool[] memory delisted = new bool[](_tokensMeta.length);
     for (uint i; i < _tokensMeta.length; i++) {
       priceFeeds[i] = _tokensMeta[i].priceFeed;
       decimals[i] = _tokensMeta[i].decimals;
+      delisted[i] = _tokensMeta[i].delisted;
     }
-    return (priceFeeds, decimals);
+    return (priceFeeds, decimals, delisted);
   }
 
   function _getTokenData(address[] memory _tokens, TokenMeta[] memory _tokensMeta)
@@ -162,24 +173,56 @@ contract HousecatQueries is Constants {
     view
     returns (TokenData memory)
   {
-    (address[] memory priceFeeds, uint[] memory decimals) = _mapTokensMeta(_tokensMeta);
+    (address[] memory priceFeeds, uint[] memory decimals, bool[] memory delisted) = _mapTokensMeta(_tokensMeta);
     uint[] memory prices = _getTokenPrices(priceFeeds);
-    return TokenData({tokens: _tokens, decimals: decimals, prices: prices});
+    return TokenData({tokens: _tokens, decimals: decimals, prices: prices, delisted: delisted});
+  }
+
+  function _getTokenContent(
+    address _account,
+    TokenData memory _tokenData,
+    bool _excludeDelisted
+  )
+    private
+    view
+    returns (
+      uint[] memory,
+      uint[] memory,
+      uint
+    )
+  {
+    uint[] memory tokenBalances = _getTokenBalances(_account, _tokenData.tokens);
+    if (_excludeDelisted) {
+      for (uint i = 0; i < tokenBalances.length; i++) {
+        if (_tokenData.delisted[i]) {
+          tokenBalances[i] = 0;
+        }
+      }
+    }
+    (uint[] memory tokenWeights, uint tokenValue) = _getTokenWeights(
+      tokenBalances,
+      _tokenData.prices,
+      _tokenData.decimals
+    );
+    return (tokenBalances, tokenWeights, tokenValue);
   }
 
   function _getContent(
     address _account,
     TokenData memory _assetData,
-    TokenData memory _loanData
+    TokenData memory _loanData,
+    bool _excludeDelisted
   ) internal view returns (WalletContent memory) {
-    uint[] memory assetBalances = _getTokenBalances(_account, _assetData.tokens);
-    (uint[] memory assetWeights, uint assetValue) = _getTokenWeights(
-      assetBalances,
-      _assetData.prices,
-      _assetData.decimals
+    (uint[] memory assetBalances, uint[] memory assetWeights, uint assetValue) = _getTokenContent(
+      _account,
+      _assetData,
+      _excludeDelisted
     );
-    uint[] memory loanBalances = _getTokenBalances(_account, _loanData.tokens);
-    (uint[] memory loanWeights, uint loanValue) = _getTokenWeights(loanBalances, _loanData.prices, _loanData.decimals);
+    (uint[] memory loanBalances, uint[] memory loanWeights, uint loanValue) = _getTokenContent(
+      _account,
+      _loanData,
+      _excludeDelisted
+    );
     return
       WalletContent({
         assetBalances: assetBalances,

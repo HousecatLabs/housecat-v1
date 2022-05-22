@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { parseEther, parseUnits } from 'ethers/lib/utils'
+import { formatEther, parseEther, parseUnits } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../../utils/mock-housecat-and-pool'
 import { DAYS, increaseTime } from '../../../utils/evm'
 import { mockPriceFeed } from '../../../utils/mock-defi'
@@ -243,6 +243,7 @@ describe('HousecatPool: deposit', () => {
     await mgmt.setTokenMeta(weth.token.address, {
       priceFeed: newPriceFeed.address,
       decimals: 18,
+      delisted: false,
     })
 
     // second deposit
@@ -294,5 +295,82 @@ describe('HousecatPool: deposit', () => {
     await pool.connect(signer).setSuspended(true)
     const tx = pool.deposit(signer.address, [])
     await expect(tx).revertedWith('HousecatPool: suspended')
+  })
+
+  it('should mint pool tokens correct amount when a token in the pool is delisted', async () => {
+    const [signer, treasury, mirrorer1, mirrorer2, mirrored] = await ethers.getSigners()
+    const { pool, adapters, mgmt, assets, amm, weth } = await mockHousecatAndPool({
+      signer,
+      treasury,
+      mirrored,
+      weth: { price: '1', amountToMirrored: '0' },
+      assets: [
+        { price: '1', reserveToken: '100000', reserveWeth: '100000', amountToMirrored: '10' },
+        { price: '1', reserveToken: '100000', reserveWeth: '100000', amountToMirrored: '10' },
+      ],
+    })
+
+    // deposit 10 ETH by mirrorer 1 (trade WETH to 50/50 Asset0 and Asset1)
+    const amountDeposit = parseEther('10')
+    await pool.connect(mirrorer1).deposit(
+      mirrorer1.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+        },
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            amountDeposit.div(2),
+            1,
+          ]),
+        },
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[1].token.address],
+            amountDeposit.div(2),
+            1,
+          ]),
+        },
+      ],
+      { value: amountDeposit }
+    )
+
+    // delist token 0
+    await mgmt.setTokenMeta(assets[0].token.address, {
+      ...(await mgmt.getTokenMeta(assets[0].token.address)),
+      delisted: true,
+    })
+
+    // deposit 10 ETH by mirrorer 2 (trade WETH to 100% Asset1)
+    await pool.connect(mirrorer2).deposit(
+      mirrorer2.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+        },
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[1].token.address],
+            amountDeposit,
+            1,
+          ]),
+        },
+      ],
+      { value: amountDeposit }
+    )
+
+    // both mirrorers should hold the same amount of pool tokens
+    const balance1 = parseFloat(formatEther(await pool.balanceOf(mirrorer1.address)))
+    const balance2 = parseFloat(formatEther(await pool.balanceOf(mirrorer2.address)))
+    expect(balance1).approximately(balance2, 0.005)
   })
 })
