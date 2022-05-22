@@ -1,8 +1,10 @@
 import { expect } from 'chai'
 import { BigNumber } from 'ethers'
+import { parseEther } from 'ethers/lib/utils'
 import { ethers } from 'hardhat'
 import { deployManagement } from '../../utils/deploy-contracts'
 import { mockPriceFeed, mockToken, mockWETH } from '../../utils/mock-defi'
+import mockHousecatAndPool from '../utils/mock-housecat-and-pool'
 
 describe('HousecatManagement', () => {
   describe('public state variables', () => {
@@ -152,14 +154,6 @@ describe('HousecatManagement', () => {
       const otherToken = await mockToken(signer, 'Token A', 'TOKENA', 18, ethers.utils.parseEther('1'))
       const tx = mgmt.connect(signer).setSupportedAssets([weth.address, otherToken.address])
       await expect(tx).emit(mgmt, 'SetSupportedAssets').withArgs([weth.address, otherToken.address])
-    })
-
-    it('should reject removing a token if it is held by at least one pool', async () => {
-      // TODO
-    })
-
-    it('should succeed to remove a token from the list if it is not held by any pool', async () => {
-      // TODO
     })
   })
 

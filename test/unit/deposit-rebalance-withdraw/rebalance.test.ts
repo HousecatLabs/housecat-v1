@@ -551,6 +551,88 @@ describe('HousecatPool: rebalance', () => {
   })
 
   describe('rebalance when a token is delisted', () => {
-    // TODO
+    it('should be able to unwind position in a delisted token', async () => {
+      const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
+      const { pool, adapters, mgmt, assets, amm, weth } = await mockHousecatAndPool({
+        signer,
+        treasury,
+        mirrored,
+        weth: { price: '1', amountToMirrored: '0' },
+        assets: [
+          { price: '1', reserveToken: '100000', reserveWeth: '100000', amountToMirrored: '10' },
+          { price: '1', reserveToken: '100000', reserveWeth: '100000', amountToMirrored: '10' },
+        ],
+      })
+
+      // deposit 10 ETH by mirrorer (trade WETH to 50/50 Asset0 and Asset1)
+      const amountDeposit = parseEther('10')
+      await pool.connect(mirrorer).deposit(
+        mirrorer.address,
+        [
+          {
+            adapter: adapters.wethAdapter.address,
+            data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+          },
+          {
+            adapter: adapters.uniswapV2Adapter.address,
+            data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+              amm.address,
+              [weth.token.address, assets[0].token.address],
+              amountDeposit.div(2),
+              1,
+            ]),
+          },
+          {
+            adapter: adapters.uniswapV2Adapter.address,
+            data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+              amm.address,
+              [weth.token.address, assets[1].token.address],
+              amountDeposit.div(2),
+              1,
+            ]),
+          },
+        ],
+        { value: amountDeposit }
+      )
+
+      // weight difference should be 0 %
+      expect(await pool.getWeightDifference()).eq(0)
+
+      // delist token 0
+      await mgmt.setTokenMeta(assets[0].token.address, {
+        ...(await mgmt.getTokenMeta(assets[0].token.address)),
+        delisted: true,
+      })
+
+      // weight difference should be 100 %
+      expect(await pool.getWeightDifference()).eq(await pool.getPercent100())
+
+      // rebalance and swap the position in Asset0 to Asset1
+      await pool.connect(signer).rebalance(mirrorer.address, [
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [assets[0].token.address, weth.token.address],
+            await assets[0].token.balanceOf(pool.address),
+            1,
+          ]),
+        },
+      ])
+      await pool.connect(signer).rebalance(mirrorer.address, [
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[1].token.address],
+            await weth.token.balanceOf(pool.address),
+            1,
+          ]),
+        },
+      ])
+
+      // weight difference should be 0
+      expect(await pool.getWeightDifference()).eq(0)
+    })
   })
 })
