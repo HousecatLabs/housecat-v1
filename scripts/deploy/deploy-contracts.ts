@@ -14,6 +14,7 @@ const main = async () => {
     assetsMeta: Object.values(polygon.assets).map((x) => ({
       decimals: x.decimals,
       priceFeed: x.priceFeed,
+      delisted: false,
     })),
     integrations: [
       polygon.uniswapV2Routers.quickswap,
