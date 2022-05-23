@@ -23,13 +23,13 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
   HousecatManagement public management;
   address public mirrored;
   bool public suspended;
+  uint public rebalanceCheckpoint;
+  uint public cumulativeSlippage;
+  uint public managementFeeCheckpoint;
+  uint public performanceFeeHighWatermark;
   string private tokenName;
   string private tokenSymbol;
   bool private initialized;
-  uint private rebalanceCheckpoint;
-  uint private cumulativeSlippage;
-  uint private managementFeeCheckpoint;
-  uint private performanceFeeHighWatermark;
 
   modifier whenNotPaused() {
     require(!management.paused(), 'HousecatPool: paused');
@@ -128,6 +128,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     uint feePercentage = factory.getUserSettings(mirrored).performanceFee;
     address treasury = management.treasury();
     _settlePerformanceFee(poolValue, feePercentage, treasury);
+  }
+
+  function isRebalanceLocked() external view returns (bool) {
+    RebalanceSettings memory settings = management.getRebalanceSettings();
+    return _isRebalanceLocked(settings);
   }
 
   function deposit(address _to, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
