@@ -37,21 +37,21 @@ repository. Deploy new frontend with the new contract addresses.
 
 ## Deployed addresses:
 
-Version: 0022cd4
+Version: c2b8d2a
 
 ```js
 {
-  timestamp: '2022-05-22T08:41:28.465Z',
+  timestamp: '2022-05-23T12:03:35.285Z',
   network: 'polygon',
   addresses: {
-    HousecatManagement: '0x5b3ccA24922f9635d628580577074f4e123799c9',
-    HousecatFactory: '0x5012C2A3Ef0C7c127fd8321a948d266E9e920F91',
-    HousecatPool: '0xb8cB3E9F97Cb668A08f3C710Ea9f9baCe1Dc16F3',
-    HousecatQueries: '0x21ECd2AC40F8326d22581648C0a7d3B5FF6277aD',
-    WETHAdapter: '0xD2a29Faa6b6cD960538eb49b87458a7Cc56773c0',
-    UniswapV2Adapter: '0xB2BC6c3007019BE95B77F18d98a9153d24239a21',
-    AaveV2Adapter: '0x1Fd44d4Ff61E49d52402e0E317786B09E3F8b5f4',
-    ParaswapV5Adapter: '0xEA055A3C70a8c9DFD710fEf8e7AB75687833D631'
+    HousecatManagement: '0x9D11C27CAC1f3381F87B2e1960Cab6596eA10632',
+    HousecatFactory: '0x7b704eC4CBb5661C717e1c6B52702544FDe17cAF',
+    HousecatPool: '0x6BD6f94827756c8A1301A2cc287aC2f5e3317C5e',
+    HousecatQueries: '0xCE392C9E5Ea52E134b9E5224b50121f62462a84F',
+    WETHAdapter: '0x4445ae50D7E9dBF203672f4d0fEc788233341eA1',
+    UniswapV2Adapter: '0xa057ca872Fa2DCdEdD3c66E32C36b085BC7614b0',
+    AaveV2Adapter: '0x890243C090f89273052D66a8Ddc95C504bdd8A28',
+    ParaswapV5Adapter: '0x1e0256Ac1eBE93A0cE71B2CD756270fAa9C6CB9f'
   }
 }
 ```
