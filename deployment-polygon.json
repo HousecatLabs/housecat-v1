@@ -1,14 +1,14 @@
 {
-  "timestamp": "2022-05-23T12:03:35.285Z",
+  "timestamp": "2022-05-24T17:19:43.646Z",
   "network": "polygon",
   "addresses": {
-    "HousecatManagement": "0x9D11C27CAC1f3381F87B2e1960Cab6596eA10632",
-    "HousecatFactory": "0x7b704eC4CBb5661C717e1c6B52702544FDe17cAF",
-    "HousecatPool": "0x6BD6f94827756c8A1301A2cc287aC2f5e3317C5e",
-    "HousecatQueries": "0xCE392C9E5Ea52E134b9E5224b50121f62462a84F",
-    "WETHAdapter": "0x4445ae50D7E9dBF203672f4d0fEc788233341eA1",
-    "UniswapV2Adapter": "0xa057ca872Fa2DCdEdD3c66E32C36b085BC7614b0",
-    "AaveV2Adapter": "0x890243C090f89273052D66a8Ddc95C504bdd8A28",
-    "ParaswapV5Adapter": "0x1e0256Ac1eBE93A0cE71B2CD756270fAa9C6CB9f"
+    "HousecatManagement": "0x3570047AA7b422F934D35cA0c012A855039CbBeF",
+    "HousecatFactory": "0xeC3eE6ebc29cC693bBcB2B8818F84c30A1490761",
+    "HousecatPool": "0x497b5D7cD81A85998eE1a00c0a3471D3FfD56529",
+    "HousecatQueries": "0xcFe7F795f75162dd4727a0e2beA3817670F8e56d",
+    "WETHAdapter": "0xb49D28d77E7f741dAa73513FC8297129b04BaB7f",
+    "UniswapV2Adapter": "0xc97A5B461FC4e476172b655B5254B4C0c3607A06",
+    "AaveV2Adapter": "0xeA1c7abEe606e5BcC6A7D9e64307c5181b65E8C7",
+    "ParaswapV5Adapter": "0x368D9b973Edb1B9907726BDD7C245F267C5d13B4"
   }
 }
