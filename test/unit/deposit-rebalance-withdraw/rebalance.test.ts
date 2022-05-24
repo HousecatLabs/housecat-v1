@@ -6,8 +6,8 @@ import { deposit } from '../../utils/deposit-withdraw'
 import { DAYS, increaseTime, SECONDS } from '../../../utils/evm'
 
 describe('HousecatPool: rebalance', () => {
-  it('only owner allowed to call if onlyOwner setting enabled', async () => {
-    const [signer, mirrored] = await ethers.getSigners()
+  it('only whitelisted rebalancer allowed to call if rebalancers list has items', async () => {
+    const [signer, mirrored, rebalancer] = await ethers.getSigners()
     const { pool, adapters } = await mockHousecatAndPool({
       signer,
       mirrored,
@@ -20,7 +20,7 @@ describe('HousecatPool: rebalance', () => {
         cumulativeSlippagePeriodSeconds: 0,
         reward: 0,
         protocolTax: 0,
-        onlyOwner: true,
+        rebalancers: [rebalancer.address],
       },
     })
     const encoder = new ethers.utils.AbiCoder()
@@ -28,10 +28,10 @@ describe('HousecatPool: rebalance', () => {
     const rebalance = pool
       .connect(mirrored)
       .rebalance(mirrored.address, [{ adapter: adapters.uniswapV2Adapter.address, data }])
-    await expect(rebalance).revertedWith('HousecatPool: only owner')
+    await expect(rebalance).revertedWith('HousecatPool: only rebalancer')
   })
 
-  it('anyone allowed to call if onlyOwner setting disabled', async () => {
+  it('anyone allowed to call if rebalancers list is empty', async () => {
     const [signer, mirrored] = await ethers.getSigners()
     const { pool, adapters } = await mockHousecatAndPool({
       signer,
@@ -45,7 +45,7 @@ describe('HousecatPool: rebalance', () => {
         cumulativeSlippagePeriodSeconds: 0,
         reward: 0,
         protocolTax: 0,
-        onlyOwner: false,
+        rebalancers: [],
       },
     })
     await deposit(pool, adapters, signer, parseEther('10'))
@@ -67,7 +67,7 @@ describe('HousecatPool: rebalance', () => {
         cumulativeSlippagePeriodSeconds: 0,
         reward: 0,
         protocolTax: 0,
-        onlyOwner: true,
+        rebalancers: [],
       },
     })
 
@@ -124,7 +124,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 0,
           reward: 0,
           protocolTax: 0,
-          onlyOwner: true,
+          rebalancers: [],
         },
       })
 
@@ -163,7 +163,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 60,
           reward: 0,
           protocolTax: 0,
-          onlyOwner: true,
+          rebalancers: [],
         },
       })
 
@@ -203,7 +203,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 60 * 60 * 24 * 60, // 60 days
           reward: 0,
           protocolTax: 0,
-          onlyOwner: true,
+          rebalancers: [],
         },
       })
 
@@ -293,7 +293,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 0,
           reward: 0,
           protocolTax: 0,
-          onlyOwner: true,
+          rebalancers: [],
         },
       })
 
@@ -334,7 +334,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 0,
           reward: 0.25e6, // 0.25%
           protocolTax: 25e6, // 25%
-          onlyOwner: false,
+          rebalancers: [],
         },
       })
 
@@ -383,7 +383,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 0,
           reward: 0.25e6, // 0.25%
           protocolTax: 25e6, // 25%
-          onlyOwner: false,
+          rebalancers: [],
         },
       })
 
@@ -422,7 +422,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 0,
           reward: 0.25e6, // 0.25%
           protocolTax: 100e6, // 100%
-          onlyOwner: false,
+          rebalancers: [],
         },
       })
 
@@ -469,7 +469,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 0,
           reward: 0.25e6, // 0.25%
           protocolTax: 0,
-          onlyOwner: false,
+          rebalancers: [],
         },
       })
 
@@ -516,7 +516,7 @@ describe('HousecatPool: rebalance', () => {
           cumulativeSlippagePeriodSeconds: 0,
           reward: 0.25e6, // 0.25%
           protocolTax: 0,
-          onlyOwner: false,
+          rebalancers: [],
         },
       })
 

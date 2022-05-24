@@ -77,6 +77,7 @@ export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNu
 export interface IDeployHousecat {
   signer: SignerWithAddress
   treasury?: string
+  rebalancers?: string[]
   weth: string
   assets?: string[]
   assetsMeta?: TokenMetaStruct[]
@@ -96,6 +97,7 @@ export interface IHousecat {
 export const deployHousecat = async ({
   signer,
   treasury,
+  rebalancers,
   weth,
   assets,
   assetsMeta,
@@ -106,6 +108,13 @@ export const deployHousecat = async ({
 }: IDeployHousecat): Promise<IHousecat> => {
   const poolTemplate = await deployPool(signer, gasPrice)
   const mgmt = await deployManagement(signer, treasury || signer.address, weth, gasPrice)
+  if (rebalancers) {
+    const rebalanceSettings = await mgmt.getRebalanceSettings()
+    await mgmt.connect(signer).updateRebalanceSettings({
+      ...rebalanceSettings,
+      rebalancers,
+    })
+  }
   const factory = await deployFactory(signer, mgmt.address, poolTemplate.address, gasPrice)
   if (assets) {
     await (await mgmt.connect(signer).setSupportedAssets(assets, { gasPrice })).wait()

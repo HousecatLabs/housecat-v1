@@ -210,8 +210,8 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
     RebalanceSettings memory settings = management.getRebalanceSettings();
     require(!_isRebalanceLocked(settings), 'HousecatPool: rebalance locked');
-    if (settings.onlyOwner) {
-      require(msg.sender == owner(), 'HousecatPool: only owner');
+    if (settings.rebalancers.length > 0) {
+      require(management.isRebalancer(msg.sender), 'HousecatPool: only rebalancer');
     }
 
     // execute transactions and get pool states before and after
