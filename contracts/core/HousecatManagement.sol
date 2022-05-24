@@ -30,7 +30,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
       maxCumulativeSlippage: SafeCast.toUint32(PERCENT_100.mul(3).div(100)),
       cumulativeSlippagePeriodSeconds: 60 * 60 * 24 * 7,
       minSecondsBetweenRebalances: 60 * 15,
-      onlyOwner: true
+      rebalancers: new address[](0)
     });
 
   FeeSettings private managementFee =
@@ -137,6 +137,16 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   function getRebalanceSettings() external view returns (RebalanceSettings memory) {
     return rebalanceSettings;
+  }
+
+  function isRebalancer(address _account) external view returns (bool) {
+    RebalanceSettings memory settings = rebalanceSettings;
+    for (uint i = 0; i < settings.rebalancers.length; i++) {
+      if (_account == settings.rebalancers[i]) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function getManagementFee() external view returns (FeeSettings memory) {
