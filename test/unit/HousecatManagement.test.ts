@@ -442,7 +442,7 @@ describe('HousecatManagement', () => {
       maxCumulativeSlippage: 3e6,
       cumulativeSlippagePeriodSeconds: 0,
       minSecondsBetweenRebalances: 0,
-      onlyOwner: true,
+      rebalancers: [ethers.constants.AddressZero],
     }
 
     it('should update rebalanceSettings successfully when called by the owner with valid values', async () => {
@@ -453,6 +453,7 @@ describe('HousecatManagement', () => {
       const newSettings = await mgmt.getRebalanceSettings()
       expect(newSettings.reward).equal(validRebalanceSettings.reward)
       expect(newSettings.protocolTax).equal(validRebalanceSettings.protocolTax)
+      expect(newSettings.rebalancers).have.members([ethers.constants.AddressZero])
     })
 
     it('should emit UpdateRebalanceSettings event', async () => {

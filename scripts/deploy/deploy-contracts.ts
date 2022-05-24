@@ -9,6 +9,7 @@ const main = async () => {
   const [owner] = await ethers.getSigners()
   const { mgmt, factory, poolTemplate, adapters } = await deployHousecat({
     signer: owner,
+    rebalancers: [owner.address],
     weth: polygon.assets.wmatic.addr,
     assets: Object.values(polygon.assets).map((x) => x.addr),
     assetsMeta: Object.values(polygon.assets).map((x) => ({
