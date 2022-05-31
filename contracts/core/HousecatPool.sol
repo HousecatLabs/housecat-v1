@@ -36,8 +36,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     _;
   }
 
-  event DepositToPool(uint poolTokenAmount, uint value, address indexed account);
-  event WithdrawFromPool(uint poolTokenAmount, uint value, address indexed account);
+  event TransferPoolToken(address indexed from, address indexed to, uint amount, uint value);
   event RebalancePool();
   event ManagementFeeCheckpointUpdated(uint secondsPassed);
   event ManagementFeeSettled(uint amountToMirrored, uint amountToTreasury);
@@ -164,7 +163,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
       amountMint = totalSupply().mul(depositValue).div(poolStateBefore.netValue);
     }
     _mint(_to, amountMint);
-    emit DepositToPool(amountMint, depositValue, _to);
+    emit TransferPoolToken(address(0), _to, amountMint, depositValue);
   }
 
   function withdraw(address _to, PoolTransaction[] calldata _transactions) external whenNotPaused {
@@ -197,12 +196,12 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
       amountBurn = this.balanceOf(msg.sender);
     }
     _burn(msg.sender, amountBurn);
+    emit TransferPoolToken(msg.sender, address(0), amountBurn, withdrawValue);
 
     // send the received ETH to the withdrawer
     uint amountEthToSend = poolStateAfter.ethBalance.sub(poolStateBefore.ethBalance);
     (bool sent, ) = _to.call{value: amountEthToSend}('');
     require(sent, 'HousecatPool: sending ETH failed');
-    emit WithdrawFromPool(amountBurn, withdrawValue, msg.sender);
   }
 
   function rebalance(address _rewardsTo, PoolTransaction[] calldata _transactions) external whenNotPaused {
@@ -240,6 +239,17 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
 
   function setSuspended(bool _value) external onlyOwner {
     suspended = _value;
+  }
+
+  function _transfer(
+    address _from,
+    address _to,
+    uint256 _amount
+  ) internal virtual override {
+    super._transfer(_from, _to, _amount);
+    uint poolValue = getPoolContent().netValue;
+    uint transferValue = poolValue.mul(_amount).div(totalSupply());
+    emit TransferPoolToken(_from, _to, _amount, transferValue);
   }
 
   function _getAssetData() private view returns (TokenData memory) {
