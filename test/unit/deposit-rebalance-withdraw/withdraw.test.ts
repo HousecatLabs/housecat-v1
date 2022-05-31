@@ -223,7 +223,7 @@ describe('HousecatPool: withdraw', () => {
     expect(balanceAfter.sub(balanceBefore)).eq(parseEther('5'))
   })
 
-  it('should emit WithdrawFromPool event', async () => {
+  it('should emit TransferPoolToken event', async () => {
     const [signer, mirrorer, mirrored, otherUser] = await ethers.getSigners()
     const { pool, adapters, amm, weth } = await mockHousecatAndPool({ signer, mirrored })
 
@@ -254,7 +254,9 @@ describe('HousecatPool: withdraw', () => {
     ])
 
     // the emitted event should include the address of the account who sent pool tokens, not otherUser
-    await expect(tx).emit(pool, 'WithdrawFromPool').withArgs(parseEther('5'), parseEther('5'), mirrorer.address)
+    await expect(tx)
+      .emit(pool, 'TransferPoolToken')
+      .withArgs(mirrorer.address, ethers.constants.AddressZero, parseEther('5'), parseEther('5'))
   })
 
   it('should settle accrued management fee', async () => {

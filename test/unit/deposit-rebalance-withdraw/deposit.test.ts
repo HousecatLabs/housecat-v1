@@ -168,7 +168,7 @@ describe('HousecatPool: deposit', () => {
     expect(await pool.balanceOf(otherUser.address)).gt(0)
   })
 
-  it('should emit DepositToPool event', async () => {
+  it('should emit TransferPoolToken event', async () => {
     const [signer, depositor, otherUser, mirrored] = await ethers.getSigners()
     const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
     const amountDeposit = parseEther('8')
@@ -182,7 +182,9 @@ describe('HousecatPool: deposit', () => {
       ],
       { value: amountDeposit }
     )
-    await expect(tx).emit(pool, 'DepositToPool').withArgs(parseEther('8'), parseEther('8'), otherUser.address)
+    await expect(tx)
+      .emit(pool, 'TransferPoolToken')
+      .withArgs(ethers.constants.AddressZero, otherUser.address, parseEther('8'), parseEther('8'))
   })
 
   it('should settle accrued management fee', async () => {

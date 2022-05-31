@@ -1,7 +1,8 @@
 import { ethers } from 'hardhat'
 import { expect } from 'chai'
-import { parseEther } from 'ethers/lib/utils'
+import { formatEther, parseEther, parseUnits } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../utils/mock-housecat-and-pool'
+import { mockPriceFeed } from '../../utils/mock-defi'
 
 describe('HousecatPool', () => {
   describe('getAssetBalances', () => {
@@ -56,6 +57,41 @@ describe('HousecatPool', () => {
       const { pool } = await mockHousecatAndPool({ signer, mirrored })
       await pool.connect(signer).setSuspended(true)
       expect(await pool.suspended()).eq(true)
+    })
+  })
+
+  describe('transfer', () => {
+    it('should emit TransferPoolToken event', async () => {
+      const [signer, depositor, otherUser, mirrored] = await ethers.getSigners()
+      const { pool, adapters, weth, mgmt } = await mockHousecatAndPool({ signer, mirrored })
+      const amountDeposit = parseEther('8')
+
+      // deposit
+      await pool.connect(depositor).deposit(
+        depositor.address,
+        [
+          {
+            adapter: adapters.wethAdapter.address,
+            data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [amountDeposit]),
+          },
+        ],
+        { value: amountDeposit }
+      )
+
+      // double pool value by increasing weth price
+      const newPriceFeed = await mockPriceFeed(signer, parseUnits('2', 8), 8)
+      await mgmt.setTokenMeta(weth.token.address, {
+        ...(await mgmt.getTokenMeta(weth.token.address)),
+        priceFeed: newPriceFeed.address,
+      })
+
+      // transfer tokens
+      const amount = ethers.utils.parseEther('1.5')
+      const value = amount.mul(2)
+      const transfer = pool.connect(depositor).transfer(otherUser.address, amount)
+      await expect(transfer)
+        .emit(pool, 'TransferPoolToken')
+        .withArgs(depositor.address, otherUser.address, amount, value)
     })
   })
 })
