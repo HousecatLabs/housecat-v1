@@ -45,7 +45,7 @@ const config: HardhatUserConfig = {
     ganache: {
       url: 'http://127.0.01:8545',
       chainId: 1337,
-      accounts: [process.env.GANACHE_PRIVATE_KEY || DUMMY_PRIVATE_KEY],
+      accounts: [process.env.GANACHE_0_PRIVATE_KEY || DUMMY_PRIVATE_KEY],
       timeout: 90 * 1000,
     },
     polygon: {
