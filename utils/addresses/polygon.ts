@@ -56,46 +56,56 @@ export const priceFeeds = {
 }
 
 export const assets: { [key: string]: IAsset } = {
+  /*
   '1inch': {
     addr: '0x9c2C5fd7b07E95EE044DDeba0E97a665F142394f',
     priceFeed: priceFeeds['1inch'],
     decimals: 18,
   },
+  */
   aave: {
     addr: '0xd6df932a45c0f255f85145f286ea0b292b21c90b',
     priceFeed: priceFeeds.aave,
     decimals: 18,
   },
+  /*
   ageur: {
     addr: '0xE0B52e49357Fd4DAf2c15e02058DCE6BC0057db4',
     priceFeed: priceFeeds.ageur,
     decimals: 18,
   },
+  */
+  /*
   alcx: {
     addr: '0x95c300e7740D2A88a44124B424bFC1cB2F9c3b89',
     priceFeed: priceFeeds.alcx,
     decimals: 18,
   },
+  */
   bal: {
     addr: '0x9a71012b13ca4d3d0cdc72a177df3ef03b0e76a3',
     priceFeed: priceFeeds.bal,
     decimals: 18,
   },
+  /*
   bat: {
     addr: '0x3cef98bb43d732e2f285ee605a8158cde967d219',
     priceFeed: priceFeeds.bat,
     decimals: 18,
   },
+  */
   cel: {
     addr: '0xd85d1e945766fea5eda9103f918bd915fbca63e6',
     priceFeed: priceFeeds.cel,
     decimals: 4,
   },
+  /*
   comp: {
     addr: '0x8505b9d2254a7ae468c0e9dd10ccea3a837aef5c',
     priceFeed: priceFeeds.comp,
     decimals: 18,
   },
+  */
   crv: {
     addr: '0x172370d5cd63279efa6d502dab29171933a610af',
     priceFeed: priceFeeds.crv,
@@ -106,36 +116,46 @@ export const assets: { [key: string]: IAsset } = {
     decimals: 18,
     priceFeed: priceFeeds.dai,
   },
+  /*
   dodo: {
     addr: '0xe4bf2864ebec7b7fdf6eeca9bacae7cdfdaffe78',
     decimals: 18,
     priceFeed: priceFeeds.dodo,
   },
-  frax: {
-    addr: '0x45c32fa6df82ead1e2ef74d17b76547eddfaff89',
-    priceFeed: priceFeeds.frax,
-    decimals: 18,
-  },
+  */
+  /*
+   frax: {
+     addr: '0x45c32fa6df82ead1e2ef74d17b76547eddfaff89',
+     priceFeed: priceFeeds.frax,
+     decimals: 18,
+   },
+   */
+  /*
   fxs: {
     addr: '0x1a3acf6d19267e2d3e7f898f42803e90c9219062',
     priceFeed: priceFeeds.fxs,
     decimals: 18,
   },
+  */
   ghst: {
     addr: '0x385eeac5cb85a38a9a07a70c73e0a3271cfb54a7',
     priceFeed: priceFeeds.ghst,
     decimals: 18,
   },
+  /*
   grt: {
     addr: '0x5fe2b58c013d7601147dcdd68c143a77499f5531',
     priceFeed: priceFeeds.grt,
     decimals: 18,
   },
+  */
+  /*
   knc: {
     addr: '0x1C954E8fe737F99f68Fa1CCda3e51ebDB291948C',
     priceFeed: priceFeeds.knc,
     decimals: 18,
   },
+  */
   link: {
     addr: '0x53e0bca35ec356bd5dddfebbd1fc0fd03fabad39',
     priceFeed: priceFeeds.link,
@@ -146,51 +166,65 @@ export const assets: { [key: string]: IAsset } = {
     priceFeed: priceFeeds.mai,
     decimals: 18,
   },
+  /*
   mana: {
     addr: '0xa1c57f48f0deb89f569dfbe6e2b7f46d33606fd4',
     priceFeed: priceFeeds.mana,
     decimals: 18,
   },
-  nexo: {
-    addr: '0x41b3966B4FF7b427969ddf5da3627d6AEAE9a48E',
-    priceFeed: priceFeeds.nexo,
-    decimals: 18,
-  },
+  */
+  /*
+   nexo: {
+     addr: '0x41b3966B4FF7b427969ddf5da3627d6AEAE9a48E',
+     priceFeed: priceFeeds.nexo,
+     decimals: 18,
+   },
+   */
+  /*
   ocean: {
     addr: '0x282d8efCe846A88B159800bd4130ad77443Fa1A1',
     priceFeed: priceFeeds.ocean,
     decimals: 18,
   },
-  pla: {
-    addr: '0x8765f05ADce126d70bcdF1b0a48Db573316662eB',
-    decimals: 18,
-    priceFeed: priceFeeds.pla,
-  },
+  */
+  /*
+   pla: {
+     addr: '0x8765f05ADce126d70bcdF1b0a48Db573316662eB',
+     decimals: 18,
+     priceFeed: priceFeeds.pla,
+   },
+   */
   quick: {
     addr: '0x831753dd7087cac61ab5644b308642cc1c33dc13',
     priceFeed: priceFeeds.quick,
     decimals: 18,
   },
+  /*
   rai: {
     addr: '0x00e5646f60AC6Fb446f621d146B6E1886f002905',
     priceFeed: priceFeeds.rai,
     decimals: 18,
   },
+  */
   sand: {
     addr: '0xBbba073C31bF03b8ACf7c28EF0738DeCF3695683',
     priceFeed: priceFeeds.sand,
     decimals: 18,
   },
+  /*
   snx: {
     addr: '0x50b728d8d964fd00c2d0aad81718b71311fef68a',
     priceFeed: priceFeeds.snx,
     decimals: 18,
   },
-  sol: {
-    addr: '0xd93f7e271cb87c23aaa73edc008a79646d1f9912',
-    decimals: 9,
-    priceFeed: priceFeeds.sol,
-  },
+  */
+  /*
+   sol: {
+     addr: '0xd93f7e271cb87c23aaa73edc008a79646d1f9912',
+     decimals: 9,
+     priceFeed: priceFeeds.sol,
+   },
+   */
   sushi: {
     addr: '0x0b3f868e0be5597d5db7feb59e1cadbb0fdda50a',
     priceFeed: priceFeeds.sushi,
@@ -201,11 +235,13 @@ export const assets: { [key: string]: IAsset } = {
     priceFeed: priceFeeds.tusd,
     decimals: 18,
   },
+  /*
   uma: {
     addr: '0x3066818837c5e6ed6601bd5a91b0762877a6b731',
     priceFeed: priceFeeds.uma,
     decimals: 18,
   },
+  */
   uni: {
     addr: '0xb33eaad8d922b1083446dc23f610c2567fb5180f',
     priceFeed: priceFeeds.uni,
@@ -236,21 +272,27 @@ export const assets: { [key: string]: IAsset } = {
     priceFeed: priceFeeds.matic,
     decimals: 18,
   },
+  /*
   woo: {
     addr: '0x1B815d120B3eF02039Ee11dC2d33DE7aA4a8C603',
     priceFeed: priceFeeds.woo,
     decimals: 18,
   },
+  */
+  /*
   wxlm: {
     addr: '0xf854225caaef5a722884a68a23215dfa5386751e',
     priceFeed: priceFeeds.xlm,
     decimals: 18,
   },
-  yfi: {
-    addr: '0xda537104d6a5edd53c6fbba9a898708e465260b6',
-    priceFeed: priceFeeds.yfi,
-    decimals: 18,
-  },
+  */
+  /*
+   yfi: {
+     addr: '0xda537104d6a5edd53c6fbba9a898708e465260b6',
+     priceFeed: priceFeeds.yfi,
+     decimals: 18,
+   },
+   */
 }
 
 export const aaveV2LendingPools = {
