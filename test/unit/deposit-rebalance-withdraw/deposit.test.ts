@@ -104,7 +104,7 @@ describe('HousecatPool: deposit', () => {
 
   it('should fail to reduce the eth balance of the pool', async () => {
     const [signer, mirrored] = await ethers.getSigners()
-    const { pool, weth, adapters, amm } = await mockHousecatAndPool({ signer, mirrored })
+    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })
 
     // send initial deposit of 10 ETH
     await deposit(pool, adapters, signer, parseEther('10'))
@@ -112,13 +112,8 @@ describe('HousecatPool: deposit', () => {
     // try to swap WETH to ETH (reducing the net value of the assets)
     const tx = pool.deposit(signer.address, [
       {
-        adapter: adapters.uniswapV2Adapter.address,
-        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokenToETH', [
-          amm.address,
-          [weth.token.address, weth.token.address],
-          parseEther('1'),
-          1,
-        ]),
+        adapter: adapters.wethAdapter.address,
+        data: adapters.wethAdapter.interface.encodeFunctionData('withdraw', [parseEther('1')]),
       },
     ])
     await expect(tx).revertedWith('HousecatPool: ETH balance changed')
