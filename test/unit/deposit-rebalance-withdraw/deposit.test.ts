@@ -124,6 +124,66 @@ describe('HousecatPool: deposit', () => {
     await expect(tx).revertedWith('HousecatPool: ETH balance changed')
   })
 
+  it('should fail to deposit if pool has holders but non positive net value', async () => {
+    const [signer, mirrorer1, , mirrorer2, mirrored] = await ethers.getSigners()
+    const { pool, mgmt, adapters, amm, weth, assets } = await mockHousecatAndPool({
+      signer,
+      mirrored,
+      assets: [{ price: '1', amountToMirrored: '10', reserveToken: '10000', reserveWeth: '10000' }],
+    })
+
+    // initial deposit so that the pool holds asset0
+    await pool.connect(mirrorer1).deposit(
+      mirrorer1.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [parseEther('5')]),
+        },
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('5'),
+            1,
+          ]),
+        },
+      ],
+      { value: parseEther('5') }
+    )
+
+    // set the value of asset0 to 0
+    const zeroFeed = await mockPriceFeed(signer, 0, 8)
+    await mgmt.setTokenMeta(assets[0].token.address, {
+      ...(await mgmt.getTokenMeta(assets[0].token.address)),
+      priceFeed: zeroFeed.address,
+    })
+
+    // try to deposit
+    const deposit2 = pool.connect(mirrorer2).deposit(
+      mirrorer2.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [parseEther('5')]),
+        },
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('5'),
+            1,
+          ]),
+        },
+      ],
+      { value: parseEther('5') }
+    )
+
+    await expect(deposit2).revertedWith('HousecatPool: pool value 0')
+  })
+
   it('should mint pool tokens an amount equal to the deposit value when the pool total supply is zero', async () => {
     const [signer, mirrorer, mirrored] = await ethers.getSigners()
     const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored })

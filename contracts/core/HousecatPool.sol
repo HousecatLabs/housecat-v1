@@ -5,16 +5,10 @@ import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
-import {UserSettings, PoolTransaction, MirrorSettings, RebalanceSettings, WalletContent, TokenData, TokenMeta} from './structs.sol';
+import {UserSettings, PoolTransaction, MirrorSettings, RebalanceSettings, WalletContent, TokenData, TokenMeta, PoolState} from './structs.sol';
 import {HousecatQueries} from './HousecatQueries.sol';
 import {HousecatFactory} from './HousecatFactory.sol';
 import {HousecatManagement} from './HousecatManagement.sol';
-
-struct PoolState {
-  uint ethBalance;
-  uint netValue;
-  uint weightDifference;
-}
 
 contract HousecatPool is HousecatQueries, ERC20, Ownable {
   using SafeMath for uint;
@@ -160,6 +154,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     // mint pool tokens an amount based on the deposit value
     uint amountMint = depositValue;
     if (totalSupply() > 0) {
+      require(poolStateBefore.netValue > 0, 'HousecatPool: pool value 0');
       amountMint = totalSupply().mul(depositValue).div(poolStateBefore.netValue);
     }
     _mint(_to, amountMint);
