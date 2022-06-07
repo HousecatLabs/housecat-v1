@@ -346,10 +346,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable, ReentrancyGuard {
 
   function _getAccruedManagementFee(uint _annualFeePercentage) private view returns (uint) {
     uint secondsSinceLastSettlement = block.timestamp.sub(managementFeeCheckpoint);
-    if (secondsSinceLastSettlement > 0) {
-      return _annualFeePercentage.mul(totalSupply()).mul(secondsSinceLastSettlement).div(365 days).div(PERCENT_100);
-    }
-    return 0;
+    return _annualFeePercentage.mul(totalSupply()).mul(secondsSinceLastSettlement).div(365 days).div(PERCENT_100);
   }
 
   function _getAccruedPerformanceFee(uint _poolValue, uint _performanceFeePercentage) private view returns (uint) {
