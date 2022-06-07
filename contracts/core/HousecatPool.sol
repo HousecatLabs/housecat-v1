@@ -404,11 +404,13 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable, ReentrancyGuard {
   }
 
   function _settleManagementFee(uint _managementFeePercentage, address _treasury) private {
-    uint amountToMirrored;
-    uint amountToTreasury;
     uint feeAmount = _getAccruedManagementFee(_managementFeePercentage);
     if (feeAmount > 0) {
-      (amountToMirrored, amountToTreasury) = _mintFee(feeAmount, management.getManagementFee().protocolTax, _treasury);
+      (uint amountToMirrored, uint amountToTreasury) = _mintFee(
+        feeAmount,
+        management.getManagementFee().protocolTax,
+        _treasury
+      );
       emit ManagementFeeSettled(amountToMirrored, amountToTreasury);
     }
     _updateManagementFeeCheckpoint();
