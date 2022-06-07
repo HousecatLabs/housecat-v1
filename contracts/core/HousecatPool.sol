@@ -4,13 +4,14 @@ pragma solidity ^0.8.4;
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
+import {ReentrancyGuard} from '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 import {UserSettings, PoolTransaction, MirrorSettings, RebalanceSettings, WalletContent, TokenData, TokenMeta, PoolState} from './structs.sol';
 import {HousecatQueries} from './HousecatQueries.sol';
 import {HousecatFactory} from './HousecatFactory.sol';
 import {HousecatManagement} from './HousecatManagement.sol';
 
-contract HousecatPool is HousecatQueries, ERC20, Ownable {
+contract HousecatPool is HousecatQueries, ERC20, Ownable, ReentrancyGuard {
   using SafeMath for uint;
 
   HousecatFactory public factory;
@@ -128,7 +129,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     return _isRebalanceLocked(settings);
   }
 
-  function deposit(address _to, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
+  function deposit(address _to, PoolTransaction[] calldata _transactions) external payable whenNotPaused nonReentrant {
     require(!suspended, 'HousecatPool: suspended');
 
     // execute transactions and get pool states before and after
@@ -161,7 +162,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     emit TransferPoolToken(address(0), _to, amountMint, depositValue);
   }
 
-  function withdraw(address _to, PoolTransaction[] calldata _transactions) external whenNotPaused {
+  function withdraw(address _to, PoolTransaction[] calldata _transactions) external whenNotPaused nonReentrant {
     // execute transactions and get pool states before and after
     (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
 
@@ -199,7 +200,7 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable {
     require(sent, 'HousecatPool: sending ETH failed');
   }
 
-  function rebalance(address _rewardsTo, PoolTransaction[] calldata _transactions) external whenNotPaused {
+  function rebalance(address _rewardsTo, PoolTransaction[] calldata _transactions) external whenNotPaused nonReentrant {
     require(!suspended, 'HousecatPool: suspended');
 
     RebalanceSettings memory settings = management.getRebalanceSettings();
