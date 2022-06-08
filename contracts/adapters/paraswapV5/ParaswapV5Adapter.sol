@@ -23,7 +23,7 @@ contract ParaswapV5Adapter is BaseAdapter {
     IAugustusSwapper(_router).protectedSimpleSwap(data);
     uint balanceOfFromTokenAfter = fromToken.balanceOf(address(this));
     require(
-      balanceOfFromTokenAfter - balanceOfFromTokenBefore == data.fromAmount,
+      balanceOfFromTokenBefore - balanceOfFromTokenAfter == data.fromAmount,
       'ParaswapV5Adapter: amount mismatch'
     );
   }
@@ -45,7 +45,7 @@ contract ParaswapV5Adapter is BaseAdapter {
     IAugustusSwapper(_router).protectedMultiSwap(data);
     uint balanceOfFromTokenAfter = fromToken.balanceOf(address(this));
     require(
-      balanceOfFromTokenAfter - balanceOfFromTokenBefore == data.fromAmount,
+      balanceOfFromTokenBefore - balanceOfFromTokenAfter == data.fromAmount,
       'ParaswapV5Adapter: amount mismatch'
     );
   }
