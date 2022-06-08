@@ -123,12 +123,12 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     return supportedIntegrations[_integration];
   }
 
-  function isAssetSupported(address _token) external view returns (bool) {
-    return _isTokenSupported(_token, supportedAssets);
+  function isAssetSupported(address _token, bool _excludeDelisted) external view returns (bool) {
+    return _isTokenSupported(_token, supportedAssets, _excludeDelisted);
   }
 
-  function isLoanSupported(address _token) external view returns (bool) {
-    return _isTokenSupported(_token, supportedLoans);
+  function isLoanSupported(address _token, bool _excludeDelisted) external view returns (bool) {
+    return _isTokenSupported(_token, supportedLoans, _excludeDelisted);
   }
 
   function getMirrorSettings() external view returns (MirrorSettings memory) {
@@ -207,10 +207,14 @@ contract HousecatManagement is Constants, Ownable, Pausable {
     emit UpdatePerformanceFee(_performanceFee);
   }
 
-  function _isTokenSupported(address _token, address[] memory _supportedTokens) private view returns (bool) {
+  function _isTokenSupported(
+    address _token,
+    address[] memory _supportedTokens,
+    bool _excludeDelisted
+  ) private view returns (bool) {
     for (uint i = 0; i < _supportedTokens.length; i++) {
       if (_supportedTokens[i] == _token) {
-        if (tokenMeta[_token].delisted) {
+        if (_excludeDelisted && tokenMeta[_token].delisted) {
           return false;
         }
         return true;

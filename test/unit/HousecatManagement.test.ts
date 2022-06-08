@@ -192,12 +192,12 @@ describe('HousecatManagement', () => {
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
       const otherToken = await mockToken(signer, 'Asset A', 'ASSET_A', 18, ethers.utils.parseEther('1'))
-      expect(await mgmt.isAssetSupported(otherToken.address)).equal(false)
+      expect(await mgmt.isAssetSupported(otherToken.address, true)).equal(false)
       await mgmt.connect(signer).setSupportedAssets([weth.address, otherToken.address])
-      expect(await mgmt.isAssetSupported(otherToken.address)).equal(true)
+      expect(await mgmt.isAssetSupported(otherToken.address, true)).equal(true)
     })
 
-    it('should return false if token is delisted', async () => {
+    it('should return false if token is delisted and exludeDelisted flag is true', async () => {
       const [signer, treasury] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
@@ -208,7 +208,21 @@ describe('HousecatManagement', () => {
         decimals: 18,
         delisted: true,
       })
-      expect(await mgmt.isAssetSupported(token.address)).equal(false)
+      expect(await mgmt.isAssetSupported(token.address, true)).equal(false)
+    })
+
+    it('should return true if token is delisted and exludeDelisted flag is false', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const token = await mockToken(signer, 'Asset A', 'ASSET_A', 18, ethers.utils.parseEther('1'))
+      await mgmt.connect(signer).setSupportedAssets([token.address])
+      await mgmt.setTokenMeta(token.address, {
+        priceFeed: ethers.constants.AddressZero,
+        decimals: 18,
+        delisted: true,
+      })
+      expect(await mgmt.isAssetSupported(token.address, false)).equal(true)
     })
   })
 
@@ -218,12 +232,12 @@ describe('HousecatManagement', () => {
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
       const loanToken = await mockToken(signer, 'Loan A', 'LOANA', 18, ethers.utils.parseEther('1'))
-      expect(await mgmt.isLoanSupported(loanToken.address)).equal(false)
+      expect(await mgmt.isLoanSupported(loanToken.address, true)).equal(false)
       await mgmt.connect(signer).setSupportedLoans([loanToken.address])
-      expect(await mgmt.isLoanSupported(loanToken.address)).equal(true)
+      expect(await mgmt.isLoanSupported(loanToken.address, true)).equal(true)
     })
 
-    it('should return false if token is delisted', async () => {
+    it('should return false if token is delisted and exludeDelisted flag is true', async () => {
       const [signer, treasury] = await ethers.getSigners()
       const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
       const mgmt = await deployManagement(signer, treasury.address, weth.address)
@@ -234,7 +248,21 @@ describe('HousecatManagement', () => {
         decimals: 18,
         delisted: true,
       })
-      expect(await mgmt.isLoanSupported(token.address)).equal(false)
+      expect(await mgmt.isLoanSupported(token.address, true)).equal(false)
+    })
+
+    it('should return true if token is delisted and exludeDelisted flag is false', async () => {
+      const [signer, treasury] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, treasury.address, weth.address)
+      const token = await mockToken(signer, 'Laon A', 'LOAN_A', 18, ethers.utils.parseEther('1'))
+      await mgmt.connect(signer).setSupportedLoans([token.address])
+      await mgmt.setTokenMeta(token.address, {
+        priceFeed: ethers.constants.AddressZero,
+        decimals: 18,
+        delisted: true,
+      })
+      expect(await mgmt.isLoanSupported(token.address, false)).equal(true)
     })
   })
 

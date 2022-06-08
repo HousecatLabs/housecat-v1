@@ -14,7 +14,8 @@ contract UniswapV2Adapter is BaseAdapter {
   ) external payable {
     HousecatManagement mgmt = _getMgmt();
     require(mgmt.isIntegrationSupported(_router), 'UniswapV2Adapter: unsupported router');
-    require(mgmt.isAssetSupported(_path[_path.length - 1]), 'UniswapV2Adapter: unsupported token to');
+    require(mgmt.isAssetSupported(_path[0], false), 'UniswapV2Adapter: unsupported token from');
+    require(mgmt.isAssetSupported(_path[_path.length - 1], true), 'UniswapV2Adapter: unsupported token to');
     IERC20(_path[0]).approve(_router, _amountIn);
     IUniswapV2Router02(_router).swapExactTokensForTokens(
       _amountIn,

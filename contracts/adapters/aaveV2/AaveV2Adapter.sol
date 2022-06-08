@@ -15,12 +15,12 @@ contract AaveV2Adapter is BaseAdapter {
   ) external {
     HousecatManagement mgmt = _getMgmt();
     require(mgmt.isIntegrationSupported(_pool), 'AaveV2Adapter: unsupported integration');
-    require(mgmt.isAssetSupported(_token), 'AaveV2Adapter: unsupported token');
+    require(mgmt.isAssetSupported(_token, true), 'AaveV2Adapter: unsupported token');
 
     // require the A-token received on deposit is supported
     ILendingPool pool = ILendingPool(_pool);
     DataTypes.ReserveData memory reserveData = pool.getReserveData(_token);
-    require(mgmt.isAssetSupported(reserveData.aTokenAddress), 'AaveV2Adapter: unsupported aToken');
+    require(mgmt.isAssetSupported(reserveData.aTokenAddress, true), 'AaveV2Adapter: unsupported aToken');
 
     IERC20(_token).approve(_pool, _amount);
     pool.deposit(_token, _amount, address(this), 0);
@@ -37,12 +37,12 @@ contract AaveV2Adapter is BaseAdapter {
   ) external {
     HousecatManagement mgmt = _getMgmt();
     require(mgmt.isIntegrationSupported(_pool), 'AaveV2Adapter: unsupported integration');
-    require(mgmt.isAssetSupported(_token), 'AaveV2Adapter: unsupported token');
+    require(mgmt.isAssetSupported(_token, true), 'AaveV2Adapter: unsupported token');
 
     // require the loan token received on borrow is supported
     ILendingPool pool = ILendingPool(_pool);
     DataTypes.ReserveData memory reserveData = pool.getReserveData(_token);
-    require(mgmt.isLoanSupported(reserveData.variableDebtTokenAddress), 'AaveV2Adapter: unsupported loan');
+    require(mgmt.isLoanSupported(reserveData.variableDebtTokenAddress, true), 'AaveV2Adapter: unsupported loan');
 
     pool.borrow(_token, _amount, 2, 0, address(this));
   }

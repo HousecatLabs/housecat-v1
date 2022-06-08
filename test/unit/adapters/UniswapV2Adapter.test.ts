@@ -67,7 +67,29 @@ describe('UniswapV2Adapter', () => {
           data: tradeWethToUnsupportedToken,
         },
       ])
-      await expect(tx).revertedWith('UniswapV2Adapter: unsupported token')
+      await expect(tx).revertedWith('UniswapV2Adapter: unsupported token to')
+    })
+
+    it('should fail to sell unknown tokens', async () => {
+      const mockUnsuportedAssets = await mockAssets({
+        signer: owner,
+        weth: { price: '1', decimals: 18 },
+        tokens: [{ price: '1', decimals: 18, reserveToken: '10000', reserveWeth: '10000' }],
+      })
+      const unsupportedAsset = mockUnsuportedAssets[2][0]
+      const tradeUnsupportedTokenToWeth = mock.adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+        mock.amm.address,
+        [unsupportedAsset.token.address, mock.weth.token.address],
+        parseEther('1'),
+        1,
+      ])
+      const tx = mock.pool.connect(owner).rebalance(owner.address, [
+        {
+          adapter: mock.adapters.uniswapV2Adapter.address,
+          data: tradeUnsupportedTokenToWeth,
+        },
+      ])
+      await expect(tx).revertedWith('UniswapV2Adapter: unsupported token from')
     })
 
     it('should succeed to swap supported tokens on a supported AMM', async () => {
@@ -93,6 +115,37 @@ describe('UniswapV2Adapter', () => {
 
       const token0Balance = await mock.assets[0].token.balanceOf(mock.pool.address)
       expect(parseFloat(formatEther(token0Balance))).approximately(1, 0.04)
+    })
+
+    it('should succeed to sell delisted tokens for supported tokens on a supported AMM', async () => {
+      // trade Asset0 to weth on mirrored wallet
+      await mock.assets[0].token.connect(mirrored).burn(parseEther('1'))
+      await mock.weth.token.mint(mirrored.address, parseEther('1'))
+
+      // delist token0
+      await mock.mgmt.setTokenMeta(mock.assets[0].token.address, {
+        ...(await mock.mgmt.getTokenMeta(mock.assets[0].token.address)),
+        delisted: true,
+      })
+
+      const tradeAsset0ToWeth = mock.adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+        mock.amm.address,
+        [mock.assets[0].token.address, mock.weth.token.address],
+        await mock.assets[0].token.balanceOf(mock.pool.address),
+        1,
+      ])
+      await mock.pool.connect(owner).rebalance(owner.address, [
+        {
+          adapter: mock.adapters.uniswapV2Adapter.address,
+          data: tradeAsset0ToWeth,
+        },
+      ])
+
+      const wethBalance = await mock.weth.token.balanceOf(mock.pool.address)
+      expect(parseFloat(formatEther(wethBalance))).approximately(5, 0.04)
+
+      const token0Balance = await mock.assets[0].token.balanceOf(mock.pool.address)
+      expect(parseFloat(formatEther(token0Balance))).approximately(0, 0.04)
     })
   })
 })
