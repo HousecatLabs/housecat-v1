@@ -10,29 +10,43 @@ contract ParaswapV5Adapter is BaseAdapter {
     HousecatManagement mgmt = _getMgmt();
     require(mgmt.isIntegrationSupported(_router), 'ParaswapV5Adapter: unsupported router');
     SimpleData memory data = abi.decode(_data[4:], (SimpleData));
-    require(mgmt.isAssetSupported(data.fromToken, false), 'ParaswapV5Adapter: unsupported token from');
-    require(mgmt.isAssetSupported(data.toToken, true), 'ParaswapV5Adapter: unsupported token to');
+    IERC20 fromToken = IERC20(data.fromToken);
+    IERC20 toToken = IERC20(data.toToken);
+    require(mgmt.isAssetSupported(address(fromToken), false), 'ParaswapV5Adapter: unsupported token from');
+    require(mgmt.isAssetSupported(address(toToken), true), 'ParaswapV5Adapter: unsupported token to');
     data.partner = payable(address(0));
     data.beneficiary = payable(address(0));
     data.deadline = block.timestamp;
     address tokenTransferProxy = IAugustusSwapper(_router).getTokenTransferProxy();
-    IERC20(data.fromToken).approve(tokenTransferProxy, data.fromAmount);
+    uint balanceOfFromTokenBefore = fromToken.balanceOf(address(this));
+    fromToken.approve(tokenTransferProxy, data.fromAmount);
     IAugustusSwapper(_router).protectedSimpleSwap(data);
+    uint balanceOfFromTokenAfter = fromToken.balanceOf(address(this));
+    require(
+      balanceOfFromTokenAfter - balanceOfFromTokenBefore == data.fromAmount,
+      'ParaswapV5Adapter: amount mismatch'
+    );
   }
 
   function multiSwap(address _router, bytes calldata _data) external payable {
     HousecatManagement mgmt = _getMgmt();
     require(mgmt.isIntegrationSupported(_router), 'ParaswapV5Adapter: unsupported router');
     SellData memory data = abi.decode(_data[4:], (SellData));
-    address fromToken = data.path[0].to;
-    address toToken = data.path[data.path.length - 1].to;
-    require(mgmt.isAssetSupported(fromToken, false), 'ParaswapV5Adapter: unsupported token from');
-    require(mgmt.isAssetSupported(toToken, true), 'ParaswapV5Adapter: unsupported token to');
+    IERC20 fromToken = IERC20(data.path[0].to);
+    IERC20 toToken = IERC20(data.path[data.path.length - 1].to);
+    require(mgmt.isAssetSupported(address(fromToken), false), 'ParaswapV5Adapter: unsupported token from');
+    require(mgmt.isAssetSupported(address(toToken), true), 'ParaswapV5Adapter: unsupported token to');
     data.partner = payable(address(0));
     data.beneficiary = payable(address(0));
     data.deadline = block.timestamp;
     address tokenTransferProxy = IAugustusSwapper(_router).getTokenTransferProxy();
-    IERC20(data.fromToken).approve(tokenTransferProxy, data.fromAmount);
+    uint balanceOfFromTokenBefore = fromToken.balanceOf(address(this));
+    fromToken.approve(tokenTransferProxy, data.fromAmount);
     IAugustusSwapper(_router).protectedMultiSwap(data);
+    uint balanceOfFromTokenAfter = fromToken.balanceOf(address(this));
+    require(
+      balanceOfFromTokenAfter - balanceOfFromTokenBefore == data.fromAmount,
+      'ParaswapV5Adapter: amount mismatch'
+    );
   }
 }
