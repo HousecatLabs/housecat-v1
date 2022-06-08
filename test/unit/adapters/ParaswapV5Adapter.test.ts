@@ -134,5 +134,49 @@ describe('ParaswapV5Adapter', () => {
 
       await expect(tx).revertedWith('ParaswapV5Adapter: unsupported token to')
     })
+
+    it('should fail to sell unsupported assets', async () => {
+      const dummyAddress = ethers.constants.AddressZero
+      const paraswapData = paraswapInterface.encodeFunctionData('protectedMultiSwap', [
+        {
+          fromToken: dummyAddress,
+          fromAmount: 123,
+          toAmount: 123,
+          expectedAmount: 123,
+          beneficiary: dummyAddress,
+          path: [
+            {
+              to: dummyAddress,
+              totalNetworkFee: 0,
+              adapters: [],
+            },
+            {
+              to: mock.assets[0].token.address,
+              totalNetworkFee: 0,
+              adapters: [],
+            },
+          ],
+          partner: dummyAddress,
+          feePercent: 0,
+          permit: '0x00',
+          deadline: 0,
+          uuid: '0x00000000000000000000000000000000',
+        },
+      ])
+      const adapterData = mock.adapters.paraswapV5Adapter.interface.encodeFunctionData('multiSwap', [
+        polygon.paraswapV5.AugustusSwapper,
+        paraswapData,
+      ])
+
+      // try to trade on paraswap when token to is not supported
+      const tx = mock.pool.connect(owner).deposit(owner.address, [
+        {
+          adapter: mock.adapters.paraswapV5Adapter.address,
+          data: adapterData,
+        },
+      ])
+
+      await expect(tx).revertedWith('ParaswapV5Adapter: unsupported token from')
+    })
   })
 })
