@@ -111,19 +111,6 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable, ReentrancyGuard {
     return _getAccruedPerformanceFee(poolValue, feePercentage);
   }
 
-  function settleManagementFee() external whenNotPaused {
-    uint feePercentage = factory.getUserSettings(mirrored).managementFee;
-    address treasury = management.treasury();
-    _settleManagementFee(feePercentage, treasury);
-  }
-
-  function settlePerformanceFee() external whenNotPaused {
-    uint poolValue = getPoolContent().netValue;
-    uint feePercentage = factory.getUserSettings(mirrored).performanceFee;
-    address treasury = management.treasury();
-    _settlePerformanceFee(poolValue, feePercentage, treasury);
-  }
-
   function isRebalanceLocked() external view returns (bool) {
     RebalanceSettings memory settings = management.getRebalanceSettings();
     return _isRebalanceLocked(settings);
@@ -231,6 +218,19 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable, ReentrancyGuard {
 
     rebalanceCheckpoint = block.timestamp;
     emit RebalancePool();
+  }
+
+  function settleManagementFee() external whenNotPaused nonReentrant {
+    uint feePercentage = factory.getUserSettings(mirrored).managementFee;
+    address treasury = management.treasury();
+    _settleManagementFee(feePercentage, treasury);
+  }
+
+  function settlePerformanceFee() external whenNotPaused nonReentrant {
+    uint poolValue = getPoolContent().netValue;
+    uint feePercentage = factory.getUserSettings(mirrored).performanceFee;
+    address treasury = management.treasury();
+    _settlePerformanceFee(poolValue, feePercentage, treasury);
   }
 
   function setSuspended(bool _value) external onlyOwner {
