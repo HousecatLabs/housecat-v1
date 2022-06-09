@@ -13,6 +13,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   address public treasury;
   address public weth;
+  uint public minInitialDepositAmount = 1 ether;
   mapping(address => bool) private adapters;
   mapping(address => bool) private supportedIntegrations;
   address[] private supportedAssets;
@@ -49,6 +50,7 @@ contract HousecatManagement is Constants, Ownable, Pausable {
 
   event UpdateTreasury(address treasury);
   event UpdateWETH(address weth);
+  event UpdateMinInitialDeposit(uint minInitialDepositAmount);
   event SetAdapter(address adapter, bool enabled);
   event SetIntegration(address integration, bool enabled);
   event SetSupportedAssets(address[] _tokens);
@@ -80,6 +82,11 @@ contract HousecatManagement is Constants, Ownable, Pausable {
   function updateWETH(address _weth) external onlyOwner {
     weth = _weth;
     emit UpdateWETH(_weth);
+  }
+
+  function updateMinInitialDepositAmount(uint _minInitialDepositAmount) external onlyOwner {
+    minInitialDepositAmount = _minInitialDepositAmount;
+    emit UpdateMinInitialDeposit(_minInitialDepositAmount);
   }
 
   function isAdapter(address _adapter) external view returns (bool) {

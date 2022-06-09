@@ -5,6 +5,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { IToken, ITokenWithLiquidity } from '../../utils/mock-defi'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
 import { FeeSettingsStruct, RebalanceSettingsStruct } from '../../typechain-types/HousecatManagement'
+import { BigNumberish } from 'ethers'
 
 interface IWethWithAmountToMirrored extends IToken {
   amountToMirrored?: string
@@ -28,6 +29,7 @@ interface IMockHousecatAndPoolProps {
   rebalanceSettings?: RebalanceSettingsStruct
   managementFee?: FeeSettingsStruct
   performanceFee?: FeeSettingsStruct
+  minInitialDepositAmount?: BigNumberish
 }
 
 export interface IMockHousecatAndPool extends IMockHousecat {
@@ -56,6 +58,7 @@ const mockHousecatAndPool = async ({
   },
   managementFee = { defaultFee: 0, maxFee: parseUnits('0.1', 8), protocolTax: 0 },
   performanceFee = { defaultFee: 0, maxFee: parseUnits('0.25', 8), protocolTax: 0 },
+  minInitialDepositAmount = 0,
 }: IMockHousecatAndPoolProps): Promise<IMockHousecatAndPool> => {
   const mock = await mockHousecat({
     signer,
@@ -66,6 +69,7 @@ const mockHousecatAndPool = async ({
     rebalanceSettings,
     managementFee,
     performanceFee,
+    minInitialDepositAmount,
   })
   await mock.factory.connect(signer).createPool(mirrored.address, [])
   const pool = await ethers.getContractAt('HousecatPool', (await mock.factory.getPools(0, 1))[0])

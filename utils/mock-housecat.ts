@@ -1,4 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { BigNumberish } from 'ethers'
 import { HousecatFactory, HousecatManagement, IUniswapV2Router02 } from '../typechain-types'
 import { FeeSettingsStruct, RebalanceSettingsStruct } from '../typechain-types/HousecatManagement'
 import { paraswapV5 } from './addresses/polygon'
@@ -14,6 +15,7 @@ interface IMockHousecatProps {
   rebalanceSettings?: RebalanceSettingsStruct
   managementFee?: FeeSettingsStruct
   performanceFee?: FeeSettingsStruct
+  minInitialDepositAmount?: BigNumberish
 }
 
 export interface IMockHousecat {
@@ -35,6 +37,7 @@ export const mockHousecat = async ({
   rebalanceSettings,
   managementFee,
   performanceFee,
+  minInitialDepositAmount,
 }: IMockHousecatProps): Promise<IMockHousecat> => {
   const [amm, _weth, _assets] = await mockAssets({
     signer,
@@ -84,6 +87,10 @@ export const mockHousecat = async ({
 
   if (performanceFee) {
     await mgmt.connect(signer).updatePerformanceFee(performanceFee)
+  }
+
+  if (minInitialDepositAmount !== undefined) {
+    await mgmt.connect(signer).updateMinInitialDepositAmount(minInitialDepositAmount)
   }
 
   return {
