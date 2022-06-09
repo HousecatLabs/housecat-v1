@@ -31,9 +31,6 @@ describe('HousecatFactory', () => {
       const [poolAddress] = await factory.getPools(0, 1)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
 
-      // signer is the owner of the pool
-      expect(await instance.owner()).equal(signer.address)
-
       // mirrored address
       expect(await instance.mirrored()).equal(mirrored.address)
 
@@ -89,7 +86,7 @@ describe('HousecatFactory', () => {
     })
 
     it('should fail to initialize a second time', async () => {
-      const [signer, treasury, mirrorer, otherUser, mirrored] = await ethers.getSigners()
+      const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
       const { mgmt, factory } = await deployHousecat({
         signer,
         treasury: treasury.address,
@@ -98,7 +95,7 @@ describe('HousecatFactory', () => {
       await factory.connect(mirrorer).createPool(mirrored.address, [])
       const [poolAddress] = await factory.getPools(0, 1)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
-      const init = instance.initialize(otherUser.address, factory.address, mgmt.address, mirrored.address, 0)
+      const init = instance.initialize(factory.address, mgmt.address, mirrored.address, 0)
       await expect(init).revertedWith('HousecatPool: already initialized')
     })
 
@@ -308,7 +305,7 @@ describe('HousecatFactory', () => {
     await factory.connect(mirrorer).createPool(mirrored.address, [])
     const [poolAddress] = await factory.getPools(0, 1)
     const instance = await ethers.getContractAt('HousecatPool', poolAddress)
-    const init = instance.initialize(otherUser.address, factory.address, mgmt.address, mirrored.address, 0)
+    const init = instance.initialize(factory.address, mgmt.address, mirrored.address, 0)
     await expect(init).revertedWith('HousecatPool: already initialized')
   })
 })

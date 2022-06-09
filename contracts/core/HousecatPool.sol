@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import {SafeMath} from '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
 import {ReentrancyGuard} from '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 import {UserSettings, PoolTransaction, MirrorSettings, RebalanceSettings, WalletContent, TokenData, TokenMeta, PoolState} from './structs.sol';
@@ -11,7 +10,7 @@ import {HousecatQueries} from './HousecatQueries.sol';
 import {HousecatFactory} from './HousecatFactory.sol';
 import {HousecatManagement} from './HousecatManagement.sol';
 
-contract HousecatPool is HousecatQueries, ERC20, Ownable, ReentrancyGuard {
+contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
   using SafeMath for uint;
 
   HousecatFactory public factory;
@@ -31,6 +30,11 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable, ReentrancyGuard {
     _;
   }
 
+  modifier onlyOwner() {
+    require(msg.sender == management.owner(), 'HousecatPool: only owner');
+    _;
+  }
+
   event TransferPoolToken(address indexed from, address indexed to, uint amount, uint value);
   event RebalancePool();
   event ManagementFeeCheckpointUpdated(uint secondsPassed);
@@ -44,14 +48,12 @@ contract HousecatPool is HousecatQueries, ERC20, Ownable, ReentrancyGuard {
   receive() external payable {}
 
   function initialize(
-    address _owner,
     address _factory,
     address _management,
     address _mirrored,
     uint _poolIdx
   ) external {
     require(!initialized, 'HousecatPool: already initialized');
-    _transferOwnership(_owner);
     factory = HousecatFactory(payable(_factory));
     management = HousecatManagement(_management);
     mirrored = _mirrored;

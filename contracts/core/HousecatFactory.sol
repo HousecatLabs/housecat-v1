@@ -38,8 +38,7 @@ contract HousecatFactory {
     require(!isPool[_mirrored], 'HousecatFactory: mirrored is pool');
     address poolAddress = Clones.clone(poolTemplateContract);
     HousecatPool pool = HousecatPool(payable(poolAddress));
-    HousecatManagement mgmt = HousecatManagement(managementContract);
-    pool.initialize(mgmt.owner(), address(this), managementContract, _mirrored, pools.length + 1);
+    pool.initialize(address(this), managementContract, _mirrored, pools.length + 1);
     pools.push(poolAddress);
     mirroredPool[_mirrored] = poolAddress;
     isPool[poolAddress] = true;

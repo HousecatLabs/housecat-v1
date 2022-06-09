@@ -49,7 +49,7 @@ describe('HousecatPool', () => {
       const [signer, mirrored, otherUser] = await ethers.getSigners()
       const { pool } = await mockHousecatAndPool({ signer, mirrored })
       const tx = pool.connect(otherUser).setSuspended(true)
-      await expect(tx).revertedWith('Ownable: caller is not the owner')
+      await expect(tx).revertedWith('HousecatPool: only owner')
     })
 
     it('sets the suspended value', async () => {
