@@ -223,6 +223,7 @@ contract HousecatQueries is Constants {
       _loanData,
       _excludeDelisted
     );
+    uint netValue = assetValue > loanValue ? assetValue.sub(loanValue) : 0;
     return
       WalletContent({
         assetBalances: assetBalances,
@@ -231,7 +232,8 @@ contract HousecatQueries is Constants {
         loanWeights: loanWeights,
         assetValue: assetValue,
         loanValue: loanValue,
-        netValue: assetValue.sub(loanValue)
+        totalValue: assetValue.add(loanValue),
+        netValue: netValue
       });
   }
 }

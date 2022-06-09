@@ -279,6 +279,7 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
 
     PoolState memory poolStateBefore = PoolState({
       ethBalance: address(this).balance.sub(msg.value),
+      totalValue: poolContentBefore.totalValue,
       netValue: poolContentBefore.netValue,
       weightDifference: weightDifferenceBefore
     });
@@ -296,6 +297,7 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
 
     PoolState memory poolStateAfter = PoolState({
       ethBalance: address(this).balance,
+      totalValue: poolContentAfter.totalValue,
       netValue: poolContentAfter.netValue,
       weightDifference: weightDifferenceAfter
     });
@@ -304,18 +306,18 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
   }
 
   function _combineWeights(WalletContent memory _content) private pure returns (uint[] memory) {
-    uint[] memory combined = new uint[](_content.assetWeights.length + _content.loanWeights.length);
-    if (_content.netValue > 0) {
+    uint[] memory combinedWeights = new uint[](_content.assetWeights.length + _content.loanWeights.length);
+    if (_content.totalValue != 0) {
       for (uint i = 0; i < _content.assetWeights.length; i++) {
-        combined[i] = _content.assetWeights[i].mul(_content.assetValue).div(_content.netValue);
+        combinedWeights[i] = _content.assetWeights[i].mul(_content.assetValue).div(_content.totalValue);
       }
       for (uint i = 0; i < _content.loanWeights.length; i++) {
-        combined[i + _content.assetWeights.length] = _content.loanWeights[i].mul(_content.loanValue).div(
-          _content.netValue
+        combinedWeights[i + _content.assetWeights.length] = _content.loanWeights[i].mul(_content.loanValue).div(
+          _content.totalValue
         );
       }
     }
-    return combined;
+    return combinedWeights;
   }
 
   function _getWeightDifference(WalletContent memory _poolContent, WalletContent memory _mirroredContent)
@@ -345,7 +347,7 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
     PoolState memory _after
   ) private pure {
     if (
-      _after.weightDifference > _mirrorSettings.maxWeightDifference && _after.netValue > _mirrorSettings.minPoolValue
+      _after.weightDifference > _mirrorSettings.maxWeightDifference && _after.totalValue > _mirrorSettings.minPoolValue
     ) {
       require(_after.weightDifference <= _before.weightDifference, 'HousecatPool: weight diff increased');
     }
