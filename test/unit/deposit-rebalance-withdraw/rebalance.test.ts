@@ -86,6 +86,34 @@ describe('HousecatPool: rebalance', () => {
     // initial deposit
     await deposit(pool, adapters, mirrorer, parseEther('5'))
 
+    // make pool unbalanced by adding asset0 to mirrored
+    await assets[0].token.mint(mirrored.address, parseEther('1'))
+
+    // try to trade too much weth -> asset0
+    const rebalance = pool.connect(signer).rebalance(signer.address, [
+      {
+        adapter: adapters.uniswapV2Adapter.address,
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+          amm.address,
+          [weth.token.address, assets[0].token.address],
+          parseEther('5'),
+          1,
+        ]),
+      },
+    ])
+    await expect(rebalance).revertedWith('HousecatPool: weight diff increased')
+  })
+
+  it('should fail to reduce pool value through slippage if pool is already within max weight difference limits', async () => {
+    const [signer, mirrored, mirrorer] = await ethers.getSigners()
+    const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool({ signer, mirrored })
+
+    // initial deposit
+    await deposit(pool, adapters, mirrorer, parseEther('5'))
+
+    // add small amount of asset0 to mirrored
+    await assets[0].token.mint(mirrored.address, parseEther('0.01'))
+
     // try to trade weth -> asset0
     const rebalance = pool.connect(signer).rebalance(signer.address, [
       {
@@ -93,12 +121,12 @@ describe('HousecatPool: rebalance', () => {
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
           amm.address,
           [weth.token.address, assets[0].token.address],
-          parseEther('2'),
+          parseEther('0.005'),
           1,
         ]),
       },
     ])
-    await expect(rebalance).revertedWith('HousecatPool: weight diff increased')
+    await expect(rebalance).revertedWith('HousecatPool: already balanced')
   })
 
   it('should fail if pool is suspended', async () => {
@@ -132,7 +160,7 @@ describe('HousecatPool: rebalance', () => {
       await deposit(pool, adapters, signer, parseEther('10'))
 
       // send a low liquidity Asset0 to the mirrored
-      assets[0].token.mint(mirrored.address, parseEther('10'))
+      await assets[0].token.mint(mirrored.address, parseEther('10'))
 
       // try to rebalance when slippage limit is 1%
       const tx = pool.connect(signer).rebalance(signer.address, [
@@ -171,7 +199,7 @@ describe('HousecatPool: rebalance', () => {
       await deposit(pool, adapters, signer, parseEther('10'))
 
       // send a low liquidity Asset0 to the mirrored
-      assets[0].token.mint(mirrored.address, parseEther('10'))
+      await assets[0].token.mint(mirrored.address, parseEther('10'))
 
       // try to rebalance when slippage limit is high (50%) but cumulative slippage limit is low (1%)
       const tx = pool.connect(signer).rebalance(signer.address, [
