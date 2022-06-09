@@ -42,16 +42,24 @@ describe('HousecatPool: deposit', () => {
 
   it('should fail to change the loan ratio of the pool to differ from the mirrored loan ratio', async () => {
     const [signer, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool({
+    const { pool, adapters, loans } = await mockHousecatAndPool({
       signer,
       mirrored,
       weth: { price: '1', amountToMirrored: '10' },
       assets: [{ price: '1', reserveToken: '10000', reserveWeth: '10000' }],
-      loans: [{ price: '1', amountToMirrored: '10' }],
+      loans: [{ price: '1', amountToMirrored: '0' }],
     })
 
+    // initial deposit when mirrored holds only weth
+    await deposit(pool, adapters, signer, parseEther('10'))
+
+    // add loan to mirrored and pool
+    await loans[0].token.mint(mirrored.address, parseEther('5'))
+    await loans[0].token.mint(pool.address, parseEther('5'))
+
     // deposit ETH without adjusting the loan position
-    const tx = deposit(pool, adapters, signer, parseEther('2'))
+    const tx = deposit(pool, adapters, signer, parseEther('10'))
+
     await expect(tx).revertedWith('HousecatPool: weight diff increased')
   })
 

@@ -52,11 +52,13 @@ struct WalletContent {
   uint[] loanWeights;
   uint assetValue;
   uint loanValue;
+  uint totalValue;
   uint netValue;
 }
 
 struct PoolState {
   uint ethBalance;
+  uint totalValue;
   uint netValue;
   uint weightDifference;
 }

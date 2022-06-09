@@ -121,6 +121,87 @@ describe('HousecatQueries', () => {
   })
 
   describe('getContent', () => {
+    it('should have netValue == assetValue - loanValue if loan value is less than asset value', async () => {
+      const [signer, account] = await ethers.getSigners()
+      const queries = await deployQueries(signer)
+
+      const [, weth, assets] = await mockAssets({
+        signer,
+        weth: { price: '1' },
+        tokens: [
+          { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+          { price: '1', reserveToken: '10000', reserveWeth: '10000' },
+        ],
+      })
+
+      await weth.token.mint(account.address, parseEther('1'))
+      await assets[0].token.mint(account.address, parseEther('1'))
+      await assets[1].token.mint(account.address, parseEther('1'))
+
+      const loans = await mockLoans({
+        signer,
+        tokens: [{ price: '1' }, { price: '1' }],
+      })
+
+      await loans[0].token.mint(account.address, parseEther('1'))
+      await loans[1].token.mint(account.address, parseEther('1'))
+
+      const assetData = {
+        tokens: [weth.token.address, assets[0].token.address, assets[1].token.address],
+        decimals: [18, 18, 18],
+        prices: [parseEther('1'), parseEther('1'), parseEther('1')],
+        delisted: [false, false, true],
+      }
+
+      const loanData = {
+        tokens: [loans[0].token.address, loans[1].token.address],
+        decimals: [18, 18],
+        prices: [parseEther('1'), parseEther('1')],
+        delisted: [false, true],
+      }
+
+      const content = await queries.getContent(account.address, assetData, loanData, false)
+      expect(content.netValue).eq(parseEther('1'))
+    })
+
+    it('should have netValue == 0 if loan value exceeds asset value', async () => {
+      const [signer, account] = await ethers.getSigners()
+      const queries = await deployQueries(signer)
+
+      const [, weth] = await mockAssets({
+        signer,
+        weth: { price: '1' },
+        tokens: [],
+      })
+
+      await weth.token.mint(account.address, parseEther('1'))
+
+      const loans = await mockLoans({
+        signer,
+        tokens: [{ price: '1' }, { price: '1' }],
+      })
+
+      await loans[0].token.mint(account.address, parseEther('1'))
+      await loans[1].token.mint(account.address, parseEther('1'))
+
+      const assetData = {
+        tokens: [weth.token.address],
+        decimals: [18, 18, 18],
+        prices: [parseEther('1'), parseEther('1'), parseEther('1')],
+        delisted: [false, false, true],
+      }
+
+      const loanData = {
+        tokens: [loans[0].token.address, loans[1].token.address],
+        decimals: [18, 18],
+        prices: [parseEther('1'), parseEther('1')],
+        delisted: [false, true],
+      }
+
+      const content = await queries.getContent(account.address, assetData, loanData, false)
+      expect(content.netValue).eq(0)
+    })
+
     it('should exclude delisted correctly', async () => {
       const [signer, account] = await ethers.getSigners()
       const queries = await deployQueries(signer)
