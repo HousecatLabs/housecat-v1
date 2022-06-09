@@ -128,7 +128,8 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require weight difference did not increase
-    _validateWeightDifference(poolStateBefore, poolStateAfter);
+    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
+    _validateWeightDifference(mirrorSettings, poolStateBefore, poolStateAfter);
 
     // require pool value did not decrease
     require(poolStateAfter.netValue >= poolStateBefore.netValue, 'HousecatPool: pool value reduced');
@@ -159,7 +160,8 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
     require(poolStateAfter.ethBalance >= poolStateBefore.ethBalance, 'HousecatPool: ETH balance decreased');
 
     // require weight difference did not increase
-    _validateWeightDifference(poolStateBefore, poolStateAfter);
+    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
+    _validateWeightDifference(mirrorSettings, poolStateBefore, poolStateAfter);
 
     // settle accrued fees
     _settleFees(poolStateBefore.netValue);
@@ -192,9 +194,9 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
   function rebalance(address _rewardsTo, PoolTransaction[] calldata _transactions) external whenNotPaused nonReentrant {
     require(!suspended, 'HousecatPool: suspended');
 
-    RebalanceSettings memory settings = management.getRebalanceSettings();
-    require(!_isRebalanceLocked(settings), 'HousecatPool: rebalance locked');
-    if (settings.rebalancers.length > 0) {
+    RebalanceSettings memory rebalanceSettings = management.getRebalanceSettings();
+    require(!_isRebalanceLocked(rebalanceSettings), 'HousecatPool: rebalance locked');
+    if (rebalanceSettings.rebalancers.length > 0) {
       require(management.isRebalancer(msg.sender), 'HousecatPool: only rebalancer');
     }
 
@@ -208,15 +210,18 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
     uint slippage = poolStateAfter.netValue >= poolStateBefore.netValue
       ? 0
       : poolStateBefore.netValue.sub(poolStateAfter.netValue).mul(PERCENT_100).div(poolStateBefore.netValue);
-    _updateCumulativeSlippage(settings, slippage);
 
-    _validateSlippage(settings, slippage);
+    _updateCumulativeSlippage(rebalanceSettings, slippage);
+
+    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
+
+    _validateSlippage(rebalanceSettings, mirrorSettings, poolStateBefore.weightDifference, slippage);
 
     // require weight difference did not increase
-    _validateWeightDifference(poolStateBefore, poolStateAfter);
+    _validateWeightDifference(mirrorSettings, poolStateBefore, poolStateAfter);
 
     // mint trade tax based on how much the weight difference reduced
-    _collectRebalanceReward(settings, poolStateBefore, poolStateAfter, _rewardsTo);
+    _collectRebalanceReward(rebalanceSettings, poolStateBefore, poolStateAfter, _rewardsTo);
 
     rebalanceCheckpoint = block.timestamp;
     emit RebalancePool();
@@ -334,14 +339,27 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
     return secondsSincePreviousRebalance < _rebalanceSettings.minSecondsBetweenRebalances;
   }
 
-  function _validateWeightDifference(PoolState memory _before, PoolState memory _after) private view {
-    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
-    if (_after.weightDifference > mirrorSettings.maxWeightDifference && _after.netValue > mirrorSettings.minPoolValue) {
+  function _validateWeightDifference(
+    MirrorSettings memory _mirrorSettings,
+    PoolState memory _before,
+    PoolState memory _after
+  ) private pure {
+    if (
+      _after.weightDifference > _mirrorSettings.maxWeightDifference && _after.netValue > _mirrorSettings.minPoolValue
+    ) {
       require(_after.weightDifference <= _before.weightDifference, 'HousecatPool: weight diff increased');
     }
   }
 
-  function _validateSlippage(RebalanceSettings memory _rebalanceSettings, uint _slippage) private view {
+  function _validateSlippage(
+    RebalanceSettings memory _rebalanceSettings,
+    MirrorSettings memory _mirrorSettings,
+    uint _initialWeightDifference,
+    uint _slippage
+  ) private view {
+    if (_slippage > 0) {
+      require(_initialWeightDifference > _mirrorSettings.maxWeightDifference, 'HousecatPool: already balanced');
+    }
     require(_slippage <= _rebalanceSettings.maxSlippage, 'HousecatPool: slippage exceeded');
     require(cumulativeSlippage <= _rebalanceSettings.maxCumulativeSlippage, 'HousecatPool: cum. slippage exceeded');
   }
