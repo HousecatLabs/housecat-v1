@@ -36,6 +36,10 @@ contract HousecatFactory {
   function createPool(address _mirrored, PoolTransaction[] calldata _transactions) external payable whenNotPaused {
     require(mirroredPool[_mirrored] == address(0), 'HousecatFactory: already mirrored');
     require(!isPool[_mirrored], 'HousecatFactory: mirrored is pool');
+    require(
+      msg.value >= HousecatManagement(managementContract).minInitialDepositAmount(),
+      'HousecatFactory: insuff. initial deposit'
+    );
     address poolAddress = Clones.clone(poolTemplateContract);
     HousecatPool pool = HousecatPool(payable(poolAddress));
     pool.initialize(address(this), managementContract, _mirrored, pools.length + 1);

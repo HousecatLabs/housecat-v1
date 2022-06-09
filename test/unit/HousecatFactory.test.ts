@@ -22,11 +22,12 @@ describe('HousecatFactory', () => {
 
     it('should create a pool instance with correct initial state', async () => {
       const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
-      const { factory } = await deployHousecat({
+      const { factory, mgmt } = await deployHousecat({
         signer,
         treasury: treasury.address,
         weth: ethers.constants.AddressZero,
       })
+      await mgmt.updateMinInitialDepositAmount(0)
       await factory.connect(mirrorer).createPool(mirrored.address, [])
       const [poolAddress] = await factory.getPools(0, 1)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
@@ -92,6 +93,7 @@ describe('HousecatFactory', () => {
         treasury: treasury.address,
         weth: ethers.constants.AddressZero,
       })
+      await mgmt.updateMinInitialDepositAmount(0)
       await factory.connect(mirrorer).createPool(mirrored.address, [])
       const [poolAddress] = await factory.getPools(0, 1)
       const instance = await ethers.getContractAt('HousecatPool', poolAddress)
@@ -101,11 +103,12 @@ describe('HousecatFactory', () => {
 
     it('should fail to create a pool if the mirrored user already has a pool', async () => {
       const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
-      const { factory } = await deployHousecat({
+      const { factory, mgmt } = await deployHousecat({
         signer,
         treasury: treasury.address,
         weth: ethers.constants.AddressZero,
       })
+      await mgmt.updateMinInitialDepositAmount(0)
       await factory.connect(mirrorer).createPool(mirrored.address, [])
       const createSecond = factory.connect(mirrorer).createPool(mirrored.address, [])
       await expect(createSecond).revertedWith('HousecatFactory: already mirrored')
@@ -113,15 +116,28 @@ describe('HousecatFactory', () => {
 
     it('should fail to create a pool that mirrors another pool', async () => {
       const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
-      const { factory } = await deployHousecat({
+      const { factory, mgmt } = await deployHousecat({
         signer,
         treasury: treasury.address,
         weth: ethers.constants.AddressZero,
       })
+      await mgmt.updateMinInitialDepositAmount(0)
       await factory.connect(mirrorer).createPool(mirrored.address, [])
       const poolAddress = await factory.getPoolByMirrored(mirrored.address)
       const createSecond = factory.connect(mirrorer).createPool(poolAddress, [])
       await expect(createSecond).revertedWith('HousecatFactory: mirrored is pool')
+    })
+
+    it('should fail if initial deposit value is too small', async () => {
+      const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
+      const { factory, mgmt } = await deployHousecat({
+        signer,
+        treasury: treasury.address,
+        weth: ethers.constants.AddressZero,
+      })
+      await mgmt.updateMinInitialDepositAmount(parseEther('1'))
+      const createPool = factory.connect(mirrorer).createPool(mirrored.address, [])
+      await expect(createPool).revertedWith('HousecatFactory: insuff. initial deposit')
     })
   })
 
@@ -296,12 +312,13 @@ describe('HousecatFactory', () => {
   })
 
   describe('getPool', async () => {
-    const [signer, treasury, mirrorer, otherUser, mirrored] = await ethers.getSigners()
+    const [signer, treasury, mirrorer, mirrored] = await ethers.getSigners()
     const { mgmt, factory } = await deployHousecat({
       signer,
       treasury: treasury.address,
       weth: ethers.constants.AddressZero,
     })
+    await mgmt.updateMinInitialDepositAmount(0)
     await factory.connect(mirrorer).createPool(mirrored.address, [])
     const [poolAddress] = await factory.getPools(0, 1)
     const instance = await ethers.getContractAt('HousecatPool', poolAddress)

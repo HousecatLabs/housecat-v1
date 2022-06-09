@@ -96,6 +96,32 @@ describe('HousecatManagement', () => {
     })
   })
 
+  describe('updateMinInitialDepositAmount', async () => {
+    it('should fail if caller is not the owner', async () => {
+      const [signer, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(otherUser).updateMinInitialDepositAmount(0)
+      await expect(update).to.revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('should update minInitialDepositValue successfully when called by the owner', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      await mgmt.connect(signer).updateMinInitialDepositAmount(ethers.utils.parseEther('1000'))
+      expect(await mgmt.minInitialDepositAmount()).equal(ethers.utils.parseEther('1000'))
+    })
+
+    it('should emit UpdateMinInitialDeposit event', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(signer).updateMinInitialDepositAmount(ethers.utils.parseEther('1000'))
+      await expect(update).emit(mgmt, 'UpdateMinInitialDeposit').withArgs(ethers.utils.parseEther('1000'))
+    })
+  })
+
   describe('setAdapter', async () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
