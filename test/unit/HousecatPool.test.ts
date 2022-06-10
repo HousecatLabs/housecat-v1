@@ -44,6 +44,80 @@ describe('HousecatPool', () => {
     })
   })
 
+  describe('getWeightDifference', () => {
+    it('returns 0 if both pool and mirrored are empty', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const { pool } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        weth: { price: '1', amountToMirrored: '0' },
+        assets: [{ price: '1', amountToMirrored: '0', reserveToken: '1000', reserveWeth: '1000' }],
+      })
+      const diff = await pool.getWeightDifference()
+      expect(diff).eq(0)
+    })
+
+    it('returns 100% if the pool is empty but mirrored is not', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const { pool } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        weth: { price: '1', amountToMirrored: '1' },
+        assets: [{ price: '1', amountToMirrored: '1', reserveToken: '1000', reserveWeth: '1000' }],
+      })
+      const percent100 = await pool.getPercent100()
+      const diff = await pool.getWeightDifference()
+      expect(diff).eq(percent100)
+    })
+
+    it('returns correct difference if pool and mirrored have different weights', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const { pool, assets, weth } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        weth: { price: '1', amountToMirrored: '1' },
+        assets: [{ price: '1', amountToMirrored: '1', reserveToken: '1000', reserveWeth: '1000' }],
+        mirrorSettings: {
+          minPoolValue: 0,
+          minMirroredValue: parseEther('2').add(1),
+          maxWeightDifference: 1e6,
+        },
+      })
+
+      // send asset0 and weth to pool so that pool weights are [20% 80%]
+      await weth.token.mint(pool.address, parseEther('1'))
+      await assets[0].token.mint(pool.address, parseEther('4'))
+
+      // mirrored weights are [50% 50%] => diff should be 30% + 30% = 60%
+      const diff = await pool.getWeightDifference()
+      const percent100 = await pool.getPercent100()
+      expect(diff).eq(percent100.mul(60).div(100))
+    })
+
+    it('returns 0 if pool and mirrored have the same weights', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const { pool, assets, weth } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        weth: { price: '1', amountToMirrored: '1' },
+        assets: [{ price: '1', amountToMirrored: '1', reserveToken: '1000', reserveWeth: '1000' }],
+        mirrorSettings: {
+          minPoolValue: 0,
+          minMirroredValue: parseEther('2').add(1),
+          maxWeightDifference: 1e6,
+        },
+      })
+
+      // send asset0 and weth to pool so that pool weights are [50% 50%]
+      await weth.token.mint(pool.address, parseEther('1'))
+      await assets[0].token.mint(pool.address, parseEther('1'))
+
+      // mirrored weights are [50% 50%] => diff should be 0
+      const diff = await pool.getWeightDifference()
+      expect(diff).eq(0)
+    })
+  })
+
   describe('setSuspended', () => {
     it('only owner allowed to call', async () => {
       const [signer, mirrored, otherUser] = await ethers.getSigners()

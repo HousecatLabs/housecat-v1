@@ -14,6 +14,7 @@ struct PoolTransaction {
 
 struct MirrorSettings {
   uint minPoolValue;
+  uint minMirroredValue;
   uint32 maxWeightDifference;
 }
 

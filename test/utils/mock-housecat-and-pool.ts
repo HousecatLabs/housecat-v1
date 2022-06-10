@@ -4,8 +4,12 @@ import { HousecatPool } from '../../typechain-types'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { IToken, ITokenWithLiquidity } from '../../utils/mock-defi'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
-import { FeeSettingsStruct, RebalanceSettingsStruct } from '../../typechain-types/HousecatManagement'
-import { BigNumberish } from 'ethers'
+import {
+  FeeSettingsStruct,
+  MirrorSettingsStruct,
+  RebalanceSettingsStruct,
+} from '../../typechain-types/HousecatManagement'
+import { BigNumberish, Wallet } from 'ethers'
 
 interface IWethWithAmountToMirrored extends IToken {
   amountToMirrored?: string
@@ -22,11 +26,12 @@ interface ILoanWithAmountToMirrored extends IToken {
 interface IMockHousecatAndPoolProps {
   signer: SignerWithAddress
   treasury?: SignerWithAddress
-  mirrored: SignerWithAddress
+  mirrored: SignerWithAddress | Wallet
   weth?: IWethWithAmountToMirrored
   assets?: IAssetWithAmountToMirrored[]
   loans?: ILoanWithAmountToMirrored[]
   rebalanceSettings?: RebalanceSettingsStruct
+  mirrorSettings?: MirrorSettingsStruct
   managementFee?: FeeSettingsStruct
   performanceFee?: FeeSettingsStruct
   minInitialDepositAmount?: BigNumberish
@@ -56,6 +61,11 @@ const mockHousecatAndPool = async ({
     protocolTax: 0,
     rebalancers: [],
   },
+  mirrorSettings = {
+    minPoolValue: 0,
+    minMirroredValue: 0,
+    maxWeightDifference: 5e6,
+  },
   managementFee = { defaultFee: 0, maxFee: parseUnits('0.1', 8), protocolTax: 0 },
   performanceFee = { defaultFee: 0, maxFee: parseUnits('0.25', 8), protocolTax: 0 },
   minInitialDepositAmount = 0,
@@ -67,6 +77,7 @@ const mockHousecatAndPool = async ({
     assets,
     loans,
     rebalanceSettings,
+    mirrorSettings,
     managementFee,
     performanceFee,
     minInitialDepositAmount,

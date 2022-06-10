@@ -121,14 +121,18 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
   function deposit(address _to, PoolTransaction[] calldata _transactions) external payable whenNotPaused nonReentrant {
     require(!suspended, 'HousecatPool: suspended');
 
+    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
+
     // execute transactions and get pool states before and after
-    (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
+    (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(
+      _transactions,
+      mirrorSettings
+    );
 
     // require eth balance did not change
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
 
     // require weight difference did not increase
-    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
     _validateWeightDifference(mirrorSettings, poolStateBefore, poolStateAfter);
 
     // require pool value did not decrease
@@ -145,7 +149,7 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
     // mint pool tokens an amount based on the deposit value
     uint amountMint = depositValue;
     if (totalSupply() > 0) {
-      require(poolStateBefore.netValue > 0, 'HousecatPool: pool value 0');
+      require(poolStateBefore.netValue > 0, 'HousecatPool: pool netValue 0');
       amountMint = totalSupply().mul(depositValue).div(poolStateBefore.netValue);
     }
     _mint(_to, amountMint);
@@ -153,14 +157,18 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
   }
 
   function withdraw(address _to, PoolTransaction[] calldata _transactions) external whenNotPaused nonReentrant {
+    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
+
     // execute transactions and get pool states before and after
-    (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
+    (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(
+      _transactions,
+      mirrorSettings
+    );
 
     // require eth balance did not decrease
     require(poolStateAfter.ethBalance >= poolStateBefore.ethBalance, 'HousecatPool: ETH balance decreased');
 
     // require weight difference did not increase
-    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
     _validateWeightDifference(mirrorSettings, poolStateBefore, poolStateAfter);
 
     // settle accrued fees
@@ -200,8 +208,13 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
       require(management.isRebalancer(msg.sender), 'HousecatPool: only rebalancer');
     }
 
+    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
+
     // execute transactions and get pool states before and after
-    (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(_transactions);
+    (PoolState memory poolStateBefore, PoolState memory poolStateAfter) = _executeTransactions(
+      _transactions,
+      mirrorSettings
+    );
 
     // require eth balance did not change
     require(poolStateAfter.ethBalance == poolStateBefore.ethBalance, 'HousecatPool: ETH balance changed');
@@ -212,8 +225,6 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
       : poolStateBefore.netValue.sub(poolStateAfter.netValue).mul(PERCENT_100).div(poolStateBefore.netValue);
 
     _updateCumulativeSlippage(rebalanceSettings, slippage);
-
-    MirrorSettings memory mirrorSettings = management.getMirrorSettings();
 
     _validateSlippage(rebalanceSettings, mirrorSettings, poolStateBefore.weightDifference, slippage);
 
@@ -265,18 +276,20 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
     return _getTokenData(loans, loansMeta);
   }
 
-  function _executeTransactions(PoolTransaction[] calldata _transactions)
+  function _executeTransactions(PoolTransaction[] calldata _transactions, MirrorSettings memory _mirrorSettings)
     private
     returns (PoolState memory, PoolState memory)
   {
     TokenData memory assets = _getAssetData();
     TokenData memory loans = _getLoanData();
 
-    // get pool state before
-    WalletContent memory mirroredContent = _getContent(mirrored, assets, loans, true);
+    // get state before
     WalletContent memory poolContentBefore = _getContent(address(this), assets, loans, false);
-    uint weightDifferenceBefore = _getWeightDifference(poolContentBefore, mirroredContent);
-
+    WalletContent memory targetContent = _getContent(mirrored, assets, loans, true);
+    if (targetContent.totalValue < _mirrorSettings.minMirroredValue) {
+      targetContent = poolContentBefore;
+    }
+    uint weightDifferenceBefore = _getWeightDifference(poolContentBefore, targetContent);
     PoolState memory poolStateBefore = PoolState({
       ethBalance: address(this).balance.sub(msg.value),
       totalValue: poolContentBefore.totalValue,
@@ -291,10 +304,9 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
       require(success, string(result));
     }
 
-    // get pool state after
+    // get state after
     WalletContent memory poolContentAfter = _getContent(address(this), assets, loans, false);
-    uint weightDifferenceAfter = _getWeightDifference(poolContentAfter, mirroredContent);
-
+    uint weightDifferenceAfter = _getWeightDifference(poolContentAfter, targetContent);
     PoolState memory poolStateAfter = PoolState({
       ethBalance: address(this).balance,
       totalValue: poolContentAfter.totalValue,
@@ -320,18 +332,18 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
     return combinedWeights;
   }
 
-  function _getWeightDifference(WalletContent memory _poolContent, WalletContent memory _mirroredContent)
+  function _getWeightDifference(WalletContent memory _poolContent, WalletContent memory _targetContent)
     private
     pure
     returns (uint)
   {
     uint[] memory poolWeights = _combineWeights(_poolContent);
-    uint[] memory mirroredWeights = _combineWeights(_mirroredContent);
+    uint[] memory targetWeights = _combineWeights(_targetContent);
     uint totalDiff;
     for (uint i; i < poolWeights.length; i++) {
-      totalDiff += poolWeights[i] > mirroredWeights[i]
-        ? poolWeights[i].sub(mirroredWeights[i])
-        : mirroredWeights[i].sub(poolWeights[i]);
+      totalDiff += poolWeights[i] > targetWeights[i]
+        ? poolWeights[i].sub(targetWeights[i])
+        : targetWeights[i].sub(poolWeights[i]);
     }
     return totalDiff;
   }

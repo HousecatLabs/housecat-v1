@@ -446,6 +446,7 @@ describe('HousecatManagement', () => {
     const percent100 = BigNumber.from((1e8).toString())
     const validMirrorSettings = {
       minPoolValue: oneUSD.mul(10),
+      minMirroredValue: oneUSD.mul(10),
       maxWeightDifference: percent100.mul(2).div(100),
     }
 
