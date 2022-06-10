@@ -3,7 +3,8 @@ import fs from 'fs'
 import { deployHousecat, deployQueries } from '../../utils/deploy-contracts'
 import polygon from '../../utils/addresses/polygon'
 
-const gasPrice = ethers.utils.parseUnits('45', 'gwei')
+const gasPrice = ethers.utils.parseUnits('50', 'gwei')
+const gasLimit = undefined//6e6
 
 const main = async () => {
   const [owner] = await ethers.getSigners()
@@ -23,8 +24,9 @@ const main = async () => {
       polygon.paraswapV5.AugustusSwapper,
     ],
     gasPrice,
+    gasLimit,
   })
-  const queries = await deployQueries(owner, gasPrice)
+  const queries = await deployQueries(owner, gasPrice, gasLimit)
   const deployment = {
     timestamp: new Date().toISOString(),
     network: hre.hardhatArguments.network,

@@ -13,15 +13,15 @@ import {
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 import { BigNumber } from 'ethers'
 
-export const deployQueries = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<HousecatQueries> => {
+export const deployQueries = async (signer: SignerWithAddress, gasPrice?: BigNumber, gasLimit?: number): Promise<HousecatQueries> => {
   const HousecatQueries = await ethers.getContractFactory('HousecatQueries')
-  const contract = await HousecatQueries.connect(signer).deploy({ gasPrice })
+  const contract = await HousecatQueries.connect(signer).deploy({ gasPrice, gasLimit })
   return contract.deployed()
 }
 
-export const deployPool = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<HousecatPool> => {
+export const deployPool = async (signer: SignerWithAddress, gasPrice?: BigNumber, gasLimit?: number): Promise<HousecatPool> => {
   const HousecatPool = await ethers.getContractFactory('HousecatPool')
-  const contract = await HousecatPool.connect(signer).deploy({ gasPrice })
+  const contract = await HousecatPool.connect(signer).deploy({ gasPrice, gasLimit })
   return contract.deployed()
 }
 
@@ -29,10 +29,11 @@ export const deployManagement = async (
   signer: SignerWithAddress,
   treasury: string,
   weth: string,
-  gasPrice?: BigNumber
+  gasPrice?: BigNumber,
+  gasLimit?: number,
 ): Promise<HousecatManagement> => {
   const HousecatManagement = await ethers.getContractFactory('HousecatManagement')
-  const contract = await HousecatManagement.connect(signer).deploy(treasury, weth, { gasPrice })
+  const contract = await HousecatManagement.connect(signer).deploy(treasury, weth, { gasPrice, gasLimit })
   return contract.deployed()
 }
 
@@ -40,10 +41,11 @@ export const deployFactory = async (
   signer: SignerWithAddress,
   management: string,
   poolTemplate: string,
-  gasPrice?: BigNumber
+  gasPrice?: BigNumber,
+  gasLimit?: number,
 ): Promise<HousecatFactory> => {
   const HousecatFactory = await ethers.getContractFactory('HousecatFactory')
-  const contract = await HousecatFactory.connect(signer).deploy(management, poolTemplate, { gasPrice })
+  const contract = await HousecatFactory.connect(signer).deploy(management, poolTemplate, { gasPrice, gasLimit })
   return contract.deployed()
 }
 
@@ -54,21 +56,21 @@ export interface IAdapters {
   paraswapV5Adapter: ParaswapV5Adapter
 }
 
-export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNumber): Promise<IAdapters> => {
+export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNumber, gasLimit?: number): Promise<IAdapters> => {
   const uniswapV2Adapter = await (await ethers.getContractFactory('UniswapV2Adapter'))
     .connect(signer)
     .deploy({ gasPrice })
   await uniswapV2Adapter.deployed()
 
-  const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy({ gasPrice })
+  const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy({ gasPrice, gasLimit })
   await aaveV2Adapter.deployed()
 
-  const wethAdapter = await (await ethers.getContractFactory('WETHAdapter')).connect(signer).deploy({ gasPrice })
+  const wethAdapter = await (await ethers.getContractFactory('WETHAdapter')).connect(signer).deploy({ gasPrice, gasLimit })
   await wethAdapter.deployed()
 
   const paraswapV5Adapter = await (await ethers.getContractFactory('ParaswapV5Adapter'))
     .connect(signer)
-    .deploy({ gasPrice })
+    .deploy({ gasPrice, gasLimit })
   await paraswapV5Adapter.deployed()
 
   return { uniswapV2Adapter, aaveV2Adapter, wethAdapter, paraswapV5Adapter }
@@ -85,6 +87,7 @@ export interface IDeployHousecat {
   loansMeta?: TokenMetaStruct[]
   integrations?: string[]
   gasPrice?: BigNumber
+  gasLimit?: number
 }
 
 export interface IHousecat {
@@ -105,9 +108,10 @@ export const deployHousecat = async ({
   loansMeta,
   integrations,
   gasPrice,
+  gasLimit,
 }: IDeployHousecat): Promise<IHousecat> => {
-  const poolTemplate = await deployPool(signer, gasPrice)
-  const mgmt = await deployManagement(signer, treasury || signer.address, weth, gasPrice)
+  const poolTemplate = await deployPool(signer, gasPrice, gasLimit)
+  const mgmt = await deployManagement(signer, treasury || signer.address, weth, gasPrice, gasLimit)
   if (rebalancers) {
     const rebalanceSettings = await mgmt.getRebalanceSettings()
     await mgmt.connect(signer).updateRebalanceSettings({
@@ -115,30 +119,30 @@ export const deployHousecat = async ({
       rebalancers,
     })
   }
-  const factory = await deployFactory(signer, mgmt.address, poolTemplate.address, gasPrice)
+  const factory = await deployFactory(signer, mgmt.address, poolTemplate.address, gasPrice, gasLimit)
   if (assets) {
     await (await mgmt.connect(signer).setSupportedAssets(assets, { gasPrice })).wait()
     if (assetsMeta) {
-      await (await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta, { gasPrice })).wait()
+      await (await mgmt.connect(signer).setTokenMetaMany(assets, assetsMeta, { gasPrice, gasLimit })).wait()
     }
   }
   if (loans) {
     await (await mgmt.connect(signer).setSupportedLoans(loans, { gasPrice })).wait()
     if (loansMeta) {
-      await (await mgmt.connect(signer).setTokenMetaMany(loans, loansMeta, { gasPrice })).wait()
+      await (await mgmt.connect(signer).setTokenMetaMany(loans, loansMeta, { gasPrice, gasLimit })).wait()
     }
   }
-  const adapters = await deployAdapters(signer, gasPrice)
+  const adapters = await deployAdapters(signer, gasPrice, gasLimit)
 
   for (let i = 0; i < Object.keys(adapters).length; i++) {
     const key = Object.keys(adapters)[i] as keyof IAdapters
     const adapter = adapters[key]
-    await (await mgmt.setAdapter(adapter.address, true, { gasPrice })).wait()
+    await (await mgmt.setAdapter(adapter.address, true, { gasPrice, gasLimit })).wait()
   }
 
   if (integrations) {
     for (let i = 0; i < integrations.length; i++) {
-      await (await mgmt.setSupportedIntegration(integrations[i], true, { gasPrice })).wait()
+      await (await mgmt.setSupportedIntegration(integrations[i], true, { gasPrice, gasLimit })).wait()
     }
   }
   return { mgmt, factory, poolTemplate, adapters }
