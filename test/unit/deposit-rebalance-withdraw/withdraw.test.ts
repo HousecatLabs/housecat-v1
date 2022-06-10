@@ -4,6 +4,7 @@ import { formatEther, parseEther, parseUnits } from 'ethers/lib/utils'
 import mockHousecatAndPool from '../../utils/mock-housecat-and-pool'
 import { DAYS, increaseTime } from '../../../utils/evm'
 import { mockPriceFeed } from '../../../utils/mock-defi'
+import { deposit } from '../../utils/deposit-withdraw'
 
 describe('HousecatPool: withdraw', () => {
   it('should fail to increase the weights difference between the pool and the mirrored', async () => {
@@ -33,6 +34,47 @@ describe('HousecatPool: withdraw', () => {
           parseEther('1'),
           1,
         ]),
+      },
+    ])
+    await expect(tx).revertedWith('HousecatPool: weight diff increased')
+  })
+
+  it('should fail to change current weights of the pool if the mirrored value is less than minMirroredValue', async () => {
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, adapters, assets, amm, weth, mgmt } = await mockHousecatAndPool({
+      signer,
+      mirrored,
+      weth: { price: '1', amountToMirrored: '2' },
+      assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '0' }],
+    })
+
+    // initial deposit
+    await deposit(pool, adapters, signer, parseEther('2'))
+
+    // send asset0 to mirrored
+    await assets[0].token.mint(mirrored.address, parseEther('2'))
+
+    // update mirror settings
+    await mgmt.updateMirrorSettings({
+      minPoolValue: 0,
+      minMirroredValue: parseEther('4').add(1),
+      maxWeightDifference: 1e6,
+    })
+
+    // withdraw when mirrored weights have changed and the mirrored value is too small
+    const tx = pool.withdraw(signer.address, [
+      {
+        adapter: adapters.uniswapV2Adapter.address,
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+          amm.address,
+          [weth.token.address, assets[0].token.address],
+          parseEther('0.5'),
+          1,
+        ]),
+      },
+      {
+        adapter: adapters.wethAdapter.address,
+        data: adapters.wethAdapter.interface.encodeFunctionData('withdraw', [parseEther('1')]),
       },
     ])
     await expect(tx).revertedWith('HousecatPool: weight diff increased')

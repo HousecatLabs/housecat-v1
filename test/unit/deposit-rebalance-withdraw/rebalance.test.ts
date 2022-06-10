@@ -104,6 +104,10 @@ describe('HousecatPool: rebalance', () => {
     await expect(rebalance).revertedWith('HousecatPool: weight diff increased')
   })
 
+  it('should fail to change current weights of the pool if the mirrored value is less than minMirroredValue', () => {
+    //
+  })
+
   it('should fail to reduce pool value through slippage if pool is already within max weight difference limits', async () => {
     const [signer, mirrored, mirrorer] = await ethers.getSigners()
     const { pool, adapters, amm, assets, weth } = await mockHousecatAndPool({ signer, mirrored })
@@ -348,13 +352,14 @@ describe('HousecatPool: rebalance', () => {
 
   describe('rebalance reward', () => {
     it('should collect reward based on how much the weight difference decreased on rebalance', async () => {
-      const [signer, mirrored, treasury, rebalancer] = await ethers.getSigners()
+      const [signer, treasury, rebalancer] = await ethers.getSigners()
+      const mirrored = ethers.Wallet.createRandom()
       const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
         signer,
         mirrored,
         treasury,
-        weth: { price: '1', amountToMirrored: '0' },
-        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        weth: { price: '1', amountToMirrored: '1' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '0' }],
         rebalanceSettings: {
           minSecondsBetweenRebalances: 60,
           maxSlippage: 1e6,
@@ -367,7 +372,10 @@ describe('HousecatPool: rebalance', () => {
       })
 
       // initial deposit
-      await deposit(pool, adapters, signer, parseEther('1'))
+      await deposit(pool, adapters, signer, parseEther('2'))
+
+      // send asset0 to mirrored
+      await assets[0].token.mint(mirrored.address, parseEther('1'))
 
       // rebalance
       const before = await pool.getWeightDifference()
@@ -377,7 +385,7 @@ describe('HousecatPool: rebalance', () => {
           data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
             amm.address,
             [weth.token.address, assets[0].token.address],
-            parseEther('1'),
+            parseEther('2'), // pool total supply
             1,
           ]),
         },
@@ -402,8 +410,8 @@ describe('HousecatPool: rebalance', () => {
         signer,
         mirrored,
         treasury,
-        weth: { price: '1', amountToMirrored: '0' },
-        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        weth: { price: '1', amountToMirrored: '1' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '0' }],
         rebalanceSettings: {
           minSecondsBetweenRebalances: 60,
           maxSlippage: 1e6,
@@ -416,7 +424,10 @@ describe('HousecatPool: rebalance', () => {
       })
 
       // initial deposit
-      await deposit(pool, adapters, signer, parseEther('1'))
+      await deposit(pool, adapters, signer, parseEther('2'))
+
+      // send asset0 to mirrored
+      await assets[0].token.mint(mirrored.address, parseEther('1'))
 
       // rebalance
       const tx = await pool.connect(rebalancer).rebalance(rebalancer.address, [
@@ -441,8 +452,8 @@ describe('HousecatPool: rebalance', () => {
         signer,
         mirrored,
         treasury,
-        weth: { price: '1', amountToMirrored: '0' },
-        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        weth: { price: '1', amountToMirrored: '1' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '0' }],
         rebalanceSettings: {
           minSecondsBetweenRebalances: 60,
           maxSlippage: 1e6,
@@ -455,7 +466,10 @@ describe('HousecatPool: rebalance', () => {
       })
 
       // initial deposit
-      await deposit(pool, adapters, signer, parseEther('1'))
+      await deposit(pool, adapters, signer, parseEther('2'))
+
+      // send asset0 to mirrored
+      await assets[0].token.mint(mirrored.address, parseEther('1'))
 
       // rebalance
       const before = await pool.getWeightDifference()
@@ -472,7 +486,7 @@ describe('HousecatPool: rebalance', () => {
       ])
       const after = await pool.getWeightDifference()
       const change = before.sub(after)
-      const rewardAmount = parseEther('1')
+      const rewardAmount = parseEther('2')
         .mul(change)
         .mul(25)
         .div(10000)
@@ -488,8 +502,8 @@ describe('HousecatPool: rebalance', () => {
         signer,
         mirrored,
         treasury,
-        weth: { price: '1', amountToMirrored: '0' },
-        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        weth: { price: '1', amountToMirrored: '1' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '0' }],
         rebalanceSettings: {
           minSecondsBetweenRebalances: 60,
           maxSlippage: 1e6,
@@ -502,7 +516,10 @@ describe('HousecatPool: rebalance', () => {
       })
 
       // initial deposit
-      await deposit(pool, adapters, signer, parseEther('1'))
+      await deposit(pool, adapters, signer, parseEther('2'))
+
+      // send asset0 to mirrored
+      await assets[0].token.mint(mirrored.address, parseEther('1'))
 
       // rebalance
       const before = await pool.getWeightDifference()
@@ -519,7 +536,7 @@ describe('HousecatPool: rebalance', () => {
       ])
       const after = await pool.getWeightDifference()
       const change = before.sub(after)
-      const rewardAmount = parseEther('1')
+      const rewardAmount = parseEther('2')
         .mul(change)
         .mul(25)
         .div(10000)
@@ -535,8 +552,8 @@ describe('HousecatPool: rebalance', () => {
         signer,
         mirrored,
         treasury,
-        weth: { price: '1', amountToMirrored: '0' },
-        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '1' }],
+        weth: { price: '1', amountToMirrored: '1' },
+        assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '0' }],
         rebalanceSettings: {
           minSecondsBetweenRebalances: 60,
           maxSlippage: 1e6,
@@ -549,7 +566,10 @@ describe('HousecatPool: rebalance', () => {
       })
 
       // initial deposit
-      await deposit(pool, adapters, signer, parseEther('1'))
+      await deposit(pool, adapters, signer, parseEther('2'))
+
+      // send asset0 to mirrored
+      await assets[0].token.mint(mirrored.address, parseEther('1'))
 
       // rebalance
       const before = await pool.getWeightDifference()
@@ -566,7 +586,7 @@ describe('HousecatPool: rebalance', () => {
       ])
       const after = await pool.getWeightDifference()
       const change = before.sub(after)
-      const rewardAmount = parseEther('1')
+      const rewardAmount = parseEther('2')
         .mul(change)
         .mul(25)
         .div(10000)

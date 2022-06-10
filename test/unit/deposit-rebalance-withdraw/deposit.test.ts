@@ -36,6 +36,67 @@ describe('HousecatPool: deposit', () => {
     expect(tx).revertedWith('HousecatPool: weight diff increased')
   })
 
+  it('should fail to deposit when the mirrored account value is less than min mirrored value', async () => {
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, adapters } = await mockHousecatAndPool({
+      signer,
+      mirrored,
+      weth: { price: '1', amountToMirrored: '2' },
+      mirrorSettings: {
+        minPoolValue: 0,
+        minMirroredValue: parseEther('2').add(1),
+        maxWeightDifference: 1e6,
+      },
+    })
+    const tx = deposit(pool, adapters, signer, parseEther('2'))
+    await expect(tx).revertedWith('HousecatPool: weight diff increased')
+  })
+
+  it('should fail to change current weights of the pool if the mirrored value is less than minMirroredValue', async () => {
+    const [signer, mirrored] = await ethers.getSigners()
+    const { pool, adapters, assets, amm, weth, mgmt } = await mockHousecatAndPool({
+      signer,
+      mirrored,
+      weth: { price: '1', amountToMirrored: '2' },
+      assets: [{ price: '1', reserveToken: '1000', reserveWeth: '1000', amountToMirrored: '0' }],
+    })
+
+    // initial deposit
+    await deposit(pool, adapters, signer, parseEther('2'))
+
+    // send asset0 to mirrored
+    await assets[0].token.mint(mirrored.address, parseEther('2'))
+
+    // update mirror settings
+    await mgmt.updateMirrorSettings({
+      minPoolValue: 0,
+      minMirroredValue: parseEther('4').add(1),
+      maxWeightDifference: 1e6,
+    })
+
+    // deposit when mirrored weights have changed and the mirrored value is too small
+    const tx = pool.deposit(
+      signer.address,
+      [
+        {
+          adapter: adapters.wethAdapter.address,
+          data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [parseEther('2')]),
+        },
+        {
+          adapter: adapters.uniswapV2Adapter.address,
+          data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+            amm.address,
+            [weth.token.address, assets[0].token.address],
+            parseEther('2'),
+            1,
+          ]),
+        },
+      ],
+      { value: parseEther('2') }
+    )
+    await expect(tx).revertedWith('HousecatPool: weight diff increased')
+  })
+
   it('TODO: should fail to change the loan weights of the pool to differ from the mirrored weights', async () => {
     // TODO: implement when mock Aave implemented
   })
@@ -60,13 +121,6 @@ describe('HousecatPool: deposit', () => {
     // deposit ETH without adjusting the loan position
     const tx = deposit(pool, adapters, signer, parseEther('10'))
 
-    await expect(tx).revertedWith('HousecatPool: weight diff increased')
-  })
-
-  it('should fail to deposit when the mirrored account holds nothing', async () => {
-    const [signer, mirrored] = await ethers.getSigners()
-    const { pool, adapters } = await mockHousecatAndPool({ signer, mirrored, weth: { price: '1' } })
-    const tx = deposit(pool, adapters, signer, parseEther('2'))
     await expect(tx).revertedWith('HousecatPool: weight diff increased')
   })
 
@@ -184,7 +238,7 @@ describe('HousecatPool: deposit', () => {
       { value: parseEther('5') }
     )
 
-    await expect(deposit2).revertedWith('HousecatPool: pool value 0')
+    await expect(deposit2).revertedWith('HousecatPool: pool netValue 0')
   })
 
   it('should mint pool tokens an amount equal to the deposit value when the pool total supply is zero', async () => {
