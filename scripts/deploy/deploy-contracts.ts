@@ -4,7 +4,7 @@ import { deployHousecat, deployQueries } from '../../utils/deploy-contracts'
 import polygon from '../../utils/addresses/polygon'
 
 const gasPrice = ethers.utils.parseUnits('50', 'gwei')
-const gasLimit = undefined//6e6
+const gasLimit = undefined //6e6
 
 const main = async () => {
   const [owner] = await ethers.getSigners()

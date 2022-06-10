@@ -13,13 +13,21 @@ import {
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 import { BigNumber } from 'ethers'
 
-export const deployQueries = async (signer: SignerWithAddress, gasPrice?: BigNumber, gasLimit?: number): Promise<HousecatQueries> => {
+export const deployQueries = async (
+  signer: SignerWithAddress,
+  gasPrice?: BigNumber,
+  gasLimit?: number
+): Promise<HousecatQueries> => {
   const HousecatQueries = await ethers.getContractFactory('HousecatQueries')
   const contract = await HousecatQueries.connect(signer).deploy({ gasPrice, gasLimit })
   return contract.deployed()
 }
 
-export const deployPool = async (signer: SignerWithAddress, gasPrice?: BigNumber, gasLimit?: number): Promise<HousecatPool> => {
+export const deployPool = async (
+  signer: SignerWithAddress,
+  gasPrice?: BigNumber,
+  gasLimit?: number
+): Promise<HousecatPool> => {
   const HousecatPool = await ethers.getContractFactory('HousecatPool')
   const contract = await HousecatPool.connect(signer).deploy({ gasPrice, gasLimit })
   return contract.deployed()
@@ -30,7 +38,7 @@ export const deployManagement = async (
   treasury: string,
   weth: string,
   gasPrice?: BigNumber,
-  gasLimit?: number,
+  gasLimit?: number
 ): Promise<HousecatManagement> => {
   const HousecatManagement = await ethers.getContractFactory('HousecatManagement')
   const contract = await HousecatManagement.connect(signer).deploy(treasury, weth, { gasPrice, gasLimit })
@@ -42,7 +50,7 @@ export const deployFactory = async (
   management: string,
   poolTemplate: string,
   gasPrice?: BigNumber,
-  gasLimit?: number,
+  gasLimit?: number
 ): Promise<HousecatFactory> => {
   const HousecatFactory = await ethers.getContractFactory('HousecatFactory')
   const contract = await HousecatFactory.connect(signer).deploy(management, poolTemplate, { gasPrice, gasLimit })
@@ -56,16 +64,24 @@ export interface IAdapters {
   paraswapV5Adapter: ParaswapV5Adapter
 }
 
-export const deployAdapters = async (signer: SignerWithAddress, gasPrice?: BigNumber, gasLimit?: number): Promise<IAdapters> => {
+export const deployAdapters = async (
+  signer: SignerWithAddress,
+  gasPrice?: BigNumber,
+  gasLimit?: number
+): Promise<IAdapters> => {
   const uniswapV2Adapter = await (await ethers.getContractFactory('UniswapV2Adapter'))
     .connect(signer)
     .deploy({ gasPrice })
   await uniswapV2Adapter.deployed()
 
-  const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter')).connect(signer).deploy({ gasPrice, gasLimit })
+  const aaveV2Adapter = await (await ethers.getContractFactory('AaveV2Adapter'))
+    .connect(signer)
+    .deploy({ gasPrice, gasLimit })
   await aaveV2Adapter.deployed()
 
-  const wethAdapter = await (await ethers.getContractFactory('WETHAdapter')).connect(signer).deploy({ gasPrice, gasLimit })
+  const wethAdapter = await (await ethers.getContractFactory('WETHAdapter'))
+    .connect(signer)
+    .deploy({ gasPrice, gasLimit })
   await wethAdapter.deployed()
 
   const paraswapV5Adapter = await (await ethers.getContractFactory('ParaswapV5Adapter'))
