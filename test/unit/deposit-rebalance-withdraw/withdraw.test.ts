@@ -489,4 +489,47 @@ describe('HousecatPool: withdraw', () => {
     // should burn 50% of the pool position
     expect(poolBalanceBeforeWithdraw.div(poolBalanceAfterWithdraw)).equal(2)
   })
+
+  it('should be able to withdraw if the pool is not balanced', async () => {
+    const [signer, treasury, mirrorer1, mirrorer2] = await ethers.getSigners()
+    const mirrored = ethers.Wallet.createRandom()
+    const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
+      signer,
+      mirrored,
+      treasury,
+      weth: { price: '1', amountToMirrored: '1' },
+      assets: [{ price: '1', reserveToken: '100000', reserveWeth: '100000', amountToMirrored: '0' }],
+    })
+
+    // deposit by mirrorer1
+    await deposit(pool, adapters, mirrorer1, parseEther('2'))
+
+    // deposit by mirrorer2
+    await deposit(pool, adapters, mirrorer2, parseEther('2'))
+
+    // send asset0 to the pool
+    await assets[0].token.mint(pool.address, parseEther('2'))
+
+    // withdraw all by mirrorer1
+    const percent100 = await pool.getPercent100()
+    const ownedByMirrorer1 = (await pool.balanceOf(mirrorer1.address)).mul(percent100).div(await pool.totalSupply())
+    const tx = pool.connect(mirrorer1).withdraw(mirrorer1.address, [
+      {
+        adapter: adapters.uniswapV2Adapter.address,
+        data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
+          amm.address,
+          [assets[0].token.address, weth.token.address],
+          (await assets[0].token.balanceOf(pool.address)).mul(ownedByMirrorer1).div(percent100),
+          1,
+        ]),
+      },
+      {
+        adapter: adapters.wethAdapter.address,
+        data: adapters.wethAdapter.interface.encodeFunctionData('withdrawUntil', [
+          (await weth.token.balanceOf(pool.address)).mul(ownedByMirrorer1).div(percent100),
+        ]),
+      },
+    ])
+    await expect(tx).not.reverted
+  })
 })
