@@ -490,15 +490,18 @@ describe('HousecatPool: withdraw', () => {
     expect(poolBalanceBeforeWithdraw.div(poolBalanceAfterWithdraw)).equal(2)
   })
 
-  it('should be able to withdraw if the pool is not balanced', async () => {
+  it('should be able to withdraw and keep the weights if the pool is not balanced', async () => {
     const [signer, treasury, mirrorer1, mirrorer2] = await ethers.getSigners()
     const mirrored = ethers.Wallet.createRandom()
-    const { pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
+    const { mgmt, pool, adapters, amm, weth, assets } = await mockHousecatAndPool({
       signer,
       mirrored,
       treasury,
       weth: { price: '1', amountToMirrored: '1' },
-      assets: [{ price: '1', reserveToken: '100000', reserveWeth: '100000', amountToMirrored: '0' }],
+      assets: [
+        { price: '1', reserveToken: '100000', reserveWeth: '100000', amountToMirrored: '0' },
+        { price: '1', reserveToken: '100000', reserveWeth: '100000', amountToMirrored: '0' },
+      ],
     })
 
     // deposit by mirrorer1
@@ -507,8 +510,15 @@ describe('HousecatPool: withdraw', () => {
     // deposit by mirrorer2
     await deposit(pool, adapters, mirrorer2, parseEther('2'))
 
-    // send asset0 to the pool
-    await assets[0].token.mint(pool.address, parseEther('2'))
+    // send asset0 to the mirrored
+    await assets[0].token.mint(mirrored.address, parseEther('2'))
+
+    // send asset1 to the pool
+    await assets[1].token.mint(pool.address, parseEther('2'))
+
+    const diffBefore = await pool.getWeightDifference()
+    const maxWeightDifference = (await mgmt.getMirrorSettings()).maxWeightDifference
+    expect(diffBefore).gt(maxWeightDifference)
 
     // withdraw all by mirrorer1
     const percent100 = await pool.getPercent100()
@@ -518,8 +528,8 @@ describe('HousecatPool: withdraw', () => {
         adapter: adapters.uniswapV2Adapter.address,
         data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
           amm.address,
-          [assets[0].token.address, weth.token.address],
-          (await assets[0].token.balanceOf(pool.address)).mul(ownedByMirrorer1).div(percent100),
+          [assets[1].token.address, weth.token.address],
+          (await assets[1].token.balanceOf(pool.address)).mul(ownedByMirrorer1).div(percent100),
           1,
         ]),
       },
@@ -531,5 +541,8 @@ describe('HousecatPool: withdraw', () => {
       },
     ])
     await expect(tx).not.reverted
+
+    const diffAfter = await pool.getWeightDifference()
+    expect(diffAfter).gt(maxWeightDifference)
   })
 })
