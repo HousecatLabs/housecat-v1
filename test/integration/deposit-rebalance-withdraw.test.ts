@@ -110,33 +110,20 @@ export const withdraw = async (
   tokens: ITokenWithPriceFeed[],
   withdrawPercentage: BigNumber
 ) => {
-  const content = await pool.getPoolContent()
-  const percent100 = await pool.getPercent100()
-  const balance = await pool.balanceOf(withdrawer.address)
-  const totalSupply = await pool.totalSupply()
-  const accruedFees = (await pool.getAccruedManagementFee()).add(await pool.getAccruedPerformanceFee())
-  const wmaticBalance = await weth.token.balanceOf(pool.address)
-  const wmaticTargetBalance = wmaticBalance.sub(
-    wmaticBalance.mul(withdrawPercentage).mul(balance).div(totalSupply.add(accruedFees)).div(percent100)
-  )
-  const sellTokenTxs = tokens.map((token, idx) => ({
-    adapter: adapters.uniswapV2Adapter.address,
-    data: adapters.uniswapV2Adapter.interface.encodeFunctionData('swapTokens', [
-      amm.address,
-      [token.token.address, weth.token.address],
-      content.assetBalances[idx + 1]
-        .mul(withdrawPercentage)
-        .mul(balance)
-        .div(totalSupply.add(accruedFees))
-        .div(percent100),
+  const withdrawTx = {
+    adapter: adapters.withdrawAdapter.address,
+    data: adapters.withdrawAdapter.interface.encodeFunctionData('withdrawPercentage', [
+      withdrawPercentage,
+      tokens
+        .filter((token) => token.token.address !== weth.token.address)
+        .map((token) => ({
+          router: amm.address,
+          path: [token.token.address, weth.token.address],
+        })),
       1,
     ]),
-  }))
-  const withdrawWethTx = {
-    adapter: adapters.wethAdapter.address,
-    data: adapters.wethAdapter.interface.encodeFunctionData('withdrawUntil', [wmaticTargetBalance]),
   }
-  return pool.connect(withdrawer).withdraw(withdrawer.address, [...sellTokenTxs, withdrawWethTx])
+  return pool.connect(withdrawer).withdraw(withdrawer.address, [withdrawTx])
 }
 
 describe('integration: deposit-rebalance-withdraw', () => {

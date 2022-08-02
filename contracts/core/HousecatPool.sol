@@ -460,6 +460,8 @@ contract HousecatPool is HousecatQueries, ERC20, ReentrancyGuard {
         _treasury
       );
       emit PerformanceFeeSettled(amountToMirrored, amountToTreasury);
+    }
+    if (_poolValue > performanceFeeHighWatermark) {
       _updatePerformanceFeeHighWatermark(_poolValue);
     }
   }

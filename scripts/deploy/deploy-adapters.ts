@@ -16,6 +16,7 @@ const main = async () => {
   console.log('UniswapV2Adapter:', adapters.uniswapV2Adapter.address)
   console.log('AaveV2Adapter:', adapters.aaveV2Adapter.address)
   console.log('ParaswapV5Adapter:', adapters.paraswapV5Adapter.address)
+  console.log('WithdrawAdapter:', adapters.withdrawAdapter.address)
 }
 
 main().catch((error) => {
