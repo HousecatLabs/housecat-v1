@@ -9,6 +9,7 @@ import {
   AaveV2Adapter,
   WETHAdapter,
   ParaswapV5Adapter,
+  WithdrawAdapter,
 } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
 import { BigNumber } from 'ethers'
@@ -62,6 +63,7 @@ export interface IAdapters {
   aaveV2Adapter: AaveV2Adapter
   wethAdapter: WETHAdapter
   paraswapV5Adapter: ParaswapV5Adapter
+  withdrawAdapter: WithdrawAdapter
 }
 
 export const deployAdapters = async (
@@ -89,7 +91,12 @@ export const deployAdapters = async (
     .deploy({ gasPrice, gasLimit })
   await paraswapV5Adapter.deployed()
 
-  return { uniswapV2Adapter, aaveV2Adapter, wethAdapter, paraswapV5Adapter }
+  const withdrawAdapter = await (await ethers.getContractFactory('WithdrawAdapter'))
+    .connect(signer)
+    .deploy({ gasPrice, gasLimit })
+  await paraswapV5Adapter.deployed()
+
+  return { uniswapV2Adapter, aaveV2Adapter, wethAdapter, paraswapV5Adapter, withdrawAdapter }
 }
 
 export interface IDeployHousecat {

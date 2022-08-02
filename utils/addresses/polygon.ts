@@ -2,6 +2,7 @@ interface IAsset {
   addr: string
   priceFeed: string
   decimals: number
+  delisted?: boolean
 }
 
 export const uniswapV2Routers = {
@@ -98,6 +99,7 @@ export const assets: { [key: string]: IAsset } = {
     addr: '0xd85d1e945766fea5eda9103f918bd915fbca63e6',
     priceFeed: priceFeeds.cel,
     decimals: 4,
+    delisted: true,
   },
   /*
   comp: {

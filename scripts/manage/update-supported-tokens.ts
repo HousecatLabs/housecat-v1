@@ -11,7 +11,7 @@ const main = async () => {
   const assetsMeta = Object.values(polygon.assets).map((x) => ({
     decimals: x.decimals,
     priceFeed: x.priceFeed,
-    delisted: false,
+    delisted: x.delisted ? x.delisted : false,
   }))
 
   const mgmt = await ethers.getContractAt('HousecatManagement', deployment.addresses.HousecatManagement)

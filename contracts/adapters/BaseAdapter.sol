@@ -5,8 +5,12 @@ import '../core/HousecatPool.sol';
 import '../core/HousecatManagement.sol';
 
 contract BaseAdapter {
+  function _getPool() internal view returns (HousecatPool) {
+    return HousecatPool(payable(address(this)));
+  }
+
   function _getMgmt() internal view returns (HousecatManagement) {
-    HousecatPool pool = HousecatPool(payable(address(this)));
+    HousecatPool pool = _getPool();
     return HousecatManagement(pool.management());
   }
 }
