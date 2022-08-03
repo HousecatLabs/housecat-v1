@@ -15,16 +15,16 @@ contract HousecatFactory {
   address[] private pools;
   mapping(address => address) private mirroredPool;
   mapping(address => bool) public isPool;
+  mapping(address => UserSettings) private pendingUserSettings;
   mapping(address => UserSettings) private userSettings;
-  mapping(address => bool) private userSettingsCreated;
-
   modifier whenNotPaused() {
     HousecatManagement housecatManagement = HousecatManagement(managementContract);
     require(!housecatManagement.paused(), 'HousecatFactory: paused');
     _;
   }
 
-  event UpdateUserSettings(UserSettings userSettings);
+  event InitiateUpdateUserSettings(address user, UserSettings userSettings);
+  event UpdateUserSettings(address user, UserSettings userSettings);
 
   constructor(address _managementContract, address _poolTemplateContract) {
     managementContract = _managementContract;
@@ -46,7 +46,7 @@ contract HousecatFactory {
     pools.push(poolAddress);
     mirroredPool[_mirrored] = poolAddress;
     isPool[poolAddress] = true;
-    if (!userSettingsCreated[_mirrored]) {
+    if (userSettings[_mirrored].createdAt == 0) {
       userSettings[_mirrored] = _getDefaultUserSettings();
     }
     if (msg.value > 0) {
@@ -54,16 +54,22 @@ contract HousecatFactory {
     }
   }
 
-  function updateUserSettings(UserSettings memory _userSettings) external whenNotPaused {
+  function initiateUpdateUserSettings(UserSettings memory _userSettings) external whenNotPaused {
+    _userSettings.createdAt = block.timestamp;
     _validateUserSettings(_userSettings);
+    pendingUserSettings[msg.sender] = _userSettings;
+    emit InitiateUpdateUserSettings(msg.sender, _userSettings);
+  }
+
+  function updateUserSettings() external whenNotPaused {
     if (mirroredPool[msg.sender] != address(0)) {
       HousecatPool pool = HousecatPool(payable(mirroredPool[msg.sender]));
+      _validateUpdateUserSettings(pool);
       pool.settleManagementFee();
       pool.settlePerformanceFee();
     }
-    userSettings[msg.sender] = _userSettings;
-    userSettingsCreated[msg.sender] = true;
-    emit UpdateUserSettings(_userSettings);
+    userSettings[msg.sender] = pendingUserSettings[msg.sender];
+    emit UpdateUserSettings(msg.sender, userSettings[msg.sender]);
   }
 
   function getPoolByMirrored(address _mirrored) external view returns (address) {
@@ -82,6 +88,10 @@ contract HousecatFactory {
     return pools_;
   }
 
+  function getPendingUserSettings(address _mirrored) external view returns (UserSettings memory) {
+    return pendingUserSettings[_mirrored];
+  }
+
   function getUserSettings(address _mirrored) external view returns (UserSettings memory) {
     return userSettings[_mirrored];
   }
@@ -90,6 +100,7 @@ contract HousecatFactory {
     HousecatManagement management = HousecatManagement(managementContract);
     return
       UserSettings({
+        createdAt: block.timestamp,
         managementFee: management.getManagementFee().defaultFee,
         performanceFee: management.getPerformanceFee().defaultFee
       });
@@ -104,6 +115,24 @@ contract HousecatFactory {
     require(
       _userSettings.performanceFee <= management.getPerformanceFee().maxFee,
       'HousecatFactory: performanceFee too high'
+    );
+  }
+
+  function _validateUpdateUserSettings(HousecatPool _pool) private view {
+    if (_pool.totalSupply() == 0) {
+      return;
+    }
+    UserSettings memory oldSettings = userSettings[msg.sender];
+    UserSettings memory newSettings = pendingUserSettings[msg.sender];
+    if (
+      newSettings.managementFee <= oldSettings.managementFee && newSettings.performanceFee <= oldSettings.performanceFee
+    ) {
+      return;
+    }
+    HousecatManagement management = HousecatManagement(managementContract);
+    require(
+      block.timestamp - pendingUserSettings[msg.sender].createdAt > management.userSettingsTimeLockSeconds(),
+      'HousecatFactory: user settings locked'
     );
   }
 }

@@ -4,7 +4,7 @@ import { deployHousecat } from '../../utils/deploy-contracts'
 import { parseEther, parseUnits } from 'ethers/lib/utils'
 import { mockPriceFeed, mockWETH } from '../../utils/mock-defi'
 import mockHousecatAndPool from '../utils/mock-housecat-and-pool'
-import { DAYS, increaseTime } from '../../utils/evm'
+import { DAYS, increaseTime, SECONDS } from '../../utils/evm'
 
 describe('HousecatFactory', () => {
   describe('createPool', () => {
@@ -141,45 +141,247 @@ describe('HousecatFactory', () => {
     })
   })
 
-  describe('updateUserSettings', () => {
+  describe('initiateUpdateUserSettings', () => {
     it('should fail when paused', async () => {
       const [signer, mirrored] = await ethers.getSigners()
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { mgmt, factory } = await mockHousecatAndPool({ signer, mirrored })
       await mgmt.connect(signer).emergencyPause()
-      const update = factory.connect(mirrored).updateUserSettings({
+      const update = factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
         managementFee: 0,
         performanceFee: 0,
       })
       await expect(update).revertedWith('HousecatFactory: paused')
     })
 
-    it('should update settings of the caller when called with valid values', async () => {
+    it('should update pendingUserSettings of the caller when called with valid values', async () => {
       const [signer, mirrored] = await ethers.getSigners()
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { mgmt, factory } = await mockHousecatAndPool({ signer, mirrored })
       const maxMgmtFee = (await mgmt.getManagementFee()).maxFee
       const maxPerfFee = (await mgmt.getPerformanceFee()).maxFee
-      await factory.connect(mirrored).updateUserSettings({
+      await factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
         managementFee: maxMgmtFee,
         performanceFee: maxPerfFee,
       })
-      const newSettings = await factory.getUserSettings(mirrored.address)
-      expect(newSettings.managementFee).equal(maxMgmtFee)
-      expect(newSettings.performanceFee).equal(maxPerfFee)
+      const pendingSettings = await factory.getPendingUserSettings(mirrored.address)
+      expect(pendingSettings.managementFee).equal(maxMgmtFee)
+      expect(pendingSettings.performanceFee).equal(maxPerfFee)
+      expect(pendingSettings.createdAt).gt(0)
     })
 
-    it('should emit UpdateUserSettings event', async () => {
+    it('should emit InitiateUpdateUserSettings event', async () => {
       const [signer, mirrored] = await ethers.getSigners()
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { mgmt, factory } = await mockHousecatAndPool({ signer, mirrored })
       const maxMgmtFee = (await mgmt.getManagementFee()).maxFee
       const maxPerfFee = (await mgmt.getPerformanceFee()).maxFee
-      const update = factory.connect(mirrored).updateUserSettings({
+      const tx = factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
         managementFee: maxMgmtFee,
         performanceFee: maxPerfFee,
       })
-      await expect(update).emit(factory, 'UpdateUserSettings')
+      await expect(tx).emit(factory, 'InitiateUpdateUserSettings')
+    })
+
+    it('should fail if managementFee is higher than maxManagementFee', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const maxFee = parseUnits('0.1', 8) // 10%
+      const { factory } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        managementFee: {
+          defaultFee: parseUnits('0.01', 8),
+          maxFee,
+          protocolTax: 0,
+        },
+      })
+
+      const tx = factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
+        managementFee: maxFee.add(1),
+        performanceFee: 0,
+      })
+      await expect(tx).revertedWith('HousecatFactory: managementFee too high')
+    })
+
+    it('should fail if performanceFee is higher than maxPerformanceFee', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const maxFee = parseUnits('0.1', 8) // 10%
+      const { factory } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        performanceFee: {
+          defaultFee: parseUnits('0.01', 8),
+          maxFee,
+          protocolTax: 0,
+        },
+      })
+      const tx = factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
+        managementFee: 0,
+        performanceFee: maxFee.add(1),
+      })
+      await expect(tx).revertedWith('HousecatFactory: performanceFee too high')
+    })
+  })
+
+  describe('updateUserSettings', () => {
+    it('should fail if pending settings are time locked', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const maxFee = parseUnits('0.1', 8) // 10%
+      const { factory, pool, adapters, mgmt } = await mockHousecatAndPool({ signer, mirrored })
+
+      // make a deposit
+      const depositAmount = parseEther('5')
+      await pool.connect(signer).deposit(
+        signer.address,
+        [
+          {
+            adapter: adapters.wethAdapter.address,
+            data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [depositAmount]),
+          },
+        ],
+        { value: depositAmount }
+      )
+
+      // initiate update
+      await factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
+        managementFee: 0,
+        performanceFee: maxFee,
+      })
+
+      const timelock = await mgmt.userSettingsTimeLockSeconds()
+      await increaseTime(timelock.toNumber() * SECONDS - 100)
+
+      const tx = factory.connect(mirrored).updateUserSettings()
+      await expect(tx).revertedWith('HousecatFactory: user settings locked')
+    })
+
+    it('should update userSettings if pending data is valid and not locked', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const maxFee = parseUnits('0.1', 8) // 10%
+      const { factory, pool, adapters, mgmt } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        performanceFee: {
+          defaultFee: parseUnits('0.01', 8),
+          maxFee,
+          protocolTax: 0,
+        },
+        managementFee: {
+          defaultFee: parseUnits('0.01', 8),
+          maxFee,
+          protocolTax: 0,
+        },
+      })
+
+      // make a deposit
+      const depositAmount = parseEther('5')
+      await pool.connect(signer).deposit(
+        signer.address,
+        [
+          {
+            adapter: adapters.wethAdapter.address,
+            data: adapters.wethAdapter.interface.encodeFunctionData('deposit', [depositAmount]),
+          },
+        ],
+        { value: depositAmount }
+      )
+
+      // initiate update
+      await factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
+        managementFee: maxFee,
+        performanceFee: maxFee,
+      })
+
+      // wait until time lock opens
+      const timelock = await mgmt.userSettingsTimeLockSeconds()
+      await increaseTime(timelock.toNumber() * SECONDS + 1)
+
+      // complete the update
+      await factory.connect(mirrored).updateUserSettings()
+
+      // check the results
+      const userSettings = await factory.getUserSettings(mirrored.address)
+      expect(userSettings.managementFee).eq(maxFee)
+      expect(userSettings.performanceFee).eq(maxFee)
+    })
+
+    it('should ignore time lock if pool has 0 totalSupply', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const maxFee = parseUnits('0.1', 8) // 10%
+      const { factory } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        performanceFee: {
+          defaultFee: parseUnits('0.01', 8),
+          maxFee,
+          protocolTax: 0,
+        },
+        managementFee: {
+          defaultFee: parseUnits('0.01', 8),
+          maxFee,
+          protocolTax: 0,
+        },
+      })
+
+      // initiate update
+      await factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
+        managementFee: maxFee,
+        performanceFee: maxFee,
+      })
+
+      // do not wait until time lock opens
+
+      // complete the update
+      await factory.connect(mirrored).updateUserSettings()
+
+      // check the results
+      const userSettings = await factory.getUserSettings(mirrored.address)
+      expect(userSettings.managementFee).eq(maxFee)
+      expect(userSettings.performanceFee).eq(maxFee)
+    })
+
+    it('should ignore time lock if none of the fees is increased', async () => {
+      const [signer, mirrored] = await ethers.getSigners()
+      const maxFee = parseUnits('0.1', 8) // 10%
+      const { factory } = await mockHousecatAndPool({
+        signer,
+        mirrored,
+        performanceFee: {
+          defaultFee: parseUnits('0.1', 8),
+          maxFee,
+          protocolTax: 0,
+        },
+        managementFee: {
+          defaultFee: parseUnits('0.1', 8),
+          maxFee,
+          protocolTax: 0,
+        },
+      })
+
+      // initiate update
+      await factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
+        managementFee: parseUnits('0.05', 8),
+        performanceFee: parseUnits('0.025', 8),
+      })
+
+      // do not wait until time lock opens
+
+      // complete the update
+      await factory.connect(mirrored).updateUserSettings()
+
+      // check the results
+      const userSettings = await factory.getUserSettings(mirrored.address)
+      expect(userSettings.managementFee).eq(parseUnits('0.05', 8))
+      expect(userSettings.performanceFee).eq(parseUnits('0.025', 8))
     })
 
     it('should settle management fee if user settings are updated', async () => {
@@ -211,11 +413,19 @@ describe('HousecatFactory', () => {
       await increaseTime(10 * DAYS)
       expect(await pool.getAccruedManagementFee()).not.equal(0)
 
-      // update settings
-      const update = factory.connect(mirrored).updateUserSettings({
+      // initiate update
+      await factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
         managementFee: (await mgmt.getManagementFee()).maxFee,
         performanceFee: (await mgmt.getPerformanceFee()).maxFee,
       })
+
+      // wait until time lock opens
+      const timelock = await mgmt.userSettingsTimeLockSeconds()
+      await increaseTime(timelock.toNumber() * SECONDS + 1)
+
+      // complete update
+      const update = factory.connect(mirrored).updateUserSettings()
 
       // ManagementFeeCheckpointUpdated should be emitted
       await expect(update).emit(pool, 'ManagementFeeCheckpointUpdated')
@@ -258,11 +468,19 @@ describe('HousecatFactory', () => {
         priceFeed: priceFeed2.address,
       })
 
-      // update settings
-      const update = factory.connect(mirrored).updateUserSettings({
+      // initiate update
+      await factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
         managementFee: (await mgmt.getManagementFee()).maxFee,
         performanceFee: (await mgmt.getPerformanceFee()).maxFee,
       })
+
+      // wait until time lock opens
+      const timelock = await mgmt.userSettingsTimeLockSeconds()
+      await increaseTime(timelock.toNumber() * SECONDS + 1)
+
+      // complete update
+      const update = factory.connect(mirrored).updateUserSettings()
 
       // PerformanceFeeHighWatermarkUpdated shold be emitted
       await expect(update).emit(pool, 'PerformanceFeeHighWatermarkUpdated')
@@ -271,43 +489,21 @@ describe('HousecatFactory', () => {
       expect(await pool.getAccruedPerformanceFee()).equal(0)
     })
 
-    it('should fail to update if managementFee is higher than maxManagementFee', async () => {
+    it('should emit UpdateUserSettings event', async () => {
       const [signer, mirrored] = await ethers.getSigners()
-      const maxFee = parseUnits('0.1', 8) // 10%
-      const { factory } = await mockHousecatAndPool({
-        signer,
-        mirrored,
-        managementFee: {
-          defaultFee: parseUnits('0.01', 8),
-          maxFee,
-          protocolTax: 0,
-        },
+      const { factory } = await mockHousecatAndPool({ signer, mirrored })
+
+      // initiate update
+      await factory.connect(mirrored).initiateUpdateUserSettings({
+        createdAt: 0,
+        managementFee: parseUnits('0.05', 8),
+        performanceFee: parseUnits('0.025', 8),
       })
 
-      const update = factory.connect(mirrored).updateUserSettings({
-        managementFee: maxFee.add(1),
-        performanceFee: 0,
-      })
-      await expect(update).revertedWith('HousecatFactory: managementFee too high')
-    })
+      // complete the update
+      const tx = await factory.connect(mirrored).updateUserSettings()
 
-    it('should fail to update if performanceFee is higher than maxPerformanceFee', async () => {
-      const [signer, mirrored] = await ethers.getSigners()
-      const maxFee = parseUnits('0.1', 8) // 10%
-      const { factory } = await mockHousecatAndPool({
-        signer,
-        mirrored,
-        performanceFee: {
-          defaultFee: parseUnits('0.01', 8),
-          maxFee,
-          protocolTax: 0,
-        },
-      })
-      const update = factory.connect(mirrored).updateUserSettings({
-        managementFee: 0,
-        performanceFee: maxFee.add(1),
-      })
-      await expect(update).revertedWith('HousecatFactory: performanceFee too high')
+      await expect(tx).emit(factory, 'UpdateUserSettings')
     })
   })
 

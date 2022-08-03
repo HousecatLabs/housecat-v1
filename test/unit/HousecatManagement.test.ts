@@ -122,6 +122,32 @@ describe('HousecatManagement', () => {
     })
   })
 
+  describe('updateUserSettingsTimeLock', async () => {
+    it('should fail if caller is not the owner', async () => {
+      const [signer, otherUser] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(otherUser).updateUserSettingsTimeLock(0)
+      await expect(update).to.revertedWith('Ownable: caller is not the owner')
+    })
+
+    it('should update userSettingsTimeLockSeconds successfully when called by the owner', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      await mgmt.connect(signer).updateUserSettingsTimeLock(3000)
+      expect(await mgmt.userSettingsTimeLockSeconds()).equal(3000)
+    })
+
+    it('should emit UpdateUserSettingsTimeLock event', async () => {
+      const [signer] = await ethers.getSigners()
+      const weth = await mockWETH(signer, 'Weth', 'WETH', 18, 0)
+      const mgmt = await deployManagement(signer, signer.address, weth.address)
+      const update = mgmt.connect(signer).updateUserSettingsTimeLock(5000)
+      await expect(update).emit(mgmt, 'UpdateUserSettingsTimeLock').withArgs(5000)
+    })
+  })
+
   describe('setAdapter', async () => {
     it('only owner allowed to call', async () => {
       const [signer, treasury, otherUser] = await ethers.getSigners()
