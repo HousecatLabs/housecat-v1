@@ -18,10 +18,7 @@ const main = async () => {
       priceFeed: x.priceFeed,
       delisted: false,
     })),
-    integrations: [
-      polygon.uniswapV2Routers.quickswap,
-      polygon.uniswapV2Routers.sushiswap,
-    ],
+    integrations: [polygon.uniswapV2Routers.quickswap, polygon.uniswapV2Routers.sushiswap],
     gasPrice,
     gasLimit,
   })
