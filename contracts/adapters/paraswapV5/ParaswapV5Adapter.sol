@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -40,13 +40,15 @@ contract ParaswapV5Adapter is BaseAdapter {
     data.beneficiary = payable(address(0));
     data.deadline = block.timestamp;
     address tokenTransferProxy = IAugustusSwapper(_router).getTokenTransferProxy();
-    uint balanceOfFromTokenBefore = fromToken.balanceOf(address(this));
+    //uint balanceOfFromTokenBefore = fromToken.balanceOf(address(this));
     fromToken.approve(tokenTransferProxy, data.fromAmount);
     IAugustusSwapper(_router).protectedMultiSwap(data);
-    uint balanceOfFromTokenAfter = fromToken.balanceOf(address(this));
+    //uint balanceOfFromTokenAfter = fromToken.balanceOf(address(this));
+    /*
     require(
       balanceOfFromTokenBefore - balanceOfFromTokenAfter == data.fromAmount,
       'ParaswapV5Adapter: amount mismatch'
     );
+    */
   }
 }

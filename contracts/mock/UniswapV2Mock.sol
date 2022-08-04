@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLISENCED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.4;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
