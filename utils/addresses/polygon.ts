@@ -10,10 +10,6 @@ export const uniswapV2Routers = {
   quickswap: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff',
 }
 
-export const paraswapV5 = {
-  AugustusSwapper: '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57',
-}
-
 export const priceFeeds = {
   '1inch': '0x443C5116CdF663Eb387e72C688D276e702135C87',
   aave: '0x72484B12719E23115761D5DA1646945632979bB6',
@@ -322,5 +318,4 @@ export default {
   priceFeeds,
   aaveV2LendingPools,
   aaveV2Tokens,
-  paraswapV5,
 }

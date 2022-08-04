@@ -8,7 +8,6 @@ import {
   UniswapV2Adapter,
   AaveV2Adapter,
   WETHAdapter,
-  ParaswapV5Adapter,
   WithdrawAdapter,
 } from '../typechain-types'
 import { TokenMetaStruct } from '../typechain-types/HousecatManagement'
@@ -62,7 +61,6 @@ export interface IAdapters {
   uniswapV2Adapter: UniswapV2Adapter
   aaveV2Adapter: AaveV2Adapter
   wethAdapter: WETHAdapter
-  paraswapV5Adapter: ParaswapV5Adapter
   withdrawAdapter: WithdrawAdapter
 }
 
@@ -86,17 +84,12 @@ export const deployAdapters = async (
     .deploy({ gasPrice, gasLimit })
   await wethAdapter.deployed()
 
-  const paraswapV5Adapter = await (await ethers.getContractFactory('ParaswapV5Adapter'))
-    .connect(signer)
-    .deploy({ gasPrice, gasLimit })
-  await paraswapV5Adapter.deployed()
-
   const withdrawAdapter = await (await ethers.getContractFactory('WithdrawAdapter'))
     .connect(signer)
     .deploy({ gasPrice, gasLimit })
-  await paraswapV5Adapter.deployed()
+  await withdrawAdapter.deployed()
 
-  return { uniswapV2Adapter, aaveV2Adapter, wethAdapter, paraswapV5Adapter, withdrawAdapter }
+  return { uniswapV2Adapter, aaveV2Adapter, wethAdapter, withdrawAdapter }
 }
 
 export interface IDeployHousecat {

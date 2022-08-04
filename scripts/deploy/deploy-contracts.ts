@@ -21,7 +21,6 @@ const main = async () => {
     integrations: [
       polygon.uniswapV2Routers.quickswap,
       polygon.uniswapV2Routers.sushiswap,
-      polygon.paraswapV5.AugustusSwapper,
     ],
     gasPrice,
     gasLimit,
@@ -38,7 +37,6 @@ const main = async () => {
       WETHAdapter: adapters.wethAdapter.address,
       UniswapV2Adapter: adapters.uniswapV2Adapter.address,
       AaveV2Adapter: adapters.aaveV2Adapter.address,
-      ParaswapV5Adapter: adapters.paraswapV5Adapter.address,
       WithdrawAdapter: adapters.withdrawAdapter.address,
     },
   }
