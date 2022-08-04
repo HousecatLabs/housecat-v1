@@ -45,7 +45,7 @@ describe('HousecatFactory', () => {
       const weth = await mockWETH(signer, 'WETH', 'WETH', 18, 0)
       await weth.mint(mirrored.address, parseEther('10'))
       const wethPriceFeed = await mockPriceFeed(signer, parseUnits('1', 8), 8)
-      const { factory, adapters } = await deployHousecat({
+      const { factory, adapters, mgmt } = await deployHousecat({
         signer,
         treasury: treasury.address,
         weth: weth.address,
@@ -84,6 +84,17 @@ describe('HousecatFactory', () => {
 
       // sender should hold 5 pool tokens
       expect(await pool.balanceOf(mirrorer.address)).equal(parseEther('5'))
+
+      // user settings have default values
+      const pendingUserSettings = await factory.getPendingUserSettings(mirrored.address)
+      const userSettings = await factory.getUserSettings(mirrored.address)
+      const defaultMgmtFee = (await mgmt.getManagementFee()).defaultFee
+      const defaultPerfFee = (await mgmt.getPerformanceFee()).defaultFee
+
+      expect(pendingUserSettings.managementFee).equal(defaultMgmtFee)
+      expect(pendingUserSettings.performanceFee).equal(defaultPerfFee)
+      expect(userSettings.managementFee).equal(defaultMgmtFee)
+      expect(userSettings.performanceFee).equal(defaultPerfFee)
     })
 
     it('should fail to initialize a second time', async () => {

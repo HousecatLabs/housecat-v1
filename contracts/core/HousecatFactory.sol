@@ -47,7 +47,9 @@ contract HousecatFactory {
     mirroredPool[_mirrored] = poolAddress;
     isPool[poolAddress] = true;
     if (userSettings[_mirrored].createdAt == 0) {
-      userSettings[_mirrored] = _getDefaultUserSettings();
+      UserSettings memory defaultUserSettings = _getDefaultUserSettings();
+      pendingUserSettings[_mirrored] = defaultUserSettings;
+      userSettings[_mirrored] = defaultUserSettings;
     }
     if (msg.value > 0) {
       pool.deposit{value: msg.value}(msg.sender, _transactions);
