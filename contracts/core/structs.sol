@@ -42,6 +42,7 @@ struct TokenMeta {
 }
 
 struct UserSettings {
+  uint createdAt;
   uint32 managementFee;
   uint32 performanceFee;
 }
