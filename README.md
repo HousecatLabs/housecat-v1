@@ -2,7 +2,7 @@
 
 ## Deployed addresses:
 
-Version: dfaf4b8
+Version: 423b4f5
 
 ```js
 {
