@@ -50,6 +50,7 @@ describe('WithdrawAdapter', () => {
           },
         ],
         1,
+        false,
       ])
       const tx = mock.pool.connect(owner).withdraw(owner.address, [
         {
@@ -78,6 +79,7 @@ describe('WithdrawAdapter', () => {
             },
           ],
           1,
+          false,
         ]
       )
       const tx = mock.pool.connect(owner).withdraw(owner.address, [
@@ -109,6 +111,7 @@ describe('WithdrawAdapter', () => {
             },
           ],
           1,
+          false,
         ]
       )
       const tx = mock.pool.connect(owner).withdraw(owner.address, [
@@ -130,6 +133,7 @@ describe('WithdrawAdapter', () => {
           },
         ],
         1,
+        false,
       ])
       await mock.pool.connect(mirrorer).withdraw(mirrorer.address, [
         {
@@ -152,6 +156,7 @@ describe('WithdrawAdapter', () => {
           },
         ],
         1,
+        false,
       ])
       await mock.pool.connect(mirrorer).withdraw(mirrorer.address, [
         {
