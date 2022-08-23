@@ -2,20 +2,19 @@
 
 ## Deployed addresses:
 
-Version: dfaf4b8
+Version: 423b4f5
 
 ```js
 {
-  timestamp: '2022-06-10T13:02:15.797Z',
+  timestamp: '2022-08-05T06:59:51.936Z',
   network: 'polygon',
   addresses: {
-    HousecatManagement: '0x958d607Df9BAd77B6795a7E938Ca02f662aB4cDb',
-    HousecatFactory: '0xD449F937f8c8acF35Fc1D0c23455f7f8a082a8d9',
-    HousecatPool: '0xd7ee650f064F182797f23f9DE5334341Da5d2296',
-    HousecatQueries: '0x5cD411e4922F3C9C5788cc77DAfdD88378546dAa',
-    WETHAdapter: '0xF7D2D0CbB09b64646e7a1a1ADA05F113A11Bf252',
-    UniswapV2Adapter: '0xa33Aed0e3144953755B3AB3cEc1D152d6D064eFB',
-    AaveV2Adapter: '0x6d22137e0AD1E73c233034C81984Fcf0B5E581c8',
+    HousecatManagement: '0xA2750A4fC338Fa72A164f966639eDA2Ab430dB27',
+    HousecatFactory: '0xc6f24569eC35df2802E7744A0AA65680e561c1C2',
+    HousecatPool: '0xCCf84A5be970619f09E3D188347db556626bF53E',
+    HousecatQueries: '0xF5fDad86DD2315CF132B0E5A48A0aaA67CcC24c1',
+    WETHAdapter: '0x10eC4f4F93375431f75e2A73198d5ADe81aBB39e',
+    UniswapV2Adapter: '0x6b0c9292EECCe232975319Ac2993f932e5AcD69B',
     WithdrawAdapter: '0x839343103F9C49a0855d412c94B875f1Fae58679'
   }
 }
