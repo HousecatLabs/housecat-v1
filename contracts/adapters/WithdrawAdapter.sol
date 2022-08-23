@@ -15,32 +15,58 @@ contract WithdrawAdapter is BaseAdapter {
   function withdrawPercentage(
     uint _percentage,
     ExchangeData[] memory _trades,
-    uint _minAmountETH
+    uint _minAmountETH,
+    bool _asManager
   ) external payable {
     HousecatPool pool = _getPool();
     HousecatManagement mgmt = _getMgmt();
     address weth = mgmt.weth();
     uint percent100 = pool.getPercent100();
-    uint totalSupply = pool.totalSupply() + pool.getAccruedManagementFee() + pool.getAccruedPerformanceFee();
-    uint myShareOfPool = (pool.balanceOf(msg.sender) * percent100) / totalSupply;
+    uint sellPercentage = _getSellPercentage(pool, mgmt, _percentage, percent100, _asManager);
     uint existingBalanceWETH = IERC20(weth).balanceOf(address(this));
-    uint addedAmountWETH = 0;
+    uint amountWETHReceived = _sellAssetsForWETH(sellPercentage, _trades, percent100, weth);
+    uint amountETH = (existingBalanceWETH * sellPercentage) / percent100 + amountWETHReceived;
+    require(amountETH >= _minAmountETH, 'WithdrawAdapter: insuff. amount out');
+    IWETH(weth).withdraw(amountETH);
+  }
 
-    // swap a percentage of each asset for WETH
+  function _getSellPercentage(
+    HousecatPool _pool,
+    HousecatManagement _mgmt,
+    uint _percentage,
+    uint _percent100,
+    bool _asManager
+  ) private view returns (uint) {
+    uint accruedMgmtFee = _pool.getAccruedManagementFee();
+    uint accruedPerfFee = _pool.getAccruedPerformanceFee();
+    uint totalSupply = _pool.totalSupply() + accruedMgmtFee + accruedPerfFee;
+    uint myBalance = _pool.balanceOf(msg.sender);
+    if (_asManager) {
+      uint mgmtFeeTax = _mgmt.getManagementFee().protocolTax;
+      uint perfFeeTax = _mgmt.getPerformanceFee().protocolTax;
+      myBalance += (accruedMgmtFee * (_percent100 - mgmtFeeTax)) / _percent100;
+      myBalance += (accruedPerfFee * (_percent100 - perfFeeTax)) / _percent100;
+    }
+    return (myBalance * _percentage) / totalSupply;
+  }
+
+  function _sellAssetsForWETH(
+    uint _sellPercentage,
+    ExchangeData[] memory _trades,
+    uint _percent100,
+    address _weth
+  ) private returns (uint) {
+    uint amountWETHReceived = 0;
     for (uint i = 0; i < _trades.length; i++) {
       ExchangeData memory d = _trades[i];
       uint totalBalanceOfToken = IERC20(d.path[0]).balanceOf(address(this));
-      if (totalBalanceOfToken > 0) {
-        uint amountSell = (totalBalanceOfToken * myShareOfPool * _percentage) / (percent100**2);
-        uint[] memory amountsOut = _swapTokens(d.router, weth, d.path, amountSell, 1);
-        addedAmountWETH += amountsOut[amountsOut.length - 1];
+      if (totalBalanceOfToken >= 0) {
+        uint amountSell = (totalBalanceOfToken * _sellPercentage) / _percent100;
+        uint[] memory amountsOut = _swapTokens(d.router, _weth, d.path, amountSell, 1);
+        amountWETHReceived += amountsOut[amountsOut.length - 1];
       }
     }
-
-    // swap WETH for ETH
-    uint amountETH = (existingBalanceWETH * myShareOfPool * _percentage) / (percent100**2) + addedAmountWETH;
-    require(amountETH >= _minAmountETH, 'WithdrawAdapter: insuff. amount out');
-    IWETH(weth).withdraw(amountETH);
+    return amountWETHReceived;
   }
 
   function _swapTokens(
