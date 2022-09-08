@@ -24,7 +24,7 @@ contract WithdrawAdapter is BaseAdapter {
     uint percent100 = pool.getPercent100();
     uint sellPercentage = _getSellPercentage(pool, mgmt, _percentage, percent100, _asManager);
     uint existingBalanceWETH = IERC20(weth).balanceOf(address(this));
-    uint amountWETHReceived = _sellAssetsForWETH(sellPercentage, _trades, percent100, weth);
+    uint amountWETHReceived = _sellAssetsForWETH(sellPercentage, _trades, percent100, weth, mgmt);
     uint amountETH = (existingBalanceWETH * sellPercentage) / percent100 + amountWETHReceived;
     require(amountETH >= _minAmountETH, 'WithdrawAdapter: insuff. amount out');
     IWETH(weth).withdraw(amountETH);
@@ -54,15 +54,17 @@ contract WithdrawAdapter is BaseAdapter {
     uint _sellPercentage,
     ExchangeData[] memory _trades,
     uint _percent100,
-    address _weth
+    address _weth,
+    HousecatManagement _mgmt
   ) private returns (uint) {
     uint amountWETHReceived = 0;
     for (uint i = 0; i < _trades.length; i++) {
       ExchangeData memory d = _trades[i];
+      require(_mgmt.isAssetSupported(d.path[0], false), 'WithdrawAdapter: unsupported token from');
       uint totalBalanceOfToken = IERC20(d.path[0]).balanceOf(address(this));
-      if (totalBalanceOfToken >= 0) {
+      if (totalBalanceOfToken > 0) {
         uint amountSell = (totalBalanceOfToken * _sellPercentage) / _percent100;
-        uint[] memory amountsOut = _swapTokens(d.router, _weth, d.path, amountSell, 1);
+        uint[] memory amountsOut = _swapTokens(d.router, _weth, _mgmt, d.path, amountSell, 1);
         amountWETHReceived += amountsOut[amountsOut.length - 1];
       }
     }
@@ -72,13 +74,13 @@ contract WithdrawAdapter is BaseAdapter {
   function _swapTokens(
     address _router,
     address _weth,
+    HousecatManagement _mgmt,
     address[] memory _path,
     uint _amountIn,
     uint _amountOutMin
   ) private returns (uint[] memory) {
-    HousecatManagement mgmt = _getMgmt();
-    require(mgmt.isIntegrationSupported(_router), 'WithdrawAdapter: unsupported router');
-    require(mgmt.isAssetSupported(_path[0], false), 'WithdrawAdapter: unsupported token from');
+    require(_mgmt.isIntegrationSupported(_router), 'WithdrawAdapter: unsupported router');
+    require(_mgmt.isAssetSupported(_path[0], false), 'WithdrawAdapter: unsupported token from');
     require(_path[_path.length - 1] == _weth, 'WithdrawAdapter: token to !== WETH');
     IERC20(_path[0]).approve(_router, _amountIn);
     return
