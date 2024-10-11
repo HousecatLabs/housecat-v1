@@ -11,7 +11,7 @@
     "@typechain/hardhat": "5.0.0",
     "@types/chai": "4.3.1",
     "@types/mocha": "9.1.1",
-    "@types/node": "16.11.38",
+    "@types/node": "16.18.113",
     "@typescript-eslint/eslint-plugin": "5.19.0",
     "@typescript-eslint/parser": "5.19.0",
     "@uniswap/v2-core": "1.0.1",
